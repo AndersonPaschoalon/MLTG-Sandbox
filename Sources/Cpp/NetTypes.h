@@ -60,7 +60,7 @@ typedef unsigned int       packet_size;
 typedef unsigned short     ttl;
 typedef unsigned short     port_number; 
 typedef unsigned int       ipv4_address;
-typedef unsigned long long flow_id;
+typedef size_t             flow_id;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,4 +78,6 @@ enum class CaptureLibrary
     LIBPACKP,
     DPDK,
     LIBTINS,
-}
+};
+
+

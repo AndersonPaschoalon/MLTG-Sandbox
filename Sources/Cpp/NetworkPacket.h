@@ -4,7 +4,6 @@
 #include "NetTypes.h"
 
 
-
 class NetworkPacket
 {
     public:
@@ -50,9 +49,11 @@ class NetworkPacket
 
         unsigned int getIPv4Dst();
 
-        void getIPv6Src(std::string& ipv6);
+        std::string getIPv6Src();
 
-        void getIPv6Dst(std::string& ipv6);
+        std::string getIPv6Dst();
+
+        ttl getTtl();
 
         void setNetwork(NetworkProtocol proto, unsigned int ipSrc, unsigned int ipDrc);
 
@@ -69,9 +70,9 @@ class NetworkPacket
 
         bool isUDPIPv4();
 
-        port_number srcPort();
+        port_number getPortSrc();
 
-        port_number dstPort();
+        port_number getPortDst();
 
         void setTransport(TransportProtocol proto, port_number src, port_number dst);
 
@@ -100,3 +101,10 @@ class NetworkPacket
     private:
 
 };
+
+typedef struct ether_buffer_node
+{
+    NetworkPacket* etherPacket;
+    struct ether_buffer_node* next;
+
+} ETHER_BUFFER_NODE;

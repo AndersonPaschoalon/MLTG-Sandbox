@@ -45,7 +45,7 @@ class Flow
                  port_number portDst,
                  ApplicationProtocol app);
 
-        void addPacket(FlowPacket& pkt);
+        void addPacket(FlowPacket* pkt);
 
 
     private:

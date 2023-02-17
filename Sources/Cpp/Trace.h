@@ -2,6 +2,10 @@
 #include <vector>
 #include "NetTypes.h"
 #include "Flow.h"
+#include "FlowPacket.h"
+#include "NetworkPacket.h"
+#include "FlowIdCalc.h"
+
 
 
 class Trace
@@ -19,7 +23,7 @@ class Trace
                  const std::string& dateTime,
                  double epochStartTime);
 
-        void addFlow(Flow* flow);
+        void bufferParser(ETHER_BUFFER_NODE* buffer, FlowIdCalc* flowCalc);        
 
 
     private:
@@ -29,5 +33,8 @@ class Trace
         std::string dateTime;
         double epochStartTime;
         std::vector<Flow*> flows;
+
+        void addFlow(Flow* flow);
+
 
 };
