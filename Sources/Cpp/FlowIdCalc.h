@@ -9,78 +9,115 @@
 #include "NetTypes.h"
 
 /// @brief Network set node
-struct NetworkLayer
+typedef struct _NetworkLayer
 {
     /// @brief set key
     NetworkProtocol proto;
 
     // points to the right network set of the specified protocol
-    std::set<Netv4DstSrc*>* setNetv4DstSrc = NULL;
-    std::set<Netv6DstSrc*>* setNetv6DstSrc = NULL;
-    std::set<Ipv4DstSrc*>* setIpv4DstSrc = NULL;
-    std::set<Ipv6DstSrc*>* setIpv6DstSrc = NULL;
+    std::set<Netv4DstSrc>* setNetv4DstSrc = NULL;
+    std::set<Netv6DstSrc>* setNetv6DstSrc = NULL;
+    std::set<Ipv4DstSrc>* setIpv4DstSrc = NULL;
+    std::set<Ipv6DstSrc>* setIpv6DstSrc = NULL;
 
-};
+    bool operator<(const struct _NetworkLayer& other) const 
+    {
+        return proto < other.proto;
+    }
+}NetworkLayer;
 
 /// @brief Generic leaf for non-ip network packets
-struct Netv4DstSrc
+typedef struct _Netv4DstSrc
 {
     // Key
     unsigned long int dstSrcSumm;
     // flow data
-    unsigned long long int flowId;
-};
+    flow_id flowId;
+
+    bool operator<(const struct _Netv4DstSrc& other) const 
+    {
+        return dstSrcSumm < other.dstSrcSumm;
+    }
+
+}Netv4DstSrc;
 
 /// @brief Generic leaf for non-ip network packets
-struct Netv6DstSrc
+typedef struct _Netv6DstSrc
 {
     // key
     unsigned long int dstSrcHash;
     // flow data
-    unsigned long long int flowId;
-};
+    flow_id flowId;
+
+    bool operator<(const struct _Netv6DstSrc& other) const 
+    {
+        return dstSrcHash < other.dstSrcHash;
+    }
+
+}Netv6DstSrc;
 
 /// @brief IPv4 node
-struct Ipv4DstSrc
+typedef struct _Ipv4DstSrc
 {
     /// @brief set key
     unsigned long int dstSrcSumm;
 
     /// @brief point to the set of transport layer
-    std::set<TransportLayer*>* setTransport;
-};
+    std::set<TransportLayer>* setTransport;
+
+
+    bool operator<(const _Ipv4DstSrc& other) const 
+    {
+        return dstSrcSumm < other.dstSrcSumm;
+    }
+
+}Ipv4DstSrc;
 
 /// @brief IPv6 node
-struct Ipv6DstSrc
+typedef struct _Ipv6DstSrc
 {
     /// @brief set key
     unsigned long int dstSrcHash;
 
     /// @brief point to the set of transport layer
-    std::set<TransportLayer*>* setTransport;
-};
+    std::set<TransportLayer>* setTransport;
+
+    bool operator<(const struct _Ipv6DstSrc& other) const 
+    {
+        return dstSrcHash < other.dstSrcHash;
+    }
+
+}Ipv6DstSrc;
 
 /// @brief Transport layer node
-struct TransportLayer
+typedef struct _TransportLayer
 {
     /// @brief key
     TransportProtocol proto;
 
     /// @brief set for the transport layer flows
-    std::set<PortDstSrc*> setPortDstSrc;
-};
+    std::set<PortDstSrc>* setPortDstSrc;
 
-struct PortDstSrc
+    bool operator<(const struct _TransportLayer& other) const 
+    {
+        return proto < other.proto;
+    }    
+}TransportLayer;
+
+typedef struct _PortDstSrc
 {
     /// @brief transport layer key
     unsigned long int dstSrcSumm;
 
     /// @brief set data
-    unsigned long long int flowId;
-};
+    flow_id flowId;
 
+    bool operator<(const struct _PortDstSrc& other) const 
+    {
+        return dstSrcSumm < other.dstSrcSumm;
+    }    
 
-
+}PortDstSrc;
 
 
 class FlowIdCalc
@@ -99,8 +136,9 @@ class FlowIdCalc
 
     private:
         std::atomic<flow_id> lastFlowId;
-        std::set<NetworkLayer*> netFlowsStack;
 
+        /// @brief A set that represent the Flow Stack of a given trace.
+        std::set<NetworkLayer>* netFlowsStack;
 
         static const unsigned int summPorts(port_number dst, port_number src);
 

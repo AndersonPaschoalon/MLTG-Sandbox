@@ -1,13 +1,21 @@
 #include <iostream>
 #include <vector>
 #include <string>
-
 #include "FlowIdCalc.h"
 
-using namespace std;
+
+void runUnityTests()
+{
+   // TODO
+   return;
+}
 
 int main()
 {
+   int retVal = 0;
+
+#ifdef UNITY_TESTS
+#else
    vector<string> msg {"Hello", "C++", "World", "from", "VS Code", "and the C++ extension!"};
 
    printf("Oiiiii\n");
@@ -20,7 +28,9 @@ int main()
 
    FlowIdCalc flowCalc = FlowIdCalc();
    printf("-- %s\n", flowCalc.toString().c_str());
+#endif
 
 
-   return 0;
+
+   return retVal;
 }
