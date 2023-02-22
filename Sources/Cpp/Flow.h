@@ -1,7 +1,11 @@
+#ifndef _FLOW__H_
+#define _FLOW__H_ 1
+
 #include <string>
 #include <vector>
 #include "NetTypes.h"
 #include "FlowPacket.h"
+
 
 class Flow
 {
@@ -10,6 +14,10 @@ class Flow
         Flow();
 
         ~Flow();
+
+        Flow(const Flow& obj);
+
+        Flow& operator=(Flow other);
 
         std::string toString();
 
@@ -45,7 +53,7 @@ class Flow
                  port_number portDst,
                  ApplicationProtocol app);
 
-        void addPacket(FlowPacket* pkt);
+        void addPacket(FlowPacket pkt);
 
 
     private:
@@ -65,11 +73,9 @@ class Flow
         
         ApplicationProtocol applicationProtocol;
 
-        std::vector<FlowPacket*>* packetList;
-
-
-
-
-        
+        std::vector<FlowPacket>* packetList;
 
 };
+
+#endif // _FLOW__H_
+

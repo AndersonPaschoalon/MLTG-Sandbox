@@ -1,3 +1,6 @@
+#ifndef _SNIFFER__H_
+#define _SNIFFER__H_ 1
+
 #include <string>
 #include <vector>
 #include "NetTypes.h"
@@ -53,3 +56,5 @@ class Sniffer
         double executionFinished;
 
 };
+
+#endif // _SNIFFER__H_

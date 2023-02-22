@@ -1,15 +1,27 @@
+#ifndef _UNITY_TESTS__H_
+#define _UNITY_TESTS__H_ 1
+
 #include <stdio.h>
 #include <iostream>
+
+#include "UnityTests.h"
+#include "EtherDummy.h"
+#include "FlowIdCalc.h"
+#include "NetworkPacket.h"
+#include "Logger.h"
 
 
 class UnityTests{
 
 public:
-    void run();
+    static void run();
 
 private:
 
-    void test_FlowIdCalc();
+    static void test_FlowIdCalc();
 
 
 };
+
+#endif // _UNITY_TESTS__H_
+

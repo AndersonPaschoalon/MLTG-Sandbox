@@ -2,19 +2,23 @@
 #include <vector>
 #include <string>
 #include "FlowIdCalc.h"
+#include "UnityTests.h"
 
+#define UNITY_TESTS 1
 
 void runUnityTests()
 {
-   // TODO
+   UnityTests::run();
    return;
 }
 
 int main()
 {
+   printf("OIz\n");
    int retVal = 0;
 
 #ifdef UNITY_TESTS
+   runUnityTests();
 #else
    vector<string> msg {"Hello", "C++", "World", "from", "VS Code", "and the C++ extension!"};
 

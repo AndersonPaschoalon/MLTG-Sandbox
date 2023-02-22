@@ -1,3 +1,6 @@
+#ifndef _FLOW_PACKET__H_ 
+#define _FLOW_PACKET__H_ 1
+
 #include <string>
 #include "NetTypes.h"
 
@@ -5,6 +8,14 @@ class FlowPacket
 {
     public:
         FlowPacket(double timeStamp, unsigned int packetSize, ttl timeToLive);
+
+        ~FlowPacket();
+
+        FlowPacket(const FlowPacket& obj);
+
+        FlowPacket& operator=(FlowPacket other);
+
+
 
         time_stamp getTimeStamp();
         
@@ -18,3 +29,5 @@ class FlowPacket
         packet_size packetSize;
         ttl timeToLive;
 };
+
+#endif // _FLOW_PACKET__H_

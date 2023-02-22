@@ -1,3 +1,8 @@
+#ifndef _NET_TYPES__H_ 
+#define _NET_TYPES__H_ 1
+
+#include <string>
+
 ///////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 ///////////////////////////////////////////////////////////////////////////////
@@ -10,10 +15,14 @@
 #define MAX_IPV4_VALUE       0xFFFFFFFF
 #define IPV4_OFFSET_VALUE    0x100000000
 #define IPV4_NONE            0x0
+#define IPV6_NONE            ""
+
+#define FLOW_ID_NONE         0
 
 ///////////////////////////////////////////////////////////////////////////////
 // Protocols
 ///////////////////////////////////////////////////////////////////////////////
+
 
 enum class NetworkProtocol
 {   
@@ -50,6 +59,11 @@ enum class ApplicationProtocol
     TLS_SSL,
 };
 
+std::string to_string(NetworkProtocol protocol);
+
+std::string to_string(TransportProtocol protocol);
+
+std::string to_string(ApplicationProtocol protocol);
 
 ///////////////////////////////////////////////////////////////////////////////
 // DATA TYPES
@@ -61,6 +75,7 @@ typedef unsigned short     ttl;
 typedef unsigned short     port_number; 
 typedef unsigned int       ipv4_address;
 typedef size_t             flow_id;
+typedef unsigned long int  flow_hash;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,3 +96,6 @@ enum class CaptureLibrary
 };
 
 
+
+
+#endif // _NET_TYPES__H_

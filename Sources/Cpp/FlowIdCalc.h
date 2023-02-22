@@ -1,3 +1,6 @@
+#ifndef _FLOW_ID_CALC__H_
+#define _FLOW_ID_CALC__H_ 1
+
 #include <stdio.h>
 #include <string>
 #include <iostream>
@@ -7,24 +10,40 @@
 
 #include "NetworkPacket.h"
 #include "NetTypes.h"
+#include "Logger.h"
 
-/// @brief Network set node
-typedef struct _NetworkLayer
+
+
+typedef struct _PortDstSrc
 {
-    /// @brief set key
-    NetworkProtocol proto;
+    /// @brief transport layer key
+    unsigned long int dstSrcSumm;
 
-    // points to the right network set of the specified protocol
-    std::set<Netv4DstSrc>* setNetv4DstSrc = NULL;
-    std::set<Netv6DstSrc>* setNetv6DstSrc = NULL;
-    std::set<Ipv4DstSrc>* setIpv4DstSrc = NULL;
-    std::set<Ipv6DstSrc>* setIpv6DstSrc = NULL;
+    /// @brief set data
+    flow_id flowId;
 
-    bool operator<(const struct _NetworkLayer& other) const 
+    bool operator<(const struct _PortDstSrc& other) const 
+    {
+        return dstSrcSumm < other.dstSrcSumm;
+    }    
+
+}PortDstSrc;
+
+/// @brief Transport layer node
+typedef struct _TransportLayer
+{
+    /// @brief key
+    TransportProtocol proto;
+
+    /// @brief set for the transport layer flows
+    std::set<PortDstSrc>* setPortDstSrc;
+
+    bool operator<(const struct _TransportLayer& other) const 
     {
         return proto < other.proto;
-    }
-}NetworkLayer;
+    }    
+}TransportLayer;
+
 
 /// @brief Generic leaf for non-ip network packets
 typedef struct _Netv4DstSrc
@@ -89,35 +108,23 @@ typedef struct _Ipv6DstSrc
 
 }Ipv6DstSrc;
 
-/// @brief Transport layer node
-typedef struct _TransportLayer
+/// @brief Network set node
+typedef struct _NetworkLayer
 {
-    /// @brief key
-    TransportProtocol proto;
+    /// @brief set key
+    NetworkProtocol proto;
 
-    /// @brief set for the transport layer flows
-    std::set<PortDstSrc>* setPortDstSrc;
+    // points to the right network set of the specified protocol
+    std::set<Netv4DstSrc>* setNetv4DstSrc = NULL;
+    std::set<Netv6DstSrc>* setNetv6DstSrc = NULL;
+    std::set<Ipv4DstSrc>* setIpv4DstSrc = NULL;
+    std::set<Ipv6DstSrc>* setIpv6DstSrc = NULL;
 
-    bool operator<(const struct _TransportLayer& other) const 
+    bool operator<(const struct _NetworkLayer& other) const 
     {
         return proto < other.proto;
-    }    
-}TransportLayer;
-
-typedef struct _PortDstSrc
-{
-    /// @brief transport layer key
-    unsigned long int dstSrcSumm;
-
-    /// @brief set data
-    flow_id flowId;
-
-    bool operator<(const struct _PortDstSrc& other) const 
-    {
-        return dstSrcSumm < other.dstSrcSumm;
-    }    
-
-}PortDstSrc;
+    }
+}NetworkLayer;
 
 
 class FlowIdCalc
@@ -131,8 +138,6 @@ class FlowIdCalc
         std::string toString();
 
         flow_id setFlowId(NetworkPacket& packet);
-
-
 
     private:
         std::atomic<flow_id> lastFlowId;
@@ -153,3 +158,5 @@ class FlowIdCalc
         flow_id getNextFlowId();
 
 };
+
+#endif // _FLOW_ID_CALC__H_

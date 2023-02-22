@@ -20,6 +20,14 @@ void Trace::addFlow(Flow *flow)
     this->flows.push_back(flow);
 }
 
+void Trace::set(const std::string &traceName, const std::string &traceSource, const std::string &dateTime, double epochStartTime)
+{
+    this->traceName = traceName;
+    this->traceSource = traceSource;
+    this->dateTime = dateTime;
+    this->epochStartTime = epochStartTime;
+}
+
 void Trace::bufferParser(ETHER_BUFFER_NODE *buffer, FlowIdCalc *flowCalc)
 {
     ETHER_BUFFER_NODE* currentNode = NULL;
@@ -110,13 +118,13 @@ void Trace::bufferParser(ETHER_BUFFER_NODE *buffer, FlowIdCalc *flowCalc)
         // this should always happen, since we add a new flow
         if (currentPacketFlow < flows.size())
         {
-            FlowPacket* pkt = new FlowPacket(currentPacket->getTimestamp(),   // double timeStamp, 
-                                             currentPacket->getPacketSize(), // unsigned int packetSize, 
-                                             currentPacket->getTtl() //ttl timeToLive
-                                             );
+            FlowPacket pkt = FlowPacket(currentPacket->getTimestamp(),   // double timeStamp, 
+                                        currentPacket->getPacketSize(), // unsigned int packetSize, 
+                                        currentPacket->getTtl() //ttl timeToLive
+                                        );
             this->flows[currentPacketFlow]->addPacket(pkt);
             // clean wild pointer
-            pkt = NULL;
+            // pkt = NULL;
         }
         else
         {

@@ -1,11 +1,14 @@
+#ifndef _TRACE__H_
+#define _TRACE__H_ 1
+
+
 #include <string>
 #include <vector>
 #include "NetTypes.h"
+#include "NetworkPacket.h"
 #include "Flow.h"
 #include "FlowPacket.h"
-#include "NetworkPacket.h"
 #include "FlowIdCalc.h"
-
 
 
 class Trace
@@ -38,3 +41,7 @@ class Trace
 
 
 };
+
+#endif // _TRACE__H_
+
+
