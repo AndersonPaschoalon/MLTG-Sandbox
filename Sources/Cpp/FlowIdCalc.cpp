@@ -77,9 +77,9 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 break;
             }
             case NetworkProtocol::IPv4 :
-            /*
-                unsigned long int ipv4Key = FlowIdCalc::summIpv4(packet.getIPv4Dst(), packet.getIPv4Src()); 
-                Ipv4DstSrc keyToSearch4 = {.dstSrcSumm=ipv4Key,};
+            {
+                netKey = FlowIdCalc::summIpv4(packet.getIPv4Dst(), packet.getIPv4Src()); 
+                Ipv4DstSrc keyToSearch4 = {.dstSrcSumm=netKey,};
 
                 if (auto searchNetAddr = netNode->setIpv4DstSrc->find(keyToSearch4); searchNetAddr != netNode->setIpv4DstSrc->end())
                 {
@@ -91,28 +91,68 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                     if (auto searchTransportProto = searchNetAddr->setTransport->find(transKey); searchTransportProto != searchNetAddr->setTransport->end())
                     {
                         // transport found!
-
+                        // search port hash 
+                        flow_hash portKey = FlowIdCalc::summPorts(packet.getPortDst(), packet.getPortSrc()); 
+                        PortDstSrc portObj = {.dstSrcSumm=portKey};
+                        if (auto searchPortPair = searchTransportProto->setPortDstSrc->find(portObj);  
+                            searchPortPair != searchTransportProto->setPortDstSrc->end())
+                        {
+                            // Port pair found!
+                            actualFlowId = searchPortPair->flowId;
+                        }
+                        else
+                        {
+                            // port pair not found, insert a new one in the transport branch!
+                            actualFlowId = FlowIdCalc::getNextFlowId();
+                            // fill the objects
+                            portObj.flowId = actualFlowId;
+                            searchTransportProto->setPortDstSrc->insert(portObj);
+                        }
                     }
                     else
                     {
                         // transport not found
                         // therefore the flow does not exist, and we must add it!
-                        
+                        actualFlowId = FlowIdCalc::getNextFlowId();
+                        // fill the objects
+                        flow_hash portHash = FlowIdCalc::summPorts(packet.getPortDst(), packet.getPortSrc());
+                        PortDstSrc portObj = {
+                            .dstSrcSumm = portHash,
+                            .flowId = actualFlowId,
+                        };
+                        std::set<PortDstSrc>* setPorts = new std::set<PortDstSrc>();
+                        setPorts->insert(portObj);
+                        transKey.setPortDstSrc = setPorts;
+                        // inset new trans protocol;
+                        searchNetAddr->setTransport->insert(transKey);
                     }
-                    
-
-
-
                 }
                 else
                 {
                     // not found => therefore a new node with a new flow id must be included
                     actualFlowId = FlowIdCalc::getNextFlowId();
-                    keyToSearch.flowId = actualFlowId;
-                    netNode->setNetv4DstSrc->insert(keyToSearch);
+                    // fill search object with the propper data
+                    // porObj -> set ports -> transport obj -> set transport 
+                    flow_hash portHash = FlowIdCalc::summPorts(packet.getPortDst(), packet.getPortSrc());
+                    PortDstSrc portObj = {
+                        .dstSrcSumm = portHash,
+                        .flowId = actualFlowId,
+                    };
+                    std::set<PortDstSrc>* setPorts = new std::set<PortDstSrc>();
+                    setPorts->insert(portObj);
+                    TransportLayer newTransportLayer = {
+                        .proto = packet.getTransportProtocol(),
+                        .setPortDstSrc = setPorts,
+                    };
+                    std::set<TransportLayer>* setTransport = new std::set<TransportLayer>();
+                    keyToSearch4.setTransport = setTransport;
+                    keyToSearch4.dstSrcSumm = netKey;
+                    // insert the node on ip set
+                    netNode->setIpv4DstSrc->insert(keyToSearch4);
                 }
+            }
+
                 break;
-            **/
             case NetworkProtocol::IPv6 :
                 break;
             default:

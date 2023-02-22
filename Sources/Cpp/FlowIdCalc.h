@@ -17,7 +17,7 @@
 typedef struct _PortDstSrc
 {
     /// @brief transport layer key
-    unsigned long int dstSrcSumm;
+    flow_hash dstSrcSumm;
 
     /// @brief set data
     flow_id flowId;
@@ -49,7 +49,7 @@ typedef struct _TransportLayer
 typedef struct _Netv4DstSrc
 {
     // Key
-    unsigned long int dstSrcSumm;
+    flow_hash dstSrcSumm;
     // flow data
     flow_id flowId;
 
@@ -64,7 +64,7 @@ typedef struct _Netv4DstSrc
 typedef struct _Netv6DstSrc
 {
     // key
-    unsigned long int dstSrcHash;
+    flow_hash dstSrcHash;
     // flow data
     flow_id flowId;
 
@@ -79,7 +79,7 @@ typedef struct _Netv6DstSrc
 typedef struct _Ipv4DstSrc
 {
     /// @brief set key
-    unsigned long int dstSrcSumm;
+    flow_hash dstSrcSumm;
 
     /// @brief point to the set of transport layer
     std::set<TransportLayer>* setTransport;
@@ -96,7 +96,7 @@ typedef struct _Ipv4DstSrc
 typedef struct _Ipv6DstSrc
 {
     /// @brief set key
-    unsigned long int dstSrcHash;
+    flow_hash dstSrcHash;
 
     /// @brief point to the set of transport layer
     std::set<TransportLayer>* setTransport;
