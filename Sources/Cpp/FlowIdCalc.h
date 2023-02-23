@@ -139,15 +139,22 @@ class FlowIdCalc
 
         flow_id setFlowId(NetworkPacket& packet);
 
+        flow_id getCurrentFlowId();
+
+
     private:
         std::atomic<flow_id> lastFlowId;
 
         /// @brief A set that represent the Flow Stack of a given trace.
         std::set<NetworkLayer>* netFlowsStack;
 
-        static const unsigned int summPorts(port_number dst, port_number src);
+        static const flow_hash summPorts(port_number dst, port_number src);
 
-        static const unsigned long summIpv4(ipv4_address dst, ipv4_address src);
+        static const void recoverPorts(flow_hash summ, port_number& dst, port_number& src);
+
+        static const flow_hash summIpv4(ipv4_address dst, ipv4_address src);
+
+        static const void recoverIpv4(flow_hash summ, ipv4_address& dst, ipv4_address& src);
 
         static const size_t hashStrings(std::string a, std::string b);
 

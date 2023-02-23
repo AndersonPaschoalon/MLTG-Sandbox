@@ -72,3 +72,10 @@ std::string to_string(ApplicationProtocol protocol)
             return "UNKNOWN";
     }
 }
+
+std::string hexToDottedDecimal(ipv4_address hexAddress)
+{
+    std::stringstream ss;
+    ss << ((hexAddress >> 24) & 0xFF) << '.' << ((hexAddress >> 16) & 0xFF) << '.' << ((hexAddress >> 8) & 0xFF) << '.' << (hexAddress & 0xFF);
+    return ss.str();
+}

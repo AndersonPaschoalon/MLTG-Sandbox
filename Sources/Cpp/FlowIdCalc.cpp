@@ -14,7 +14,84 @@ FlowIdCalc::~FlowIdCalc()
 
 std::string FlowIdCalc::toString()
 {
-    return std::string("FlowIdCalc");
+    ipv4_address srcIp = 0x0;
+    ipv4_address dstIp = 0x0;
+    port_number srcPort = 0x0;
+    port_number dstPort = 0x0;
+    flow_id flowId = 0;
+    std::string dump = "";
+    // iter over all main set elements
+    std::set<NetworkLayer>::iterator itrL1;
+    for (itrL1 = this->netFlowsStack->begin();   itrL1 != this->netFlowsStack->end(); itrL1++)
+    {
+
+        dump += "# Protocol " + to_string(itrL1->proto) + "\n";
+        // setNetv4DstSrc
+        if (itrL1->setNetv4DstSrc != NULL)
+        {
+            std::set<Netv4DstSrc>::iterator itrL2;
+            for (itrL2 = itrL1->setNetv4DstSrc->begin();   itrL2 !=itrL1->setNetv4DstSrc->end(); itrL2++)
+            {
+                srcIp = 0x0;
+                dstIp = 0x0;
+                FlowIdCalc::recoverIpv4(itrL2->dstSrcSumm, dstIp, srcIp);
+                dump += "flow:" + std::to_string(itrL2->flowId) + 
+                        ", net:" + to_string(itrL1->proto) + 
+                        ", netSrc:" + hexToDottedDecimal(srcIp) + 
+                        ", netDst:" + hexToDottedDecimal(dstIp) + "\n";
+            }
+        }
+
+        // setNetv6DstSrc
+        if (itrL1->setNetv6DstSrc != NULL)
+        {
+            
+        }
+
+        // setIpv4DstSrc
+        if (itrL1->setIpv4DstSrc != NULL)
+        {
+            NetworkProtocol netProto = itrL1->proto;
+            std::set<Ipv4DstSrc>::iterator itrL2;
+            for (itrL2 = itrL1->setIpv4DstSrc->begin();   itrL2 !=itrL1->setIpv4DstSrc->end(); itrL2++)
+            {
+                srcIp = 0x0;
+                dstIp = 0x0;
+                FlowIdCalc::recoverIpv4(itrL2->dstSrcSumm, dstIp, srcIp);
+                std::set<TransportLayer>::iterator itrL3;
+                for (itrL3 = itrL2->setTransport->begin();   itrL3 !=itrL2->setTransport->end(); itrL3++)
+                {
+                    TransportProtocol transProto = itrL3->proto;
+                    dump += "# Protocol " + to_string(netProto) + "/" +  to_string(transProto) + "\n";
+                    std::set<PortDstSrc>::iterator itrL4;
+                    for (itrL4 = itrL3->setPortDstSrc->begin();   itrL4 !=itrL3->setPortDstSrc->end(); itrL4++)
+                    {
+                        srcPort = 0;
+                        dstPort = 0;
+                        flowId = itrL4->flowId;
+                        FlowIdCalc::recoverPorts(itrL4->dstSrcSumm, dstPort, srcPort);
+                        dump += "flow:" + std::to_string(flowId) + 
+                                ", net:" + to_string(netProto) + 
+                                ", netSrc:" + hexToDottedDecimal(srcIp) + 
+                                ", netDst:" + hexToDottedDecimal(dstIp) +
+                                ", trans:" + to_string(transProto) +
+                                ", portSrc:" + std::to_string(srcPort) +
+                                ", portDst:" + std::to_string(dstPort) + "\n";
+                    }
+                }
+            }            
+            
+        }
+
+        // setIpv6DstSrc
+        if (itrL1->setIpv6DstSrc != NULL)
+        {
+            
+        }
+
+    }
+
+    return dump;
 }
 
 flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
@@ -287,14 +364,37 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
     return actualFlowId;
 }
 
-const unsigned int FlowIdCalc::summPorts(port_number dst, port_number src)
+flow_id FlowIdCalc::getCurrentFlowId()
+{
+    return this->lastFlowId.load();
+}
+
+const flow_hash FlowIdCalc::summPorts(port_number dst, port_number src)
 {
     return PORT_OFFSET_VALUE*dst + src;
+}
+
+const void FlowIdCalc::recoverPorts(flow_hash summ, port_number &dst, port_number &src)
+{
+    unsigned long int lsbValue = summ & PORT_LSB_MASK;
+    unsigned long int msbValue = (summ & PORT_MSB_MASK) >> 16;
+    src = (port_number)lsbValue;
+    dst = (port_number)msbValue;
+    return;
 }
 
 const unsigned long int FlowIdCalc::summIpv4(ipv4_address dst, ipv4_address src)
 {
     return IPV4_OFFSET_VALUE*dst + src;
+}
+
+const void FlowIdCalc::recoverIpv4(flow_hash summ, ipv4_address &dst, ipv4_address &src)
+{
+    unsigned long int lsbValue = summ & IPV4_LSB_MASK;
+    unsigned long int msbValue = (summ & IPV4_MSB_MASK) >> 16*2;
+    src = (ipv4_address)lsbValue;
+    dst = (ipv4_address)msbValue;
+    return;
 }
 
 const size_t FlowIdCalc::hashStrings(std::string a, std::string b)

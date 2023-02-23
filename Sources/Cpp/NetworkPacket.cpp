@@ -147,11 +147,11 @@ ttl NetworkPacket::getTtl()
     return this->timeToLive;
 }
 
-void NetworkPacket::setNetwork(NetworkProtocol proto, ipv4_address ipSrc, ipv4_address ipDrc)
+void NetworkPacket::setNetwork(NetworkProtocol proto, ipv4_address ipSrc, ipv4_address ipDst)
 {
     this->networkProtocol = proto;
     this->ipv4Src = ipSrc;
-    this->ipv4Dst = ipDrc;
+    this->ipv4Dst = ipDst;
 }
 
 void NetworkPacket::setNetworkV6(NetworkProtocol proto, std::string src, std::string dst)

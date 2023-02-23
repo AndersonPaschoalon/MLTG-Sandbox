@@ -12,10 +12,12 @@ void UnityTests::test_FlowIdCalc()
     FlowIdCalc flowCalc;
     dummyIf.listen();
     int i = 0;
-    for (i = 0; i < 20; i++)
+    for (i = 0; i < 400; i++)
     {
         NetworkPacket p = dummyIf.pop_back();
         flow_id flowId = flowCalc.setFlowId(p);
         LOGGER(INFO, "* New Flow ID is %zu (packet:%s)", flowId, p.about().c_str());
     } 
+    LOGGER(INFO, "*********************************************");
+    LOGGER(INFO, "flowCalc.toString():\n%s", flowCalc.toString().c_str());
 }

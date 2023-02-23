@@ -20,10 +20,10 @@ int EtherDummy::listen()
     int size1 = 128;
     int size2 = 512;
     int size3 = 1024;
-    ipv4_address addr1 = 0xFFFF1212;
-    ipv4_address addr2 = 0xFFFF0015;
-    port_number port1 = 0x00FF;
-    port_number port2 = 0xFF00;
+    ipv4_address addr1 = 0xFFFF1212; // 255.255.18.18
+    ipv4_address addr2 = 0xFFFF0015; // 255.255.0.21
+    port_number port1 = 0x00FF; // 255
+    port_number port2 = 0xFF00; // 65280
 
     // Flow 1
     NetworkPacket p1 = NetworkPacket("Flow 1, ip, addr1, addr2, tcp, port1, port2");
@@ -124,5 +124,6 @@ NetworkPacket &EtherDummy::pop_back()
     {
         this->currentElement = 0;
     }
+	printf("pkt%d\n", this->currentElement);
     return this->vecPackets->at(this->currentElement);
 }

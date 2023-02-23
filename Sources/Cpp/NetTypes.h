@@ -2,6 +2,8 @@
 #define _NET_TYPES__H_ 1
 
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 ///////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -11,11 +13,16 @@
 #define MAX_PORT_VALUE       0xFFFF
 #define PORT_OFFSET_VALUE    0x10000
 #define PORT_NONE            0x0
+#define PORT_LSB_MASK        0xFFFF
+#define PORT_MSB_MASK        0xFFFF0000
 
 #define MAX_IPV4_VALUE       0xFFFFFFFF
 #define IPV4_OFFSET_VALUE    0x100000000
 #define IPV4_NONE            0x0
 #define IPV6_NONE            ""
+#define IPV4_LSB_MASK        0xFFFFFFFF
+#define IPV4_MSB_MASK        0xFFFFFFFF00000000
+
 
 #define FLOW_ID_NONE         0
 
@@ -77,6 +84,7 @@ typedef unsigned int       ipv4_address;
 typedef size_t             flow_id;
 typedef unsigned long int  flow_hash;
 
+std::string hexToDottedDecimal(ipv4_address hexAddress);
 
 ///////////////////////////////////////////////////////////////////////////////
 // METADATA

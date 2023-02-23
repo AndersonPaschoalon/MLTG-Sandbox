@@ -12,6 +12,7 @@ class NetworkPacket
     public:
 
         NetworkPacket();
+
         NetworkPacket(std::string comment);
 
         ~NetworkPacket();
@@ -71,7 +72,7 @@ class NetworkPacket
 
         ttl getTtl();
 
-        void setNetwork(NetworkProtocol proto, ipv4_address ipSrc,ipv4_address ipDrc);
+        void setNetwork(NetworkProtocol proto, ipv4_address ipSrc,ipv4_address ipDst);
 
         void setNetworkV6(NetworkProtocol proto, std::string src, std::string dst);
 
