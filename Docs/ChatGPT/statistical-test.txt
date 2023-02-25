@@ -1,0 +1,6 @@
+As for analytical techniques, statistical tests such as the Kolmogorov-Smirnov test, the Anderson-Darling test, and the Shapiro-Wilk test can be used to test the normality of the data and the similarity between the generated and original data. Other techniques such as the autocorrelation function and power spectral density analysis can also be used to analyze the statistical properties of the time-series data.
+
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson.html
+https://en.wikipedia.org/wiki/Anderson%E2%80%93Darling_test
+
+
