@@ -5,6 +5,7 @@ EtherDummy::EtherDummy()
     printf("EtherDummy\n");
     this->vecPackets = new std::vector<NetworkPacket>();
     this->currentElement = -1;
+    this->active = false;
 }
 
 EtherDummy::~EtherDummy()
@@ -12,18 +13,20 @@ EtherDummy::~EtherDummy()
     delete this->vecPackets;
 }
 
-int EtherDummy::listen()
+int EtherDummy::listen(std::string deviceName, time_stamp captureTimeoutSec)
 {
     int nElements = 0;
-    double timeStamp = 0.0;
-    int size0 = 64;
-    int size1 = 128;
-    int size2 = 512;
-    int size3 = 1024;
+    time_stamp timeStamp = 0.0;
+    packet_size size0 = 64;
+    packet_size size1 = 128;
+    packet_size size2 = 512;
+    packet_size size3 = 1024;
     ipv4_address addr1 = 0xFFFF1212; // 255.255.18.18
     ipv4_address addr2 = 0xFFFF0015; // 255.255.0.21
     port_number port1 = 0x00FF; // 255
     port_number port2 = 0xFF00; // 65280
+    this->captureTimeoutSec = captureTimeoutSec;
+    this->active = true;
 
     // Flow 1
     NetworkPacket p1 = NetworkPacket("Flow 1, ip, addr1, addr2, tcp, port1, port2");
@@ -114,16 +117,35 @@ int EtherDummy::listen()
     this->vecPackets->push_back(p10);
     this->vecPackets->push_back(p11);
 
-    return  0;
+    return  DEVICE_SUCCESS;
 }
 
-NetworkPacket &EtherDummy::pop_back()
+int EtherDummy::nextPacket(NetworkPacket &packet)
 {
+    //    this->currentElement++;
+    //    if (this->currentElement >= this->vecPackets->size())
+    //    {
+    //        this->currentElement = 0;
+    //    }
+    //	printf("pkt%d\n", this->currentElement);
+    //    return this->vecPackets->at(this->currentElement);
+    if(this->active == false)
+    {
+        return ERROR_LISTEN_NOT_CALLED;
+    }
     this->currentElement++;
     if (this->currentElement >= this->vecPackets->size())
     {
         this->currentElement = 0;
     }
-	printf("pkt%d\n", this->currentElement);
-    return this->vecPackets->at(this->currentElement);
+    packet = this->vecPackets->at(this->currentElement);
+    return NEXT_PACKET_OK;
+}
+
+int EtherDummy::stop()
+{
+    this->currentElement = -1;
+    this->nPackets = 0;
+    this->vecPackets->clear();
+    return DEVICE_SUCCESS;
 }

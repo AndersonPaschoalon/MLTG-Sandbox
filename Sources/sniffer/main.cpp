@@ -14,7 +14,6 @@ void runUnityTests()
 
 int main()
 {
-   printf("OIz\n");
    int retVal = 0;
 
 #ifdef UNITY_TESTS

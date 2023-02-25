@@ -12,13 +12,6 @@ enum LogLevel {
 
 extern LogLevel gLogLevel;
 
-//#define LOGGER(level, ...) \
-//    do { \
-//        if (level >= gLogLevel) { \
-//            printf(__VA_ARGS__); \
-//        } \
-//    } while(0)
-
 #define LOGGER(level, format, ...) \
     do { \
         if (level >= gLogLevel) { \

@@ -3,9 +3,10 @@
 
 #include <vector>
 #include "NetworkPacket.h"
+#include "ICaptureDriver.h"
 
-
-class EtherDummy
+/// @brief This class creates some fixed pre-defined packets. For test purpose only.
+class EtherDummy: public ICaptureDriver
 {
     public:
 
@@ -13,15 +14,18 @@ class EtherDummy
 
         ~EtherDummy();
 
-        int listen();
+        int listen(std::string deviceName, time_stamp captureTimeoutSec = 0);
 
-        NetworkPacket& pop_back();
+        int nextPacket(NetworkPacket& packet);
+
+        int stop();
 
     private:
 
-    int currentElement;
-    int nPackets;
-    std::vector<NetworkPacket>* vecPackets;
+        bool active;
+        int currentElement;
+        int nPackets;
+        std::vector<NetworkPacket>* vecPackets;
 
 };
 

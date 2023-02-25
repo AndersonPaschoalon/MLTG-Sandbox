@@ -77,7 +77,7 @@ std::string NetworkPacket::about()
     return this->comment;
 }
 
-unsigned int NetworkPacket::getPacketSize()
+packet_size NetworkPacket::getPacketSize()
 {
     return this->packetSize;
 }
@@ -87,10 +87,15 @@ double NetworkPacket::getTimestamp()
     return this->timeStamp;
 }
 
-void NetworkPacket::setPysical(unsigned int packetSize, double timestamp)
+void NetworkPacket::setPysical(packet_size packetSize, time_stamp timestamp)
 {
     this->packetSize = packetSize;
     this->timeStamp = timestamp;
+}
+
+flow_id NetworkPacket::getFlowId()
+{
+    return this->flowId;
 }
 
 void NetworkPacket::setFlowId(flow_id flowId)

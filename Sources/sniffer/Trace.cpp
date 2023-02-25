@@ -118,13 +118,11 @@ void Trace::bufferParser(ETHER_BUFFER_NODE *buffer, FlowIdCalc *flowCalc)
         // this should always happen, since we add a new flow
         if (currentPacketFlow < flows.size())
         {
-            FlowPacket pkt = FlowPacket(currentPacket->getTimestamp(),   // double timeStamp, 
-                                        currentPacket->getPacketSize(), // unsigned int packetSize, 
-                                        currentPacket->getTtl() //ttl timeToLive
+            FlowPacket pkt = FlowPacket(currentPacket->getTimestamp(),   
+                                        currentPacket->getPacketSize(), 
+                                        currentPacket->getTtl() 
                                         );
             this->flows[currentPacketFlow]->addPacket(pkt);
-            // clean wild pointer
-            // pkt = NULL;
         }
         else
         {

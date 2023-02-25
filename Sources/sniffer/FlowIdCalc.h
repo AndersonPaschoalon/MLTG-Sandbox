@@ -27,7 +27,7 @@ typedef struct _PortDstSrc
         return dstSrcSumm < other.dstSrcSumm;
     }    
 
-}PortDstSrc;
+} PortDstSrc;
 
 /// @brief Transport layer node
 typedef struct _TransportLayer
@@ -42,7 +42,7 @@ typedef struct _TransportLayer
     {
         return proto < other.proto;
     }    
-}TransportLayer;
+} TransportLayer;
 
 
 /// @brief Generic leaf for non-ip network packets
@@ -58,7 +58,7 @@ typedef struct _Netv4DstSrc
         return dstSrcSumm < other.dstSrcSumm;
     }
 
-}Netv4DstSrc;
+} Netv4DstSrc;
 
 /// @brief Generic leaf for non-ip network packets
 typedef struct _Netv6DstSrc
@@ -73,7 +73,7 @@ typedef struct _Netv6DstSrc
         return dstSrcHash < other.dstSrcHash;
     }
 
-}Netv6DstSrc;
+} Netv6DstSrc;
 
 /// @brief IPv4 node
 typedef struct _Ipv4DstSrc
@@ -90,7 +90,7 @@ typedef struct _Ipv4DstSrc
         return dstSrcSumm < other.dstSrcSumm;
     }
 
-}Ipv4DstSrc;
+} Ipv4DstSrc;
 
 /// @brief IPv6 node
 typedef struct _Ipv6DstSrc
@@ -106,7 +106,7 @@ typedef struct _Ipv6DstSrc
         return dstSrcHash < other.dstSrcHash;
     }
 
-}Ipv6DstSrc;
+} Ipv6DstSrc;
 
 /// @brief Network set node
 typedef struct _NetworkLayer
@@ -124,7 +124,7 @@ typedef struct _NetworkLayer
     {
         return proto < other.proto;
     }
-}NetworkLayer;
+} NetworkLayer;
 
 
 class FlowIdCalc
@@ -141,8 +141,8 @@ class FlowIdCalc
 
         flow_id getCurrentFlowId();
 
-
     private:
+
         std::atomic<flow_id> lastFlowId;
 
         /// @brief A set that represent the Flow Stack of a given trace.
@@ -157,10 +157,6 @@ class FlowIdCalc
         static const void recoverIpv4(flow_hash summ, ipv4_address& dst, ipv4_address& src);
 
         static const size_t hashStrings(std::string a, std::string b);
-
-        void initNetFlowsStack();
-
-        void destroyNetFlowsStack();
 
         flow_id getNextFlowId();
 

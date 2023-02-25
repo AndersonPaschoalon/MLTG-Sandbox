@@ -1,6 +1,6 @@
 #include "FlowPacket.h"
 
-FlowPacket::FlowPacket(double timeStamp, unsigned int packetSize, ttl timeToLive)
+FlowPacket::FlowPacket(time_stamp timeStamp, packet_size packetSize, ttl timeToLive)
 {
     this->packetSize = packetSize;
     this->timeStamp = timeStamp;

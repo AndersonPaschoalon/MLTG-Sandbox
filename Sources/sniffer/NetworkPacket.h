@@ -29,16 +29,16 @@ class NetworkPacket
         // Physical
         //
 
-        unsigned int getPacketSize();
+        packet_size getPacketSize();
 
         double getTimestamp();
 
-        void setPysical(unsigned int packetSize, double timestamp);
+        void setPysical(packet_size packetSize, time_stamp timestamp);
 
         //
         // Flow Level
         //
-        unsigned long long getFlowId();
+        flow_id getFlowId();
         
         void setFlowId(flow_id flowId);
 
@@ -104,8 +104,8 @@ class NetworkPacket
 
     private:
 
-        unsigned int packetSize;
-        double timeStamp;
+        packet_size packetSize;
+        time_stamp timeStamp;
         flow_id flowId;
         NetworkProtocol networkProtocol;
         ipv4_address ipv4Src;

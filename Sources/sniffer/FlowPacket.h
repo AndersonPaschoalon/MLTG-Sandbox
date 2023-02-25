@@ -7,7 +7,7 @@
 class FlowPacket
 {
     public:
-        FlowPacket(double timeStamp, unsigned int packetSize, ttl timeToLive);
+        FlowPacket(time_stamp timeStamp, packet_size packetSize, ttl timeToLive);
 
         ~FlowPacket();
 
