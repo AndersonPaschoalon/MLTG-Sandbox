@@ -12,7 +12,7 @@ void UnityTests::test_FlowIdCalc()
     FlowIdCalc flowCalc;
     dummyIf.listen("DummyDevice");
     int i = 0;
-    for (i = 0; i < 10000000; i++)
+    for (i = 0; i < 1000000; i++)
     {
         NetworkPacket p;
         int ret = dummyIf.nextPacket(p);

@@ -15,7 +15,7 @@ class FlowPacket
 
         FlowPacket& operator=(FlowPacket other);
 
-
+        std::string toString();
 
         time_stamp getTimeStamp();
         

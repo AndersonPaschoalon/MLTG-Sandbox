@@ -23,13 +23,28 @@
 #define IPV4_LSB_MASK        0xFFFFFFFF
 #define IPV4_MSB_MASK        0xFFFFFFFF00000000
 
-
 #define FLOW_ID_NONE         0
+
+
+///////////////////////////////////////////////////////////////////////////////
+// DATA TYPES
+///////////////////////////////////////////////////////////////////////////////
+
+typedef double             time_stamp;
+typedef unsigned int       packet_size;
+typedef unsigned short     ttl;
+typedef unsigned short     port_number; 
+typedef unsigned int       ipv4_address;
+typedef size_t             flow_id;
+typedef unsigned long int  flow_hash;
+typedef unsigned short     protocol_stack; 
+
+std::string hexToDottedDecimal(ipv4_address hexAddress);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Protocols
 ///////////////////////////////////////////////////////////////////////////////
-
 
 enum class NetworkProtocol
 {   
@@ -66,25 +81,38 @@ enum class ApplicationProtocol
     TLS_SSL,
 };
 
+std::ostream& operator<<(std::ostream& os, const NetworkProtocol& n);
+std::ostream& operator<<(std::ostream& os, const TransportProtocol& n);
+std::ostream& operator<<(std::ostream& os, const ApplicationProtocol& n);
+
 std::string to_string(NetworkProtocol protocol);
-
 std::string to_string(TransportProtocol protocol);
-
 std::string to_string(ApplicationProtocol protocol);
 
-///////////////////////////////////////////////////////////////////////////////
-// DATA TYPES
-///////////////////////////////////////////////////////////////////////////////
 
-typedef double             time_stamp;
-typedef unsigned int       packet_size;
-typedef unsigned short     ttl;
-typedef unsigned short     port_number; 
-typedef unsigned int       ipv4_address;
-typedef size_t             flow_id;
-typedef unsigned long int  flow_hash;
+/// @brief Compress the network protocols into a bitmap.
+/// @param n Network protocol enum.
+/// @param t Transport protocol enum.
+/// @param a Application protocol enum.
+/// @return The bitmap.
+protocol_stack zip_stack(NetworkProtocol n, TransportProtocol t, ApplicationProtocol a);
 
-std::string hexToDottedDecimal(ipv4_address hexAddress);
+/// @brief Returns the Network Protocol from the bitmap protocol stack.
+/// @param stack Bitmap.
+/// @return Network Protocol Enum.
+NetworkProtocol to_network_protocol(protocol_stack stack);
+
+/// @brief Returns the Transport Protocol from the bitmap protocol stack.
+/// @param stack Bitmap.
+/// @return Transport Protocol Enum.
+TransportProtocol to_transport_protocol(protocol_stack stack);
+
+/// @brief Returns the Application Protocol from the bitmap protocol stack.
+/// @param stack Bitmap.
+/// @return Application Protocol Enum.
+ApplicationProtocol to_application_protocol(protocol_stack stack);
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // METADATA
