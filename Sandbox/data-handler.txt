@@ -1,0 +1,92 @@
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <sqlite3.h>
+
+class DataHandler {
+public:
+    DataHandler() {
+        m_commit_thread = std::thread(&DataHandler::commitThread, this);
+    }
+    
+    ~DataHandler() {
+        finish();
+        m_commit_thread.join();
+    }
+    
+    void receiveData(int counter, const std::string& fruit) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data_queue.push(std::make_pair(counter, fruit));
+        m_cv.notify_all();
+    }
+    
+    void finish() {
+        m_finish = true;
+        m_cv.notify_all();
+    }
+    
+private:
+    std::thread m_commit_thread;
+    std::queue<std::pair<int, std::string>> m_data_queue;
+    std::mutex m_mutex;
+    std::condition_variable m_cv;
+    bool m_finish = false;
+    
+    void commitThread() {
+        sqlite3* db;
+        char* err_msg = nullptr;
+        int rc = sqlite3_open("fruits.db", &db);
+        if (rc != SQLITE_OK) {
+            std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+            sqlite3_close(db);
+            return;
+        }
+        
+        rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS fruits (id INTEGER PRIMARY KEY, counter INTEGER, name TEXT);", nullptr, nullptr, &err_msg);
+        if (rc != SQLITE_OK) {
+            std::cerr << "Error creating table: " << err_msg << std::endl;
+            sqlite3_free(err_msg);
+            sqlite3_close(db);
+            return;
+        }
+        
+        while (true) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_cv.wait_for(lock, std::chrono::milliseconds(500), [this]() { return !m_data_queue.empty() || m_finish; });
+            
+            if (m_finish) {
+                commitData(db);
+                break;
+            }
+            
+            if (m_data_queue.size() > 5000) {
+                commitData(db);
+            }
+        }
+        
+        sqlite3_close(db);
+    }
+    
+    void commitData(sqlite3* db) {
+        sqlite3_exec(db, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+        
+        while (!m_data_queue.empty()) {
+            int counter = m_data_queue.front().first;
+            std::string name = m_data_queue.front().second;
+            m_data_queue.pop();
+            
+            char* err_msg = nullptr;
+            std::string sql = "INSERT INTO fruits (counter, name) VALUES (" + std::to_string(counter) + ", '" + name + "');";
+            int rc = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &err_msg);
+            if (rc != SQLITE_OK) {
+                std::cerr << "Error inserting data: " << err_msg << std::endl;
+                sqlite3_free(err_msg);
+            }
+        }
+        
+        sqlite3_exec(db, "END TRANSACTION;", nullptr, nullptr, nullptr);
+    }
+};
