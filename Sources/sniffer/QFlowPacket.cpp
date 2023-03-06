@@ -63,12 +63,12 @@ QFlowPacket *QFlowPacket::next()
     return this->nextPacket;
 }
 
-void QFlowPacket::setDelete(bool toDelete)
+void QFlowPacket::setCommited(bool toDelete)
 {
     this->readyToFree = toDelete;
 }
 
-bool QFlowPacket::getDelete()
+bool QFlowPacket::getCommited()
 {
     return this->readyToFree;
 }

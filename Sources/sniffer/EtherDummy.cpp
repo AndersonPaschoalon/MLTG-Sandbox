@@ -27,6 +27,7 @@ int EtherDummy::listen(std::string deviceName, time_stamp captureTimeoutSec)
     port_number port2 = 0xFF00; // 65280
     this->captureTimeoutSec = captureTimeoutSec;
     this->active = true;
+    this->deviceName = deviceName;
 
     // Flow 1
     NetworkPacket p1 = NetworkPacket("Flow 1, ip, addr1, addr2, tcp, port1, port2");
@@ -122,13 +123,6 @@ int EtherDummy::listen(std::string deviceName, time_stamp captureTimeoutSec)
 
 int EtherDummy::nextPacket(NetworkPacket &packet)
 {
-    //    this->currentElement++;
-    //    if (this->currentElement >= this->vecPackets->size())
-    //    {
-    //        this->currentElement = 0;
-    //    }
-    //	printf("pkt%d\n", this->currentElement);
-    //    return this->vecPackets->at(this->currentElement);
     if(this->active == false)
     {
         return ERROR_LISTEN_NOT_CALLED;
@@ -139,6 +133,8 @@ int EtherDummy::nextPacket(NetworkPacket &packet)
         this->currentElement = 0;
     }
     packet = this->vecPackets->at(this->currentElement);
+
+
     return NEXT_PACKET_OK;
 }
 

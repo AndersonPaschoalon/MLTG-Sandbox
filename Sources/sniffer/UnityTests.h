@@ -9,7 +9,8 @@
 #include "FlowIdCalc.h"
 #include "NetworkPacket.h"
 #include "Logger.h"
-
+#include "ILocalDbService.h"
+#include "LocalDbServiceV1_Naive.h"
 
 class UnityTests{
 
@@ -19,6 +20,7 @@ public:
 private:
 
     static void test_FlowIdCalc();
+    static void test_NaiveDatabase();
 
 
 };

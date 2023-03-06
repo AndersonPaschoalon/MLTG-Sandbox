@@ -44,10 +44,10 @@ class QFlowPacket
         QFlowPacket* next();
 
         // TODO MUDAR PARA setCommited()
-        void setDelete(bool toDelete);
+        void setCommited(bool toDelete);
 
         // getCommited
-        bool getDelete();
+        bool getCommited();
 
     private:
 

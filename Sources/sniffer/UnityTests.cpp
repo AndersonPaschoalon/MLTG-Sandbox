@@ -3,7 +3,8 @@
 
 void UnityTests::run()
 {
-    UnityTests::test_FlowIdCalc();
+    // UnityTests::test_FlowIdCalc();
+    UnityTests::test_NaiveDatabase();
 }
 
 void UnityTests::test_FlowIdCalc()
@@ -27,4 +28,11 @@ void UnityTests::test_FlowIdCalc()
     dummyIf.stop();
     LOGGER(INFO, "*********************************************");
     LOGGER(INFO, "flowCalc.toString():\n%s", flowCalc.toString().c_str());
+}
+
+void UnityTests::test_NaiveDatabase()
+{
+
+    LocalDbServiceV1_Naive database = LocalDbServiceV1_Naive();
+    database.open();
 }

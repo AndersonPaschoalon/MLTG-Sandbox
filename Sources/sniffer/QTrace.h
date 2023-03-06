@@ -16,8 +16,9 @@ class QTrace
 
         void set(const std::string& traceName,
                  const std::string& traceSource,
-                 const std::string& dateTime,
-                 double epochStartTime);
+                 const std::string& comment,
+                 long int tsSec, 
+                 long int tsUsec);
 
 
     public:

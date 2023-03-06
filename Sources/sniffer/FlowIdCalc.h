@@ -8,6 +8,7 @@
 #include <atomic>
 #include <unordered_map>
 
+#include "IFlowIdCalc.h"
 #include "NetworkPacket.h"
 #include "NetTypes.h"
 #include "Logger.h"
@@ -127,7 +128,7 @@ typedef struct _NetworkLayer
 } NetworkLayer;
 
 
-class FlowIdCalc
+class FlowIdCalc: public IFlowIdCalc
 {
     public:
 

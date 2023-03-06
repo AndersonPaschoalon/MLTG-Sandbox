@@ -5,6 +5,9 @@
 #include "NetworkPacket.h"
 #include "ICaptureDriver.h"
 
+#define DUMMY_DEVICE_FIXED    "fixed" // default
+#define DUMMY_DEVICE_RANDOM   "random"
+
 /// @brief This class creates some fixed pre-defined packets. For test purpose only.
 class EtherDummy: public ICaptureDriver
 {
@@ -26,6 +29,7 @@ class EtherDummy: public ICaptureDriver
         int currentElement;
         int nPackets;
         std::vector<NetworkPacket>* vecPackets;
+        std::string deviceName;
 
 };
 
