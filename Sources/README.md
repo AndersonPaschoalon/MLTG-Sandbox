@@ -1,0 +1,12 @@
+apps/
+    sniffer.exe
+    sniffer.pltot.py
+    db/
+        Trace.db
+        Flow/
+            ...
+        Payload/
+            ...
+    tf.models.py
+    models/
+    d2itg.exe
