@@ -5,10 +5,7 @@ from scipy import signal
 import pywt
 import random
 import hurst
-# This is a sample Python script.
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
 def sample_inter_arrival_times_ms(sample, repeat=1):
     if sample == 1:
@@ -25,8 +22,10 @@ def _generate_weibull_interarrival(n, shape, scale):
     interarrival = interarrival * scale
     return interarrival
 
+
 def _generate_integers(n, min_val, max_val):
     return [random.randint(min_val, max_val) for _ in range(n)]
+
 
 def sample_flows(n_packets, n_flows):
     return _generate_integers(n_packets, 1, n_flows)
@@ -106,7 +105,6 @@ def plot_psd(interarrival_times, sample_nickname):
     plt.savefig("PowerSpectralDensity" + sample_nickname)
 
 
-
 def plot_time_series(interarrival_times, sample_nickname):
     # Compute the cumulative sum of interarrival times
     cumsum = np.cumsum(interarrival_times)
@@ -118,6 +116,7 @@ def plot_time_series(interarrival_times, sample_nickname):
     plt.ylabel('Cumulative Sum of Interarrival Times (ms)')
     plt.title('Time Series Plot')
     plt.savefig("TimeSeriesPlot" + sample_nickname)
+
 
 # wavelet
 # conda install -c conda-forge pywavelets
@@ -182,6 +181,7 @@ def plot_bandwidth2(interarrival_times, packet_sizes, sample_nickname):
     plt.ylabel('Bandwidth (mbytes per second)')
     plt.savefig("Bandwidth" + sample_nickname)
 
+
 def plot_bandwidth(interarrival_times, packet_sizes, sample_nickname):
     time = [0]
     bandwidth = [0]
@@ -220,17 +220,59 @@ def plot_flow_per_second(packet_flow, packet_interarrival_times, sample_nickname
     ax.set_title('Flow rate over time')
     plt.savefig('flow_per_second' + sample_nickname)
 
-def plot_local_hurst_exponent(interpacket_times, window_size, sample_nickname):
-    hurst_exponents = []
-    for i in range(len(interpacket_times) - window_size):
-        window = interpacket_times[i:i+window_size]
-        h = hurst(window)
-        hurst_exponents.append(h)
 
-    plt.plot(hurst_exponents)
-    plt.xlabel('Time')
+
+def plot_local_hurst(ts, window_size=50, sample_nickname=""):
+    """
+    Plots the local Hurst exponent of a time series.
+
+    Args:
+        ts (numpy.ndarray): The time series.
+        window_size (int): The size of the window used for local Hurst exponent calculation.
+
+    Returns:
+        None.
+    """
+
+    # Calculate the cumulative sum and deviation of the time series
+    cum_sum = np.cumsum(ts - np.mean(ts))
+    cum_dev = cum_sum - np.arange(1, len(ts) + 1) * np.mean(ts)
+
+    # Initialize arrays for scaling factors and fluctuation values
+    scales = np.arange(1, window_size)
+    flucts = np.zeros_like(scales)
+
+    # Iterate over the window sizes
+    for i, sc in enumerate(scales):
+        # Determine the number of windows
+        num_windows = np.floor(len(ts) / sc).astype(int)
+
+        # Initialize arrays for local variances
+        local_ranges = np.zeros(num_windows)
+        local_vars = np.zeros(num_windows)
+
+        # Iterate over the windows
+        for j in range(num_windows):
+            start = j * sc
+            end = start + sc
+
+            # Calculate the local range and variance
+            local_ranges[j] = np.max(cum_sum[start:end]) - np.min(cum_sum[start:end])
+            local_vars[j] = np.var(ts[start:end])
+
+        # Calculate the local fluctuation
+        flucts[i] = np.sqrt(np.mean(local_ranges ** 2)) / np.mean(np.sqrt(local_vars))
+
+    # Calculate the local Hurst exponent
+    hurst = np.log(flucts) / np.log(scales)
+
+    # Plot the local Hurst exponent
+    plt.plot(hurst)
+    plt.xlabel('Window size (log scale)')
     plt.ylabel('Hurst exponent')
-    plt.savefig('Hurstexponent' + sample_nickname)
+    plt.xscale('log')
+    plt.savefig('localHurstExponent' + sample_nickname)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -249,6 +291,7 @@ if __name__ == '__main__':
     #plot_bandwidth(vec_samples, vec_pkt_sizes, "weibull_samples")
     wavelet_energy_plot(vec_samples, "weibull_samples")
     plot_flow_per_second(vec_flows, vec_samples, "weibull_samples")
-    plot_local_hurst_exponent(vec_samples, 100, "weibull_samples")
+    plot_local_hurst(vec_samples, window_size=50, sample_nickname="weibull_samples")
+
 
 
