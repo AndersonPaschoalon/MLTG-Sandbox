@@ -3,6 +3,11 @@
 
 #include <string>
 #include <vector>
+#include <unistd.h>
+#include <iostream>
+#include <cstdlib>
+#include <signal.h>
+
 #include "NetTypes.h"
 #include "NetworkPacket.h"
 
@@ -27,23 +32,42 @@ class ICaptureDriver
     public:
 
         // listen device
-        virtual int listen(std::string deviceName, time_stamp captureTimeoutSec = 0) = 0;
-        virtual int listen(std::string deviceName);
+        virtual int listen(const char* deviceName, double captureTimeoutSec = 0) = 0;
+        virtual int listen(const char* deviceName) = 0;
 
         // read packets
         virtual int nextPacket(NetworkPacket& packet) = 0;
+        // o que pode parar: ultimo pacote (arquivo), timeout ou thread de interrupção.
+        virtual bool doContinue();
 
         // retrieve information
-        virtual void getDeviceInfo(std::string& deviceName, std::string& lastErrorDescription, time_stamp& captureTimeoutSec);
+        void getDeviceInfo(std::string& deviceName, std::string& lastErrorDescription, double& captureTimeoutSec);
 
         // finish device
         virtual int stop() = 0;
 
     protected:
 
-        time_stamp captureTimeoutSec = 0;
+        // should not be directly updated by derived classes
+        static bool interruptionFlag;
+        double captureTimeoutSec = 0;
+
+        // in case of sniffing a file, must be set as true at the end
+        bool isLastPacket = false;
+        // first packet timestamp
+        PacketTimeStamp firstTs;
+        // must be updated after each new packet captured
+        PacketTimeStamp lastTs;
+        // device name used by the library
         std::string deviceName = "";
+        // must be filled in case of error on device
         std::string lastErrorDetails = "";
+
+        // must be called on listen() to allow interruptions
+        void registerSignal();
+
+        // is called by registerSignal()
+        static void signalCallbackHander(int signum);
 
 };
 

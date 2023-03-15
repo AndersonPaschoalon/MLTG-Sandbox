@@ -30,7 +30,9 @@
 // DATA TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef double             time_stamp;
+typedef long int           ts_sec;
+typedef long int           ts_usec;
+// typedef double             time_stamp;
 typedef unsigned int       packet_size;
 typedef unsigned short     ttl;
 typedef unsigned short     port_number; 
@@ -39,7 +41,18 @@ typedef size_t             flow_id;
 typedef unsigned long int  flow_hash;
 typedef unsigned short     protocol_stack; 
 
+typedef struct packet_time_stamp_struct{
+    ts_sec sec;
+    ts_usec usec;
+}PacketTimeStamp;
+
 std::string hexToDottedDecimal(ipv4_address hexAddress);
+
+double interArrival(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
+
+PacketTimeStamp delta(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,6 +94,7 @@ enum class ApplicationProtocol
     TLS_SSL,
 };
 
+
 std::ostream& operator<<(std::ostream& os, const NetworkProtocol& n);
 std::ostream& operator<<(std::ostream& os, const TransportProtocol& n);
 std::ostream& operator<<(std::ostream& os, const ApplicationProtocol& n);
@@ -89,13 +103,25 @@ std::string to_string(NetworkProtocol protocol);
 std::string to_string(TransportProtocol protocol);
 std::string to_string(ApplicationProtocol protocol);
 
-
 /// @brief Compress the network protocols into a bitmap.
 /// @param n Network protocol enum.
 /// @param t Transport protocol enum.
 /// @param a Application protocol enum.
 /// @return The bitmap.
 protocol_stack zip_stack(NetworkProtocol n, TransportProtocol t, ApplicationProtocol a);
+
+/// @brief Compress two port numbers into a unsigned long
+/// @param dst 
+/// @param src 
+/// @return 
+flow_hash zip_ports(port_number dst, port_number src);
+
+/// @brief Compress two IPV4 adresses into a unsigned long.
+/// @param dst 
+/// @param src 
+/// @return 
+flow_hash zip_ipv4(ipv4_address dst, ipv4_address src);
+
 
 /// @brief Returns the Network Protocol from the bitmap protocol stack.
 /// @param stack Bitmap.

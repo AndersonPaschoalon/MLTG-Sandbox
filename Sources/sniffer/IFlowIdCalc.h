@@ -25,7 +25,6 @@ class IFlowIdCalc
 
         std::atomic<flow_id> lastFlowId;
 
-
 };
 
 

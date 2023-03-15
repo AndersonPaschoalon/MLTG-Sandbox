@@ -125,6 +125,7 @@ std::string to_string(ApplicationProtocol protocol)
     }
 }
 
+
 std::string hexToDottedDecimal(ipv4_address hexAddress)
 {
     std::stringstream ss;
@@ -132,6 +133,21 @@ std::string hexToDottedDecimal(ipv4_address hexAddress)
     return ss.str();
 }
 
+double interArrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
+{
+    double sec_diff = t1.sec - t0.sec;
+    double usec_diff = t1.usec - t0.usec;
+    return sec_diff + usec_diff / 1000000.0;
+}
+
+PacketTimeStamp delta(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
+{
+    PacketTimeStamp delta = {
+        .sec = t1.sec - t0.sec, 
+        .usec = t1.usec - t0.usec,
+    };
+    return delta;
+}
 
 /// @brief Compress the network protocols into a bitmap.
 /// @param n Network protocol enum.
@@ -145,6 +161,16 @@ protocol_stack zip_stack(NetworkProtocol n, TransportProtocol t, ApplicationProt
     stack |= static_cast<protocol_stack>(t) << 4;
     stack |= static_cast<protocol_stack>(a);
     return stack;
+}
+
+flow_hash zip_ports(port_number dst, port_number src)
+{
+    return PORT_OFFSET_VALUE*dst + src;
+}
+
+flow_hash zip_ipv4(ipv4_address dst, ipv4_address src)
+{
+    return IPV4_OFFSET_VALUE*dst + src;
 }
 
 /// @brief Returns the Network Protocol from the bitmap protocol stack.

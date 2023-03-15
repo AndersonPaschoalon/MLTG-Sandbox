@@ -17,8 +17,17 @@ class EtherDummy: public ICaptureDriver
 
         ~EtherDummy();
 
-        int listen(std::string deviceName, time_stamp captureTimeoutSec = 0);
+        EtherDummy(const EtherDummy& obj);
 
+        EtherDummy& operator=(EtherDummy other);
+
+        std::string toString();
+
+        // listen device
+        int listen(const char* deviceName, double captureTimeoutSec = 0);
+        int listen(const char* deviceName);
+
+        // read packets
         int nextPacket(NetworkPacket& packet);
 
         int stop();

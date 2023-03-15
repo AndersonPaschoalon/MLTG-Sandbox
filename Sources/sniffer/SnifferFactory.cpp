@@ -1,12 +1,7 @@
-#include "Logger.h"
-#include "Utils.h"
 #include "SnifferFactory.h"
-#include "FlowIdCalc.h"
-#include "EtherDummy.h"
-#include "EtherLibpcap.h"
-#include "LocalDbServiceV1_Naive.h"
 
-const IFlowIdCalc* SnifferFactory::makePacketFlowClassifierAlgorithm(const char *calcAlgorithm)
+
+IFlowIdCalc* SnifferFactory::makePacketFlowClassifierAlgorithm(const char *calcAlgorithm)
 {
     std::string nameLower = StringUtils::toLower(calcAlgorithm);
     if ( nameLower == StringUtils::toLower(FLOW_ID_CALC))
@@ -22,7 +17,7 @@ const IFlowIdCalc* SnifferFactory::makePacketFlowClassifierAlgorithm(const char 
     }
 }
 
-const ILocalDbService* SnifferFactory::makeTraceDatabaseManager(const char *manager)
+ILocalDbService* SnifferFactory::makeTraceDatabaseManager(const char *manager)
 {
     std::string nameLower = StringUtils::toLower(manager);
     if (nameLower == StringUtils::toLower(TRACE_DB_V1_NAIVE))
@@ -40,7 +35,7 @@ const ILocalDbService* SnifferFactory::makeTraceDatabaseManager(const char *mana
     }
 }
 
-const ICaptureDriver* SnifferFactory::makePacketCaptureDriver(const char *driver)
+ICaptureDriver* SnifferFactory::makePacketCaptureDriver(const char *driver)
 {
     std::string nameLower = StringUtils::toLower(driver);
     if ( nameLower == StringUtils::toLower(DRIVER_ETHER_DUMMY))

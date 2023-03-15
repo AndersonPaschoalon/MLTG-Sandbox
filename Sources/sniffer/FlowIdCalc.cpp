@@ -11,6 +11,15 @@ FlowIdCalc::~FlowIdCalc()
     // todo
 }
 
+FlowIdCalc::FlowIdCalc(const FlowIdCalc &obj)
+{
+}
+
+FlowIdCalc &FlowIdCalc::operator=(FlowIdCalc other)
+{
+    // TODO: insert return statement here
+}
+
 std::string FlowIdCalc::toString()
 {
     ipv4_address srcIp = 0x0;
@@ -466,7 +475,8 @@ flow_id FlowIdCalc::getCurrentFlowId()
 
 const flow_hash FlowIdCalc::summPorts(port_number dst, port_number src)
 {
-    return PORT_OFFSET_VALUE*dst + src;
+    // return PORT_OFFSET_VALUE*dst + src;
+    return zip_ports(dst, src);
 }
 
 const void FlowIdCalc::recoverPorts(flow_hash summ, port_number &dst, port_number &src)
@@ -480,7 +490,8 @@ const void FlowIdCalc::recoverPorts(flow_hash summ, port_number &dst, port_numbe
 
 const flow_hash FlowIdCalc::summIpv4(ipv4_address dst, ipv4_address src)
 {
-    return IPV4_OFFSET_VALUE*dst + src;
+    return zip_ipv4(dst, src);
+    // return IPV4_OFFSET_VALUE*dst + src;
 }
 
 const void FlowIdCalc::recoverIpv4(flow_hash summ, ipv4_address &dst, ipv4_address &src)

@@ -2,27 +2,65 @@
 #define _Q_TRACE__H_ 1
 
 #include <string>
+#include "NetTypes.h"
+#include "NetworkPacket.h"
+#include "QFlow.h"
+#include "QFlowPacket.h"
 
 
 class QTrace
 {
-    private:
+    public:
 
-        QTrace();
+        //
+        // Class methods
+        //
+
+
+        QTrace(const char* traceName, const char*  traceSource, const char* comment);
 
         ~QTrace();
 
+        QTrace(const QTrace& obj);
+
+        QTrace& operator=(QTrace other);        
+
         std::string toString();
 
-        void set(const std::string& traceName,
-                 const std::string& traceSource,
-                 const std::string& comment,
-                 long int tsSec, 
-                 long int tsUsec);
+
+        //
+        // Trace metadata
+        //
+
+        const std::string getTraceName();
+        const std::string getTraceSource();
+        const std::string getComment();
 
 
-    public:
+        //
+        // Trace Management
+        //
 
+        void push(NetworkPacket& p);
+        void consume(QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
+        static void free(QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
+
+    private:
+
+        // trace information
+        std::string traceName;
+        std::string traceSource;
+        std::string comment;
+
+        QFlow* fHead;
+        QFlow* fTail;
+        QFlowPacket* pHead;
+        QFlowPacket* pTail;
+        flow_id lastFlow;
+
+        void set(const char*  traceName,
+                 const char*  traceSource,
+                 const char*  comment);
 
 };
 

@@ -29,11 +29,13 @@ class NetworkPacket
         // Physical
         //
 
+        size_t getPacketId();
+
         packet_size getPacketSize();
 
-        double getTimestamp();
+        PacketTimeStamp getTimestamp();
 
-        void setPysical(packet_size packetSize, time_stamp timestamp);
+        void setPysical(size_t pktId, packet_size packetSize, PacketTimeStamp& timestamp);
 
         //
         // Flow Level
@@ -105,7 +107,8 @@ class NetworkPacket
     private:
 
         packet_size packetSize;
-        time_stamp timeStamp;
+        PacketTimeStamp timeStamp;
+        size_t packetId;
         flow_id flowId;
         NetworkProtocol networkProtocol;
         ipv4_address ipv4Src;
@@ -122,12 +125,6 @@ class NetworkPacket
 
 };
 
-typedef struct ether_buffer_node
-{
-    NetworkPacket* etherPacket;
-    struct ether_buffer_node* next;
-
-} ETHER_BUFFER_NODE;
 
 #endif // _NETWORK_PACKET__H_
 

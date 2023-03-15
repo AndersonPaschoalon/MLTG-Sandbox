@@ -136,6 +136,10 @@ class FlowIdCalc: public IFlowIdCalc
 
         ~FlowIdCalc();
 
+        FlowIdCalc(const FlowIdCalc& obj);
+
+        FlowIdCalc& operator=(FlowIdCalc other);
+
         std::string toString();
 
         flow_id setFlowId(NetworkPacket& packet);

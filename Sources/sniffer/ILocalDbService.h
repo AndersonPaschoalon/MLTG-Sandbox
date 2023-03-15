@@ -10,6 +10,8 @@
 #include "QFlow.h"
 #include "QFlowPacket.h"
 
+#define FILE_TRACE_DATABASE          "TraceDatabase.db"
+
 
 class ILocalDbService
 {

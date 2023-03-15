@@ -11,7 +11,7 @@ class QFlowPacket
 
         // CLASS OPERATORS
 
-        QFlowPacket(size_t packetId, flow_id flowId, time_stamp time_stamp, packet_size pktSize, ttl timeToLive);
+        QFlowPacket(size_t packetId, flow_id flowId, PacketTimeStamp& ts, packet_size pktSize, ttl timeToLive);
 
         ~QFlowPacket();
 
@@ -22,20 +22,7 @@ class QFlowPacket
         std::string toString();
 
         // CLASS PAYLOAD
-
-        /// @brief Packet private key. Is a counter on the flow packets.
-        /// @return returns the packet ID.
-        size_t packetId();
-
-        /// @brief [FK][PK] Packet flow ID.
-        /// @return returns the packet flow ID
-        flow_id getFlowId();
-
-        time_stamp getTimeStamp();
-        
-        packet_size getPacketSize();
-
-        ttl getTtl();
+        void getQData(size_t& packetId, flow_id& flowId, PacketTimeStamp& ts, packet_size& packetSize, ttl& timeToLive);
 
         // OPERATIONS CONTROL
 
@@ -51,15 +38,15 @@ class QFlowPacket
 
     private:
 
-    size_t pktId;
-    flow_id flowId;
-    time_stamp timeStamp;
-    packet_size pktSize;
-    ttl timeToLive;
-    bool readyToFree;
-    QFlowPacket* nextPacket;
+        size_t pktId;
+        flow_id flowId;
+        PacketTimeStamp timeStamp;
+        packet_size pktSize;
+        ttl timeToLive;
+        bool readyToFree;
+        QFlowPacket* nextPacket;
 
-    void set(size_t pktId, flow_id flowId, time_stamp timeStamp, packet_size pktSize, ttl timeToLive, bool readyToFree, QFlowPacket* nextPacket);
+        void set(size_t pktId, flow_id flowId, PacketTimeStamp& timeStamp, packet_size pktSize, ttl timeToLive, bool readyToFree, QFlowPacket* nextPacket);
 
 };
 

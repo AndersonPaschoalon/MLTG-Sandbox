@@ -13,10 +13,25 @@ EtherDummy::~EtherDummy()
     delete this->vecPackets;
 }
 
-int EtherDummy::listen(std::string deviceName, time_stamp captureTimeoutSec)
+EtherDummy::EtherDummy(const EtherDummy &obj)
+{
+}
+
+EtherDummy &EtherDummy::operator=(EtherDummy other)
+{
+    // TODO: insert return statement here
+}
+
+std::string EtherDummy::toString()
+{
+    return std::string();
+}
+
+int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
 {
     int nElements = 0;
-    time_stamp timeStamp = 0.0;
+    int timeStamp = 0.0;
+    PacketTimeStamp ts = {.sec=0, .usec=0};
     packet_size size0 = 64;
     packet_size size1 = 128;
     packet_size size2 = 512;
@@ -25,85 +40,87 @@ int EtherDummy::listen(std::string deviceName, time_stamp captureTimeoutSec)
     ipv4_address addr2 = 0xFFFF0015; // 255.255.0.21
     port_number port1 = 0x00FF; // 255
     port_number port2 = 0xFF00; // 65280
+    size_t pktId = 0;
     this->captureTimeoutSec = captureTimeoutSec;
     this->active = true;
-    this->deviceName = deviceName;
+    this->deviceName = std::string(deviceName);
 
     // Flow 1
+    pktId++;
     NetworkPacket p1 = NetworkPacket("Flow 1, ip, addr1, addr2, tcp, port1, port2");
-    p1.setPysical(timeStamp, size0);
+    p1.setPysical(pktId, size0, ts);
     p1.setNetwork(NetworkProtocol::IPv4, addr1, addr2);
     p1.setTransport(TransportProtocol::TCP, port1, port2);
     p1.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 2
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p2 = NetworkPacket("Flow 2, ip, addr2, addr1, tcp, port1, port2");
-    p2.setPysical(timeStamp, size1);
+    p2.setPysical(pktId, size1, ts);
     p2.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
     p2.setTransport(TransportProtocol::TCP, port1, port2);
     p2.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 3
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p3 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
-    p3.setPysical(timeStamp, size2);
+    p3.setPysical(pktId, size2, ts);
     p3.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
     p3.setTransport(TransportProtocol::TCP, port2, port1);
     p3.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 3
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p4 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
-    p4.setPysical(timeStamp, size1);
+    p4.setPysical(pktId, size1, ts);
     p4.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
     p4.setTransport(TransportProtocol::TCP, port2, port1);
     p4.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 4
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p5 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
-    p5.setPysical(timeStamp, size0);
+    p5.setPysical(pktId, size0, ts);
     p5.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
     p5.setTransport(TransportProtocol::UDP, port2, port1);
     p5.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 4
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p6 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
-    p6.setPysical(timeStamp, size1);
+    p6.setPysical(pktId, size1, ts);
     p6.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
     p6.setTransport(TransportProtocol::UDP, port2, port1);
     p6.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 5
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p7 = NetworkPacket("Flow 5, icmp, addr2, addr1");
-    p7.setPysical(timeStamp, size2);
+    p7.setPysical(pktId, size2, ts);
     p7.setNetwork(NetworkProtocol::ICMP, addr2, addr1);
 
     // Flow 6
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p8 = NetworkPacket("Flow 6, icmp, addr1, addr2");
-    p8.setPysical(timeStamp, size3);
+    p8.setPysical(pktId, size3, ts);
     p8.setNetwork(NetworkProtocol::ICMP, addr1, addr2);
 
     //  Flow 6
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p9 = NetworkPacket("Flow 6, icmp, addr1, addr2");
-    p9.setPysical(timeStamp, size3);
+    p9.setPysical(pktId, size3, ts);
     p9.setNetwork(NetworkProtocol::ICMP, addr1, addr2);
 
     // Flow 7
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p10 = NetworkPacket("Flow 7, arp, addr1, addr2");
-    p10.setPysical(timeStamp, size3);
+    p10.setPysical(pktId, size3, ts);
     p10.setNetwork(NetworkProtocol::ARP, addr1, addr2);
 
     // Flow 8
-    timeStamp += 0.5;
+    ts.sec += 1;
     NetworkPacket p11 = NetworkPacket("Flow 8, arp, addr2, addr1");
-    p11.setPysical(timeStamp, size0);
+    p11.setPysical(pktId, size0, ts);
     p11.setNetwork(NetworkProtocol::ARP, addr2, addr1);
 
     this->vecPackets->push_back(p1);
@@ -119,6 +136,11 @@ int EtherDummy::listen(std::string deviceName, time_stamp captureTimeoutSec)
     this->vecPackets->push_back(p11);
 
     return  DEVICE_SUCCESS;
+}
+
+int EtherDummy::listen(const char* deviceName)
+{
+    return this->listen(deviceName, 0);
 }
 
 int EtherDummy::nextPacket(NetworkPacket &packet)

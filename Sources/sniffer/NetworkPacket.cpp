@@ -3,7 +3,8 @@
 NetworkPacket::NetworkPacket()
 {
     this->packetSize = 0;
-    this->timeStamp = 0;
+    this->timeStamp.sec = 0;
+    this->timeStamp.usec = 0;
     this->flowId = FLOW_ID_NONE;
     this->aplicationProtocol = ApplicationProtocol::NONE;
     this->transportProtocol = TransportProtocol::NONE;
@@ -77,20 +78,27 @@ std::string NetworkPacket::about()
     return this->comment;
 }
 
+size_t NetworkPacket::getPacketId()
+{
+    return this->packetId;
+}
+
 packet_size NetworkPacket::getPacketSize()
 {
     return this->packetSize;
 }
 
-double NetworkPacket::getTimestamp()
+PacketTimeStamp NetworkPacket::getTimestamp()
 {
     return this->timeStamp;
 }
 
-void NetworkPacket::setPysical(packet_size packetSize, time_stamp timestamp)
+void NetworkPacket::setPysical(size_t pktId, packet_size packetSize, PacketTimeStamp& timestamp)
 {
+    this->packetId = pktId;
     this->packetSize = packetSize;
-    this->timeStamp = timestamp;
+    this->timeStamp.sec = timestamp.sec;
+    this->timeStamp.usec = timestamp.usec;
 }
 
 flow_id NetworkPacket::getFlowId()

@@ -11,7 +11,10 @@
 class StringUtils
 {
     public:
+
         const static std::string toLower(const char* str);
+
+        const static bool fileExists(const char* fileName);
 
     private:
 

@@ -5,7 +5,12 @@
 #include "IFlowIdCalc.h"
 #include "ILocalDbService.h"
 #include "ICaptureDriver.h"
-
+#include "Logger.h"
+#include "Utils.h"
+#include "FlowIdCalc.h"
+#include "EtherDummy.h"
+#include "EtherLibpcap.h"
+#include "LocalDbServiceV1_Naive.h"
 
 //
 // Trace Database Managers 
@@ -38,12 +43,15 @@ class SnifferFactory
 {
     public:
 
-        const static IFlowIdCalc* makePacketFlowClassifierAlgorithm(const char* calcAlgorithm);
+        SnifferFactory();
 
-        const static ILocalDbService* makeTraceDatabaseManager(const char* name);
+        std::string toString();
 
-        const static ICaptureDriver* makePacketCaptureDriver(const char* manager);
+        static IFlowIdCalc* makePacketFlowClassifierAlgorithm(const char* calcAlgorithm);
 
+        static ILocalDbService* makeTraceDatabaseManager(const char* name);
+
+        static ICaptureDriver* makePacketCaptureDriver(const char* manager);
 
     private:
 

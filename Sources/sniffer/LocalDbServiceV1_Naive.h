@@ -3,12 +3,24 @@
 
 #include <iostream>
 #include <sqlite3.h>
+#include <vector>
 #include "ILocalDbService.h"
 
 
 class LocalDbServiceV1_Naive: public ILocalDbService
 {
     public: 
+
+        LocalDbServiceV1_Naive();
+
+        ~LocalDbServiceV1_Naive();
+
+        LocalDbServiceV1_Naive(const LocalDbServiceV1_Naive& obj);
+
+        LocalDbServiceV1_Naive& operator=(LocalDbServiceV1_Naive other);
+
+        std::string toString();
+
         int open();
 
         /// @brief Receive a data of a new trace. Any new Flow or packet data to be commited will requere a Trace 
@@ -58,9 +70,16 @@ class LocalDbServiceV1_Naive: public ILocalDbService
 
     private:
 
+        /// @brief Pointer to the Trace database
         sqlite3* db;
+        QTrace* qTracePtr;
+        std::vector<QFlow*> qFlowPtrVec;
+        std::vector<QFlowPacket*> qPktPtrVec;
+        bool hasCommit;
 
-        void commitToFlowDatabase();
+
+        int commitToFlowDatabase();
+
 
 };
 
