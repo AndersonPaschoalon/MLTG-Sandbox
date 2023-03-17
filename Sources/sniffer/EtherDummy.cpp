@@ -10,21 +10,47 @@ EtherDummy::EtherDummy()
 
 EtherDummy::~EtherDummy()
 {
+    this->vecPackets->clear();
     delete this->vecPackets;
 }
 
 EtherDummy::EtherDummy(const EtherDummy &obj)
 {
+    this->active = obj.active;
+    this->currentElement = obj.currentElement;
+    this->nPackets = obj.nPackets;
+    this->deviceName = obj.deviceName;
+    this->vecPackets = new std::vector<NetworkPacket>();
+    for (int i = 0; i < obj.vecPackets->size(); i++)
+    {
+        this->vecPackets->push_back(obj.vecPackets->at(i));
+    }
+
 }
 
 EtherDummy &EtherDummy::operator=(EtherDummy other)
 {
-    // TODO: insert return statement here
+    if(this != &other)
+    {
+        this->active = other.active;
+        this->currentElement = other.currentElement;
+        this->nPackets = other.nPackets;
+        this->deviceName = other.deviceName;
+        this->vecPackets = new std::vector<NetworkPacket>();
+        for (int i = 0; i < other.vecPackets->size(); i++)
+        {
+            this->vecPackets->push_back(other.vecPackets->at(i));
+        }
+    }
+    return *this;
 }
 
 std::string EtherDummy::toString()
 {
-    return std::string();
+    return std::string("{ active:") + std::to_string(this->active) + 
+           std::string(", currentElement:") + std::to_string(this->currentElement) +
+           std::string(", nPackets:") + std::to_string(this->nPackets) +
+           std::string(", deviceName:") + this->deviceName + std::string("}");
 }
 
 int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)

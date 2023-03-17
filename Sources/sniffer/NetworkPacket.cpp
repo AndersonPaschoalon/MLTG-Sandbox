@@ -70,7 +70,20 @@ NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
 
 std::string NetworkPacket::toString()
 {
-    return "NetworkPacket";
+    return std::string("{ packetSize:") + std::to_string(this->packetSize) + 
+           std::string(", timeStamp:") + std::to_string(this->timeStamp.sec) + std::string("s ") +  std::to_string(this->timeStamp.usec) + std::string("us") + 
+		   std::string(", flowId:") + std::to_string(this->flowId) +
+           std::string(", networkProtocol:") + to_string(this->networkProtocol) +
+		   std::string(", transportProtocol:") + to_string(this->transportProtocol) +
+           std::string(", aplicationProtocol:") + to_string(this->aplicationProtocol) +
+		   std::string(", portDst:") + std::to_string(this->portDst) +
+		   std::string(", portSrc:") + std::to_string(this->portSrc) +
+		   std::string(", ipv4Dst:") + std::to_string(this->ipv4Dst) +
+		   std::string(", ipv4Src:") + std::to_string(this->ipv4Src) +
+		   std::string(", ipv6Dst:") + this->ipv6Dst +
+		   std::string(", ipv6Src:") + this->ipv6Src +
+		   std::string(", timeToLive:") + std::to_string(this->timeToLive) +		   
+           std::string(", comment:") + this->comment + std::string("}");
 }
 
 std::string NetworkPacket::about()
