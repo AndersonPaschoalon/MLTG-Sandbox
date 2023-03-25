@@ -2,19 +2,27 @@
 
 LocalDbServiceV1_Naive::LocalDbServiceV1_Naive()
 {
+    this->hasCommit = false;
+    this->alreadyClosed = false;
 }
 
 LocalDbServiceV1_Naive::~LocalDbServiceV1_Naive()
 {
+    if(this->alreadyClosed != true)
+    {
+        this->close();
+    }
+    // already free
+    this->db = nullptr;
+
+    // this class does not manage this memory
+    this->qTracePtr = nullptr;
 }
 
-LocalDbServiceV1_Naive::LocalDbServiceV1_Naive(const LocalDbServiceV1_Naive &obj)
-{
-}
 
 std::string LocalDbServiceV1_Naive::toString()
 {
-    return std::string();
+    return std::string("LocalDbServiceV1_Naive");
 }
 
 int LocalDbServiceV1_Naive::open()
@@ -41,6 +49,8 @@ int LocalDbServiceV1_Naive::open()
             return rc;
         }
 
+        this->hasCommit = false;
+        this->alreadyClosed = false;
         return SQLITE_OK;
     }
 
@@ -89,8 +99,13 @@ void LocalDbServiceV1_Naive::receiveData(QFlowPacket *head, QFlowPacket *tail)
 
 int LocalDbServiceV1_Naive::close()
 {
-    int ret = this->commitToFlowDatabase();
-    this->hasCommit = true;
+    int ret = 0;
+    if (this->alreadyClosed != true)
+    {
+        int ret = this->commitToFlowDatabase();
+        this->hasCommit = true;
+        this->alreadyClosed = true;
+    }
     return ret;
 }
 
@@ -208,5 +223,4 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
     rc = sqlite3_close(db);
 
     return rc;
-
 }

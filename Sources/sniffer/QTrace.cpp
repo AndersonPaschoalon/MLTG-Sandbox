@@ -2,11 +2,17 @@
 
 QTrace::QTrace(const char *traceName, const char *traceSource, const char *comment)
 {
+    this->fHead = nullptr;
+    this->fTail = nullptr;
+    this->pHead = nullptr;
+    this->pTail = nullptr;
+    this->lastFlow = 0;
     this->set(traceName, traceSource, comment);
 }
 
 QTrace::~QTrace()
 {
+    // delete
 }
 
 void QTrace::set(const char*  theTraceName, const char*  theTraceSource, const char*  theComment)
@@ -18,7 +24,9 @@ void QTrace::set(const char*  theTraceName, const char*  theTraceSource, const c
 
 std::string QTrace::toString()
 {
-    return std::string();
+    return std::string("{ traceName:") + this->traceName + 
+           std::string(", traceSource:") + this->traceSource + 
+		   std::string(", comment:") + this->comment + std::string("}");
 }
 
 const std::string QTrace::getTraceName()
@@ -36,7 +44,7 @@ const std::string QTrace::getComment()
     return this->comment;
 }
 
-void QTrace::push(NetworkPacket &p)
+void QTrace::push(NetworkPacket p)
 {
     if (p.getFlowId() > this->lastFlow)
     {
@@ -76,7 +84,7 @@ void QTrace::push(NetworkPacket &p)
     {
         this->pHead = fp;
     }
-    if (this->fTail != nullptr)
+    if (this->pTail != nullptr)
     {
         // update tail pkt
         this->pTail->setNext(fp);
@@ -98,7 +106,7 @@ void QTrace::consume(QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHe
     this->pTail = nullptr;
 }
 
-void QTrace::free(QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHead, QFlowPacket *flowPacketTail)
+const void QTrace::free(QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHead, QFlowPacket *flowPacketTail)
 {
     QFlow *flowToDelete = nullptr;
     while (flowHead != nullptr)
@@ -126,4 +134,39 @@ void QTrace::free(QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHead,
     }
     flowPacketTail = nullptr;
 
+}
+
+const void QTrace::echo(QTrace &obj, QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHead, QFlowPacket *flowPacketTail)
+{
+    printf("** QTrace data dump **\n%s", obj.toString().c_str());
+
+    unsigned long i = 0;
+    printf("** QFlow data dump**\n");
+    QFlow *flowPtr;
+    flowPtr = flowHead;
+    while (flowPtr != nullptr)
+    {
+        printf("\t[flow-%lu] %s\n", i, flowPtr->toString().c_str());
+        flowPtr = flowPtr->next();
+        if(flowPtr == flowTail)
+        {
+            break;;
+        }
+    }
+
+    i = 0;
+    printf("** QFlowPacket data dump**\n");
+    QFlowPacket *pktPtr;
+    pktPtr = flowPacketHead;
+    while (pktPtr != nullptr)
+    {
+        printf("\t[pkt-%lu] %s\n", i, pktPtr->toString().c_str());
+        flowPtr = flowPtr->next();
+        if(pktPtr == flowPacketTail)
+        {
+            break;;
+        }
+    }
+
+    return void();
 }

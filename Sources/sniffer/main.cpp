@@ -12,9 +12,7 @@
 #define UNITY_TESTS 1
 
 
-void runUnityTests();
 
-ISniffer* makeNewSniffer(const char* snifferImplementation);
 
 
 int main()
@@ -23,7 +21,7 @@ int main()
 
 #ifdef UNITY_TESTS
    // unity tests 
-   runUnityTests();
+   UnityTests::run();
 #else
     // params
     const char traceName[] = "POC";
@@ -43,27 +41,25 @@ int main()
     return ret;
 #endif
    return retVal;
+   
 }
 
-void runUnityTests()
-{
-   UnityTests::run();
-   return;
-}
 
-ISniffer* makeNewSniffer(const char* snifferImplementation)
-{
-    ISniffer* snifferImpl = nullptr;
-    if(strcmp(snifferImplementation, "Sniffer_v01") == 0)
-    {
-        snifferImpl = new Sniffer_v01();
-    }
-    else
-    {
-        snifferImpl = new Sniffer_v01();
-    }
-    return snifferImpl;
-}
+
+// ISniffer* makeNewSniffer(const char* snifferImplementation);
+// ISniffer* makeNewSniffer(const char* snifferImplementation)
+// {
+//     ISniffer* snifferImpl = nullptr;
+//     if(strcmp(snifferImplementation, "Sniffer_v01") == 0)
+//     {
+//         snifferImpl = new Sniffer_v01();
+//     }
+//     else
+//     {
+//         snifferImpl = new Sniffer_v01();
+//     }
+//     return snifferImpl;
+// }
 
 
 

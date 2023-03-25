@@ -8,17 +8,89 @@ FlowIdCalc::FlowIdCalc()
 
 FlowIdCalc::~FlowIdCalc()
 {
-    // todo
+    std::set<NetworkLayer>::iterator it;
+    for(it = this->netFlowsStack->begin(); it != this->netFlowsStack->end(); it++)
+    {
+        if(it->setNetv4DstSrc != NULL)
+        {
+            it->setNetv4DstSrc->clear();
+            delete it->setNetv4DstSrc;
+        }
+        if(it->setNetv6DstSrc != NULL)
+        {
+            it->setNetv6DstSrc->clear();
+            delete it->setNetv6DstSrc;
+        }
+        if(it->setIpv4DstSrc != NULL)
+        {
+            // free set IPV4
+            std::set<Ipv4DstSrc>* s4 = it->setIpv4DstSrc;
+
+            std::set<Ipv4DstSrc>::iterator it4;
+            for (it4 = s4->begin(); it4 != s4->end(); ++it4)
+            {
+                // free Set Transport
+                std::set<TransportLayer>* sT = it4->setTransport;
+
+                std::set<TransportLayer>::iterator itT;
+                for (itT = sT->begin(); itT != sT->end(); ++itT)
+                {
+                    // free set Ports
+                    std::set<PortDstSrc>* sP = itT->setPortDstSrc;
+
+                    sP->clear();
+
+                    delete sP;
+                }
+
+                delete sT;
+            }
+
+
+           delete s4;
+        }
+        if(it->setIpv6DstSrc != NULL)
+        {
+            // free set IPV4
+            std::set<Ipv6DstSrc>* s6 = it->setIpv6DstSrc;
+
+            std::set<Ipv6DstSrc>::iterator it6;
+            for (it6 = s6->begin(); it6 != s6->end(); ++it6)
+            {
+                // free Set Transport
+                std::set<TransportLayer>* sT = it6->setTransport;
+
+                std::set<TransportLayer>::iterator itT;
+                for (itT = sT->begin(); itT != sT->end(); ++itT)
+                {
+                    // free set Ports
+                    std::set<PortDstSrc>* sP = itT->setPortDstSrc;
+
+                    sP->clear();
+
+                    delete sP;
+                }
+
+                delete sT;
+            }
+
+           delete s6;
+        }
+    }
+
+    this->netFlowsStack->clear();
+    delete this->netFlowsStack;
+    this->netFlowsStack = nullptr;
 }
 
-FlowIdCalc::FlowIdCalc(const FlowIdCalc &obj)
-{
-}
+//FlowIdCalc::FlowIdCalc(const FlowIdCalc &obj)
+//{
+//}
 
-FlowIdCalc &FlowIdCalc::operator=(FlowIdCalc other)
-{
-    // TODO: insert return statement here
-}
+//FlowIdCalc &FlowIdCalc::operator=(FlowIdCalc other)
+//{
+//    // TODO: insert return statement here
+//}
 
 std::string FlowIdCalc::toString()
 {

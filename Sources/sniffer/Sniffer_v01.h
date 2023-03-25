@@ -35,9 +35,9 @@ class Sniffer_v01: public ISniffer
 
         ~Sniffer_v01();
 
-        Sniffer_v01(const Sniffer_v01& obj);
+        Sniffer_v01(const Sniffer_v01& obj) = delete;
 
-        Sniffer_v01& operator=(Sniffer_v01 other);
+        Sniffer_v01& operator=(Sniffer_v01 other) = delete;
 
         int run();
 

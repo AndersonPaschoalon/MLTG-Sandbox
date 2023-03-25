@@ -2,29 +2,30 @@
 
 QFlowPacket::QFlowPacket(size_t packetId, flow_id flowId, PacketTimeStamp& timeStamp, packet_size pktSize, ttl timeToLive)
 {
-    this->set(packetId, flowId, timeStamp, pktSize, timeToLive, false, NULL);
+    this->set(packetId, flowId, timeStamp, pktSize, timeToLive, false, nullptr);
 }
 
 QFlowPacket::~QFlowPacket()
 {
+    // nothing to do
 }
 
-QFlowPacket::QFlowPacket(const QFlowPacket &obj)
-{
-    PacketTimeStamp ts;
-    ts.sec = obj.timeStamp.sec;
-    ts.usec = obj.timeStamp.usec;
-    this->set(obj.pktId, obj.flowId, ts, obj.pktSize, obj.timeToLive, obj.readyToFree, obj.nextPacket);
-}
+//QFlowPacket::QFlowPacket(const QFlowPacket &obj)
+//{
+//    PacketTimeStamp ts;
+//    ts.sec = obj.timeStamp.sec;
+//    ts.usec = obj.timeStamp.usec;
+//    this->set(obj.pktId, obj.flowId, ts, obj.pktSize, obj.timeToLive, obj.readyToFree, obj.nextPacket);
+//}
 
-QFlowPacket &QFlowPacket::operator=(QFlowPacket other)
-{
-    if(this != &other)
-    {
-        this->set(other.pktId, other.flowId, other.timeStamp, other.pktSize, other.timeToLive, other.readyToFree, other.nextPacket);
-    }        
-    return *this;
-}
+//QFlowPacket &QFlowPacket::operator=(QFlowPacket other)
+//{
+//    if(this != &other)
+//    {
+//        this->set(other.pktId, other.flowId, other.timeStamp, other.pktSize, other.timeToLive, other.readyToFree, other.nextPacket);
+//    }        
+//    return *this;
+//}
 
 std::string QFlowPacket::toString()
 {
@@ -75,4 +76,6 @@ void QFlowPacket::set(size_t pktId, flow_id flowId, PacketTimeStamp& timeStamp, 
     this->timeStamp.usec = timeStamp.usec;
     this->pktSize = pktSize;
     this->timeToLive = timeToLive;
+    this->readyToFree = readyToFree;
+    this->nextPacket = nextPacket;
 }

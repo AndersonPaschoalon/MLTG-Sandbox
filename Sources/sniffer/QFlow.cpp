@@ -2,6 +2,12 @@
 
 QFlow::QFlow()
 {
+    this->nextPtr = nullptr;
+    this->flowId = 0;
+    this->stack = 0;
+    this->portDstSrc = 0;
+    this->net4DstSrcSumm = 0;
+    this->net6DstSrc = "";
 }
 
 QFlow::~QFlow()
@@ -13,14 +19,14 @@ std::string QFlow::toString()
     return std::string();
 }
 
-QFlow::QFlow(const QFlow &obj)
-{
-}
+//QFlow::QFlow(const QFlow &obj)
+//{
+//}
 
-QFlow &QFlow::operator=(QFlow other)
-{
-    // TODO: insert return statement here
-}
+//QFlow &QFlow::operator=(QFlow other)
+//{
+//    // TODO: insert return statement here
+//}
 
 void QFlow::setProtocols(NetworkProtocol n, TransportProtocol t, ApplicationProtocol a)
 {

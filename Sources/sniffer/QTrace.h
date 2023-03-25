@@ -21,9 +21,9 @@ class QTrace
 
         ~QTrace();
 
-        QTrace(const QTrace& obj);
+        QTrace(const QTrace& obj) = delete;
 
-        QTrace& operator=(QTrace other);        
+        QTrace& operator=(QTrace other) = delete;        
 
         std::string toString();
 
@@ -41,9 +41,10 @@ class QTrace
         // Trace Management
         //
 
-        void push(NetworkPacket& p);
+        void push(NetworkPacket p);
         void consume(QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
-        static void free(QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
+        const static void free(QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
+        const static void echo (QTrace& obj, QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
 
     private:
 

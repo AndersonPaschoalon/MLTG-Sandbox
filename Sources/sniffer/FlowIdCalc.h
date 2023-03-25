@@ -136,9 +136,11 @@ class FlowIdCalc: public IFlowIdCalc
 
         ~FlowIdCalc();
 
-        FlowIdCalc(const FlowIdCalc& obj);
+        // do not allow copy
+        FlowIdCalc(const FlowIdCalc& obj) = delete;
 
-        FlowIdCalc& operator=(FlowIdCalc other);
+        // do not allow copy
+        FlowIdCalc& operator=(FlowIdCalc other) = delete;
 
         std::string toString();
 
@@ -151,6 +153,8 @@ class FlowIdCalc: public IFlowIdCalc
         std::atomic<flow_id> lastFlowId;
 
         /// @brief A set that represent the Flow Stack of a given trace.
+        /// Structure:
+        /// set:NetProtocol -> set:netAddr -> set::TransportProtocol -> set::portAddr
         std::set<NetworkLayer>* netFlowsStack;
 
         static const flow_hash summPorts(port_number dst, port_number src);

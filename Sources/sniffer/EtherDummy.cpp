@@ -53,8 +53,9 @@ std::string EtherDummy::toString()
            std::string(", deviceName:") + this->deviceName + std::string("}");
 }
 
-int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
+int EtherDummy::listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter)
 {
+    this->setListenVars(deviceName, captureTimeoutSec, maxPacketCounter);
     int nElements = 0;
     int timeStamp = 0.0;
     PacketTimeStamp ts = {.sec=0, .usec=0};
@@ -67,9 +68,7 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     port_number port1 = 0x00FF; // 255
     port_number port2 = 0xFF00; // 65280
     size_t pktId = 0;
-    this->captureTimeoutSec = captureTimeoutSec;
     this->active = true;
-    this->deviceName = std::string(deviceName);
 
     // Flow 1
     pktId++;
@@ -80,6 +79,7 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     p1.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 2
+    pktId++;
     ts.sec += 1;
     NetworkPacket p2 = NetworkPacket("Flow 2, ip, addr2, addr1, tcp, port1, port2");
     p2.setPysical(pktId, size1, ts);
@@ -88,6 +88,7 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     p2.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 3
+    pktId++;
     ts.sec += 1;
     NetworkPacket p3 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
     p3.setPysical(pktId, size2, ts);
@@ -96,6 +97,7 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     p3.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 3
+    pktId++;
     ts.sec += 1;
     NetworkPacket p4 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
     p4.setPysical(pktId, size1, ts);
@@ -104,6 +106,7 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     p4.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 4
+    pktId++;
     ts.sec += 1;
     NetworkPacket p5 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
     p5.setPysical(pktId, size0, ts);
@@ -112,6 +115,7 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     p5.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 4
+    pktId++;
     ts.sec += 1;
     NetworkPacket p6 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
     p6.setPysical(pktId, size1, ts);
@@ -120,30 +124,35 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     p6.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 5
+    pktId++;
     ts.sec += 1;
     NetworkPacket p7 = NetworkPacket("Flow 5, icmp, addr2, addr1");
     p7.setPysical(pktId, size2, ts);
     p7.setNetwork(NetworkProtocol::ICMP, addr2, addr1);
 
     // Flow 6
+    pktId++;
     ts.sec += 1;
     NetworkPacket p8 = NetworkPacket("Flow 6, icmp, addr1, addr2");
     p8.setPysical(pktId, size3, ts);
     p8.setNetwork(NetworkProtocol::ICMP, addr1, addr2);
 
     //  Flow 6
+    pktId++;
     ts.sec += 1;
     NetworkPacket p9 = NetworkPacket("Flow 6, icmp, addr1, addr2");
     p9.setPysical(pktId, size3, ts);
     p9.setNetwork(NetworkProtocol::ICMP, addr1, addr2);
 
     // Flow 7
+    pktId++;
     ts.sec += 1;
     NetworkPacket p10 = NetworkPacket("Flow 7, arp, addr1, addr2");
     p10.setPysical(pktId, size3, ts);
     p10.setNetwork(NetworkProtocol::ARP, addr1, addr2);
 
     // Flow 8
+    pktId++;
     ts.sec += 1;
     NetworkPacket p11 = NetworkPacket("Flow 8, arp, addr2, addr1");
     p11.setPysical(pktId, size0, ts);
@@ -164,9 +173,9 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec)
     return  DEVICE_SUCCESS;
 }
 
-int EtherDummy::listen(const char* deviceName)
+int EtherDummy::listen(const char *deviceName)
 {
-    return this->listen(deviceName, 0);
+    return this->listen(deviceName, 0, -1);
 }
 
 int EtherDummy::nextPacket(NetworkPacket &packet)
@@ -182,6 +191,8 @@ int EtherDummy::nextPacket(NetworkPacket &packet)
     }
     packet = this->vecPackets->at(this->currentElement);
 
+    // update parent class state
+    this->updatePacketCounter();
 
     return NEXT_PACKET_OK;
 }

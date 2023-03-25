@@ -15,9 +15,9 @@ class QFlowPacket
 
         ~QFlowPacket();
 
-        QFlowPacket(const QFlowPacket& obj);
+        QFlowPacket(const QFlowPacket& obj) = delete;
 
-        QFlowPacket& operator=(QFlowPacket other);
+        QFlowPacket& operator=(QFlowPacket other) = delete;
 
         std::string toString();
 
@@ -50,4 +50,4 @@ class QFlowPacket
 
 };
 
-#endif _Q_FLOW_PACKET__H_ 
+#endif // _Q_FLOW_PACKET__H_ 

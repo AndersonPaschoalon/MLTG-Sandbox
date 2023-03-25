@@ -14,9 +14,9 @@ class QFlow
 
         ~QFlow();
 
-        QFlow(const QFlow& obj);
+        QFlow(const QFlow& obj) = delete;
 
-        QFlow& operator=(QFlow other);
+        QFlow& operator=(QFlow other) = delete;
 
         std::string toString();
 

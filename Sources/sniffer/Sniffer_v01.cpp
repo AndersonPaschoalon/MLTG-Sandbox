@@ -8,14 +8,14 @@ Sniffer_v01::~Sniffer_v01()
 {
 }
 
-Sniffer_v01::Sniffer_v01(const Sniffer_v01 &obj)
-{
-}
+//Sniffer_v01::Sniffer_v01(const Sniffer_v01 &obj)
+//{
+//}
 
-Sniffer_v01 &Sniffer_v01::operator=(Sniffer_v01 other)
-{
-    // TODO: insert return statement here
-}
+//Sniffer_v01 &Sniffer_v01::operator=(Sniffer_v01 other)
+//{
+//    // TODO: insert return statement here
+//}
 
 
 
@@ -50,13 +50,14 @@ int Sniffer_v01::run()
     IFlowIdCalc* flowAlgorithm = SnifferFactory::makePacketFlowClassifierAlgorithm(this->flowCalcAlgorithm.c_str());
 
 
-    QTrace trace = QTrace(this->traceName.c_str(), this->captureDevice.c_str(), this->comments.c_str());
+    // QTrace trace = QTrace(this->traceName.c_str(), this->captureDevice.c_str(), this->comments.c_str());
+    QTrace trace(this->traceName.c_str(), this->captureDevice.c_str(), this->comments.c_str());
     
     // open database manager
     database->open();
 
     // start packet capture
-    captureDriver->listen(this->captureDevice.c_str(), this->timeoutSec);
+    captureDriver->listen(this->captureDevice.c_str(), this->timeoutSec, this->maxPacketNumber);
     while(captureDriver->doContinue())
     {
         NetworkPacket p;
@@ -71,6 +72,7 @@ int Sniffer_v01::run()
     QFlowPacket* pHead = nullptr; 
     QFlowPacket* pTail = nullptr;
     trace.consume(fHead, fTail, pHead, pTail);
+    QTrace::echo(trace, fHead, fTail, pHead, pTail);
 
     // send to local database and commit 
     database->receiveData(trace);

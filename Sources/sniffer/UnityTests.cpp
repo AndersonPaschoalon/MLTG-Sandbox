@@ -3,14 +3,20 @@
 
 void UnityTests::run()
 {
-    // UnityTests::test_FlowIdCalc();
-    UnityTests::test_NaiveDatabase();
+    bool t01 = false;
+    bool t02 = true;
+    bool t03 = true;
+    bool t04 = true;
+    if(t01) UnityTests::test_FlowIdCalc();
+    if(t02) UnityTests::test_NaiveDatabase_Sniffer_Integration();
 }
 
 void UnityTests::test_FlowIdCalc()
 {
-    EtherDummy dummyIf = EtherDummy();
+    // EtherDummy dummyIf = EtherDummy();
+    EtherDummy dummyIf;
     FlowIdCalc flowCalc;
+    
     dummyIf.listen("DummyDevice");
     int i = 0;
     for (i = 0; i < 1000000; i++)
@@ -30,9 +36,34 @@ void UnityTests::test_FlowIdCalc()
     LOGGER(INFO, "flowCalc.toString():\n%s", flowCalc.toString().c_str());
 }
 
-void UnityTests::test_NaiveDatabase()
+void UnityTests::test_NaiveDatabase_Sniffer_Integration()
 {
+    const char traceName[] = "POC";
+    const char snifferImplementation[] = "Sniffer_v01";
+    const char captureLibrary[] = "EtherDummy";
+    const char captureDevice[] = "";
+    const char databaseManeger[] = "LocalDbServiceV1_Naive";
+    const char flowAlgorithm[] = "FlowIdCalc";
+    const char comments[] = "This is the sniffer first proof of concepts.";
+    double timeoutSec = 30.0;
+    long maxPacketNumber = 10000;
 
-    LocalDbServiceV1_Naive database = LocalDbServiceV1_Naive();
-    database.open();
+    // run sniffer implementation
+    ISniffer* sniffer = UnityTests::makeNewSniffer(snifferImplementation);
+    sniffer->configure(traceName, captureLibrary, captureDevice, databaseManeger, flowAlgorithm, comments, timeoutSec, maxPacketNumber);
+    int ret = sniffer->run();
+}
+
+ISniffer *UnityTests::makeNewSniffer(const char *snifferImplementation)
+{
+    ISniffer* snifferImpl = nullptr;
+    if(strcmp(snifferImplementation, "Sniffer_v01") == 0)
+    {
+        snifferImpl = new Sniffer_v01();
+    }
+    else
+    {
+        snifferImpl = new Sniffer_v01();
+    }
+    return snifferImpl;
 }

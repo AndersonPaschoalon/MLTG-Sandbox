@@ -7,7 +7,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <signal.h>
-
 #include "NetTypes.h"
 #include "NetworkPacket.h"
 
@@ -26,14 +25,13 @@
 #define ERROR_CANT_GRAB_PACKET        -5
 
 
-
 class ICaptureDriver
 {
     public:
 
         // listen device
-        virtual int listen(const char* deviceName, double captureTimeoutSec = 0) = 0;
-        virtual int listen(const char* deviceName) = 0;
+        virtual int listen(const char* deviceName, double captureTimeoutSec, long maxPackets) = 0;
+        virtual int listen(const char* deviceName);
 
         // read packets
         virtual int nextPacket(NetworkPacket& packet) = 0;
@@ -41,7 +39,8 @@ class ICaptureDriver
         virtual bool doContinue();
 
         // retrieve information
-        void getDeviceInfo(std::string& deviceName, std::string& lastErrorDescription, double& captureTimeoutSec);
+        virtual void getDeviceInfo(std::string& deviceName, std::string& lastErrorDescription, double& captureTimeoutSec);
+        virtual long getPacketCounter();
 
         // finish device
         virtual int stop() = 0;
@@ -51,6 +50,7 @@ class ICaptureDriver
         // should not be directly updated by derived classes
         static bool interruptionFlag;
         double captureTimeoutSec = 0;
+        long maxPackets = 0;
 
         // in case of sniffing a file, must be set as true at the end
         bool isLastPacket = false;
@@ -62,12 +62,23 @@ class ICaptureDriver
         std::string deviceName = "";
         // must be filled in case of error on device
         std::string lastErrorDetails = "";
+        // number of captured packets
+        unsigned long packetCounter;
 
         // must be called on listen() to allow interruptions
         void registerSignal();
 
         // is called by registerSignal()
         static void signalCallbackHander(int signum);
+
+        // call this method on the contructor
+        void resetVars();
+
+        // set vars from listen call
+        void setListenVars(const char* deviceName, double captureTimeoutSec, long maxPackets);
+
+        // update packetCounter
+        void updatePacketCounter();
 
 };
 

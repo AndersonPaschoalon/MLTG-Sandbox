@@ -1,7 +1,15 @@
 #include "SnifferFactory.h"
 
+SnifferFactory::SnifferFactory()
+{
+}
 
-IFlowIdCalc* SnifferFactory::makePacketFlowClassifierAlgorithm(const char *calcAlgorithm)
+std::string SnifferFactory::toString()
+{
+    return std::string("SnifferFactory");
+}
+
+IFlowIdCalc *SnifferFactory::makePacketFlowClassifierAlgorithm(const char *calcAlgorithm)
 {
     std::string nameLower = StringUtils::toLower(calcAlgorithm);
     if ( nameLower == StringUtils::toLower(FLOW_ID_CALC))
@@ -23,15 +31,15 @@ ILocalDbService* SnifferFactory::makeTraceDatabaseManager(const char *manager)
     if (nameLower == StringUtils::toLower(TRACE_DB_V1_NAIVE))
     {
         // TODO
-        ILocalDbService* driver = nullptr;
-        return driver;
+        ILocalDbService* dbService = new LocalDbServiceV1_Naive();
+        return dbService;
     }
     else // default
     {
         LOGGER(WARN, "**WARN** Invalid name {%s} on fatory.", manager);
         // TODO
-        ILocalDbService* driver = nullptr;
-        return driver;        
+        ILocalDbService* dbService = nullptr;
+        return dbService;        
     }
 }
 

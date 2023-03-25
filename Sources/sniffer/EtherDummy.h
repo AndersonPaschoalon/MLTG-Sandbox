@@ -24,7 +24,7 @@ class EtherDummy: public ICaptureDriver
         std::string toString();
 
         // listen device
-        int listen(const char* deviceName, double captureTimeoutSec = 0);
+        int listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter);
         int listen(const char* deviceName);
 
         // read packets

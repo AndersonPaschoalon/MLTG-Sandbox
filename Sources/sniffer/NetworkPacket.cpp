@@ -2,6 +2,7 @@
 
 NetworkPacket::NetworkPacket()
 {
+    this->packetId = 0;
     this->packetSize = 0;
     this->timeStamp.sec = 0;
     this->timeStamp.usec = 0;
@@ -26,12 +27,15 @@ NetworkPacket::NetworkPacket(std::string comment): NetworkPacket()
 
 NetworkPacket::~NetworkPacket()
 {
+    // nothing to do
 }
 
 NetworkPacket::NetworkPacket(const NetworkPacket &obj)
 {
+    this->packetId = obj.packetId;
     this->packetSize = obj.packetSize;
-    this->timeStamp = obj.timeStamp;
+    this->timeStamp.sec = obj.timeStamp.sec;
+    this->timeStamp.usec = obj.timeStamp.usec;
     this->flowId = obj.flowId;
     this->aplicationProtocol = obj.aplicationProtocol;
     this->transportProtocol = obj.transportProtocol;
@@ -50,8 +54,10 @@ NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
 {
     if (this != &other)
     {
+        this->packetId = other.packetId;
         this->packetSize = other.packetSize;
-        this->timeStamp = other.timeStamp;
+        this->timeStamp.sec = other.timeStamp.sec;
+        this->timeStamp.usec = other.timeStamp.usec;
         this->flowId = other.flowId;
         this->aplicationProtocol = other.aplicationProtocol;
         this->transportProtocol = other.transportProtocol;
@@ -72,6 +78,7 @@ std::string NetworkPacket::toString()
 {
     return std::string("{ packetSize:") + std::to_string(this->packetSize) + 
            std::string(", timeStamp:") + std::to_string(this->timeStamp.sec) + std::string("s ") +  std::to_string(this->timeStamp.usec) + std::string("us") + 
+           std::string(", packetId:") + std::to_string(this->packetId) +
 		   std::string(", flowId:") + std::to_string(this->flowId) +
            std::string(", networkProtocol:") + to_string(this->networkProtocol) +
 		   std::string(", transportProtocol:") + to_string(this->transportProtocol) +

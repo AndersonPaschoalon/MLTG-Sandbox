@@ -47,7 +47,8 @@ class ISniffer
                                const char* databaseManager,
                                const char* flowCalcAlgorithm,
                                const char* comments,
-                               const double timeoutSec = 30);
+                               const double timeoutSec = 30,
+                               const long maxPacketNumber = -1);
 
         virtual int run() = 0;
 
@@ -60,6 +61,7 @@ class ISniffer
         std::string flowCalcAlgorithm;
         std::string comments;
         double timeoutSec;
+        long maxPacketNumber;
         TraceType traceType;
 
 };

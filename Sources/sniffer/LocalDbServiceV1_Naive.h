@@ -15,9 +15,9 @@ class LocalDbServiceV1_Naive: public ILocalDbService
 
         ~LocalDbServiceV1_Naive();
 
-        LocalDbServiceV1_Naive(const LocalDbServiceV1_Naive& obj);
+        LocalDbServiceV1_Naive(const LocalDbServiceV1_Naive& obj) = delete;
 
-        LocalDbServiceV1_Naive& operator=(LocalDbServiceV1_Naive other);
+        LocalDbServiceV1_Naive& operator=(LocalDbServiceV1_Naive other) = delete;
 
         std::string toString();
 
@@ -76,6 +76,7 @@ class LocalDbServiceV1_Naive: public ILocalDbService
         std::vector<QFlow*> qFlowPtrVec;
         std::vector<QFlowPacket*> qPktPtrVec;
         bool hasCommit;
+        bool alreadyClosed;
 
 
         int commitToFlowDatabase();
