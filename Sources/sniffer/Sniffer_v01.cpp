@@ -42,15 +42,10 @@ Sniffer_v01::~Sniffer_v01()
 int Sniffer_v01::run()
 {
     // initialization
-    // ILocalDbService* database = SnifferFactory::makeTraceDatabaseManager(TRACE_DB_V1_NAIVE);
-    // ICaptureDriver* captureDriver = SnifferFactory::makePacketCaptureDriver(DRIVER_ETHER_DUMMY);
-    // IFlowIdCalc* flowAlgorithm = SnifferFactory::makePacketFlowClassifierAlgorithm(FLOW_ID_CALC);
     ILocalDbService* database = SnifferFactory::makeTraceDatabaseManager(this->databaseManager.c_str());
     ICaptureDriver* captureDriver = SnifferFactory::makePacketCaptureDriver(this->captureLibrary.c_str());
     IFlowIdCalc* flowAlgorithm = SnifferFactory::makePacketFlowClassifierAlgorithm(this->flowCalcAlgorithm.c_str());
 
-
-    // QTrace trace = QTrace(this->traceName.c_str(), this->captureDevice.c_str(), this->comments.c_str());
     QTrace trace(this->traceName.c_str(), this->captureDevice.c_str(), this->comments.c_str());
     
     // open database manager
@@ -76,8 +71,9 @@ int Sniffer_v01::run()
     *ppFTail = nullptr;
     *ppPHead = nullptr;
     *ppPTail = nullptr;
-
     trace.consume(ppFHead, ppFTail, ppPHead, ppPTail);
+
+    // print received data
     QTrace::echo(trace, *ppFHead, *ppFTail, *ppPHead, *ppPTail);
 
     // send to local database and commit 

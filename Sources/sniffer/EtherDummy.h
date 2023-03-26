@@ -13,6 +13,10 @@ class EtherDummy: public ICaptureDriver
 {
     public:
 
+        ///////////////////////////////////////////////////////////////////////
+        // Class Methods
+        ///////////////////////////////////////////////////////////////////////
+
         EtherDummy();
 
         ~EtherDummy();
@@ -22,6 +26,10 @@ class EtherDummy: public ICaptureDriver
         EtherDummy& operator=(EtherDummy other);
 
         std::string toString();
+
+        ///////////////////////////////////////////////////////////////////////
+        // Driver Methods
+        ///////////////////////////////////////////////////////////////////////
 
         // listen device
         int listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter);

@@ -203,7 +203,7 @@ int LocalDbServiceV1_Naive::close()
 
         // commit to flow database
         int ret = this->commitToFlowDatabase();
-        if(ret != true)
+        if(ret != SQLITE_OK)
         {
             LOGGER(ERROR, "Error commiting data to fLOW Database! Code:%d\n", ret);
             return ret;
@@ -358,10 +358,17 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
 
 const bool LocalDbServiceV1_Naive::insertTraceData(sqlite3 *db, const char *traceName, const char *traceSource, const char *comment, ts_sec tsSec, ts_usec tsUsec)
 {
+    /// Start a transaction
+    int rc = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, NULL);
+    if (rc != SQLITE_OK) {
+        LOGGER(ERROR, "Cannot start transaction. Reason:%s\n", sqlite3_errmsg(db));
+        return false;
+    }
+
     // Prepare the SQL statement with placeholders for the values to be inserted
     const char* sql = "INSERT INTO Trace (traceName, traceSource, comment, tsSec, tsUsec) VALUES (?, ?, ?, ?, ?)";
     sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         LOGGER(ERROR, "Error preparing insert statement: %s", sqlite3_errmsg(db));
         return false;

@@ -1,6 +1,7 @@
 #ifndef _Q_FLOW__H_ 
 #define _Q_FLOW__H_ 1
 
+#include <string.h>
 #include <string>
 #include "NetTypes.h"
 #include "QFlowPacket.h"

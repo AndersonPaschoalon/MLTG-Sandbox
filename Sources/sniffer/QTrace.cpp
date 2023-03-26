@@ -135,7 +135,6 @@ void QTrace::push(NetworkPacket p)
     fp->setNext(nullptr);
     this->pTail = fp;
 
-    
     // debug 
     // printf("Packet added %s\n", fp->toString().c_str());
 }

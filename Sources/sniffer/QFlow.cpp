@@ -67,9 +67,12 @@ void QFlow::setNet4Addr(ipv4_address dst, ipv4_address src)
 void QFlow::setNet6Addr(const char *dst, const char *src)
 {
     this->net6DstSrc.clear();
-    this->net6DstSrc.append(dst);
-    this->net6DstSrc.append(",");
-    this->net6DstSrc.append(src);
+    if(strcmp(dst, "") != 0 || strcmp(src, "") != 0)
+    {
+        this->net6DstSrc.append(dst);
+        this->net6DstSrc.append(",");
+        this->net6DstSrc.append(src);
+    }
 }
 
 void QFlow::setPorts(port_number dst, port_number src)
