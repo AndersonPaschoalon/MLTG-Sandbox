@@ -46,7 +46,7 @@ void UnityTests::test_NaiveDatabase_Sniffer_Integration()
     const char flowAlgorithm[] = "FlowIdCalc";
     const char comments[] = "This is the sniffer first proof of concepts.";
     double timeoutSec = 30.0;
-    long maxPacketNumber = 10;
+    long maxPacketNumber = 1000000;
 
     // run sniffer implementation
     ISniffer* sniffer = UnityTests::makeNewSniffer(snifferImplementation);

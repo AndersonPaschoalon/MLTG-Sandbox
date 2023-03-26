@@ -191,6 +191,12 @@ int EtherDummy::nextPacket(NetworkPacket &packet)
     }
     packet = this->vecPackets->at(this->currentElement);
 
+    // update packet id
+    size_t count = (size_t)this->packetCounter;
+    packet_size size = packet.getPacketSize();
+    PacketTimeStamp ts = packet.getTimestamp();
+    packet.setPysical(count, size, ts);
+
     // update parent class state
     this->updatePacketCounter();
 

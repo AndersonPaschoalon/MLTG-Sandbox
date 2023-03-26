@@ -1,5 +1,9 @@
 #include "QTrace.h"
 
+QTrace::QTrace(): QTrace("", "", "")
+{
+}
+
 QTrace::QTrace(const char *traceName, const char *traceSource, const char *comment)
 {
     this->fHead = nullptr;
@@ -15,11 +19,39 @@ QTrace::~QTrace()
     // delete
 }
 
+QTrace::QTrace(const QTrace &obj)
+{
+    this->traceName = obj.traceName;
+    this->traceSource = obj.traceSource;
+    this->comment = obj.comment;
+    this->fHead = obj.fHead;
+    this->fTail = obj.fTail;
+    this->pHead = obj.pHead;
+    this->pTail = obj.pTail;        
+    this->lastFlow = obj.lastFlow;
+}
+
+QTrace &QTrace::operator=(QTrace other)
+{
+    if (this != &other)
+    {
+        this->traceName = other.traceName;
+        this->traceSource = other.traceSource;
+        this->comment = other.comment;
+        this->fHead = other.fHead;
+        this->fTail = other.fTail;
+        this->pHead = other.pHead;
+        this->pTail = other.pTail;        
+        this->lastFlow = other.lastFlow;
+    }
+    return *this;
+}
+
 void QTrace::set(const char*  theTraceName, const char*  theTraceSource, const char*  theComment)
 {
-    this->traceName = std::string(theTraceName);
-    this->traceSource = std::string(theTraceSource);
-    this->comment = std::string(theComment);
+    this->traceName = StringUtils::trimCopy(std::string(theTraceName));
+    this->traceSource = StringUtils::trimCopy(std::string(theTraceSource));
+    this->comment = StringUtils::trimCopy(std::string(theComment));
 }
 
 std::string QTrace::toString()
@@ -42,6 +74,15 @@ const std::string QTrace::getTraceSource()
 const std::string QTrace::getComment()
 {
     return this->comment;
+}
+
+bool QTrace::isEmpty()
+{
+    if(this->traceName == "")
+    {
+        return true;
+    }
+    return false;
 }
 
 void QTrace::push(NetworkPacket p)

@@ -34,7 +34,7 @@ void ISniffer::configure(const char* traceName, const char *capLybrary, const ch
     this->comments = std::string(comments);
     this->timeoutSec = timeoutSeconds;
     this->maxPacketNumber = maxPacketNumber;
-    if(StringUtils::fileExists(captureDevice))
+    if(OSUtils::fileExists(captureDevice))
     {
         this->traceType = TraceType::FILE;
     }

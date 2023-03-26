@@ -11,18 +11,29 @@
 #include "QFlowPacket.h"
 
 #define FILE_TRACE_DATABASE          "TraceDatabase.db"
+#define FILE_FLOW_DB_SUFIX           "_Flow.db"
 
+
+// error list
+#define SUCCESS                       0
+#define ERROR_TRACE_ALREADY_EXISTS    -1
+#define ERROR_INVALID_TRACE_NAME      -2
+#define ERROR_CANNOT_DELETE_FILE      -3
+#define ERROR_QUERY_ERROR             -4
 
 class ILocalDbService
 {
     public:
 
+        /// @brief Open a connection wiht the database
+        /// @return 
         virtual int open() = 0;
+        
 
         /// @brief Receive a data of a new trace. Any new Flow or packet data to be commited will requere a Trace 
         /// data as well.
         /// @param newTrace New trace to be commited. 
-        virtual void receiveData(QTrace& newTrace) = 0;
+        virtual int receiveData(QTrace newTrace) = 0;
 
         /// @brief Receive the data of a new flow. 
         /// Receive the pointers of the data to be stored in the database. This method only receive the pointer
@@ -51,6 +62,15 @@ class ILocalDbService
         /// @param head first element of the linked list to be set
         /// @param tail  last element of the linked list to be set. pass NULL to set all elements
         virtual void receiveData(QFlowPacket* head, QFlowPacket* tail) = 0;
+
+        /// @brief Delete an existing flow database.
+        /// @param traceName 
+        /// @return 
+        virtual int deleteFlowDatabase(const char* traceName) = 0;
+
+        /// @brief 
+        /// @param traces 
+        virtual void queryAllTraces(std::vector<QTrace>& traces) = 0;
 
         /// @brief Close the connection with the database.
         /// @return returns 0 in case of success, and in case of failue will return an error code.

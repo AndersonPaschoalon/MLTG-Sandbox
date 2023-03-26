@@ -2,6 +2,7 @@
 #define _Q_TRACE__H_ 1
 
 #include <string>
+#include "Utils.h"
 #include "NetTypes.h"
 #include "NetworkPacket.h"
 #include "QFlow.h"
@@ -16,14 +17,15 @@ class QTrace
         // Class methods
         //
 
+        QTrace();
 
         QTrace(const char* traceName, const char*  traceSource, const char* comment);
 
         ~QTrace();
 
-        QTrace(const QTrace& obj) = delete;
+        QTrace(const QTrace& obj);
 
-        QTrace& operator=(QTrace other) = delete;        
+        QTrace& operator=(QTrace other);        
 
         std::string toString();
 
@@ -35,6 +37,7 @@ class QTrace
         const std::string getTraceName();
         const std::string getTraceSource();
         const std::string getComment();
+        bool isEmpty();
 
 
         //
