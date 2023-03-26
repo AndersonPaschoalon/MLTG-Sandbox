@@ -32,7 +32,6 @@
 
 typedef long int           ts_sec;
 typedef long int           ts_usec;
-// typedef double             time_stamp;
 typedef unsigned int       packet_size;
 typedef unsigned short     ttl;
 typedef unsigned short     port_number; 
@@ -46,13 +45,13 @@ typedef struct packet_time_stamp_struct{
     ts_usec usec;
 }PacketTimeStamp;
 
-std::string hexToDottedDecimal(ipv4_address hexAddress);
+//std::string hexToDottedDecimal(ipv4_address hexAddress);
+std::string hex_to_dotted_decimal(ipv4_address hexAddress);
 
-double interArrival(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
+// double interArrival(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
+double inter_arrival(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
 
 PacketTimeStamp delta(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
-
-
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,6 +121,12 @@ flow_hash zip_ports(port_number dst, port_number src);
 /// @return 
 flow_hash zip_ipv4(ipv4_address dst, ipv4_address src);
 
+/// @brief 
+/// @param a 
+/// @param b 
+/// @return 
+size_t hash_strings(std::string a, std::string b);
+
 
 /// @brief Returns the Network Protocol from the bitmap protocol stack.
 /// @param stack Bitmap.
@@ -138,7 +143,15 @@ TransportProtocol to_transport_protocol(protocol_stack stack);
 /// @return Application Protocol Enum.
 ApplicationProtocol to_application_protocol(protocol_stack stack);
 
+/// @brief 
+/// @param summ 
+/// @param dst 
+/// @param src 
+void recover_ipv4(flow_hash summ, ipv4_address &dst, ipv4_address &src);
 
+void recover_ipv4_str(flow_hash summ, std::string& dst, std::string& src);
+
+void recover_ports(flow_hash summ, port_number &dst, port_number &src);
 
 ///////////////////////////////////////////////////////////////////////////////
 // METADATA

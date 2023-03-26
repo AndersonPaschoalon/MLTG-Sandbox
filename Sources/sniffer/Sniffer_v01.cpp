@@ -65,23 +65,37 @@ int Sniffer_v01::run()
         flowAlgorithm->setFlowId(p);
         trace.push(p);
     }
+    printf("* Captured Packets %ld\n", captureDriver->getPacketCounter());
 
     // receive captured data buffer pointers
-    QFlow* fHead = nullptr; 
-    QFlow* fTail = nullptr;
-    QFlowPacket* pHead = nullptr; 
-    QFlowPacket* pTail = nullptr;
-    trace.consume(fHead, fTail, pHead, pTail);
-    QTrace::echo(trace, fHead, fTail, pHead, pTail);
+    QFlow** ppFHead = new QFlow*; 
+    QFlow** ppFTail = new QFlow*;
+    QFlowPacket** ppPHead = new QFlowPacket*; 
+    QFlowPacket** ppPTail = new QFlowPacket*;
+    *ppFHead = nullptr;
+    *ppFTail = nullptr;
+    *ppPHead = nullptr;
+    *ppPTail = nullptr;
+
+    trace.consume(ppFHead, ppFTail, ppPHead, ppPTail);
+    QTrace::echo(trace, *ppFHead, *ppFTail, *ppPHead, *ppPTail);
 
     // send to local database and commit 
     database->receiveData(trace);
-    database->receiveData(fHead, fTail);
-    database->receiveData(pHead, pTail);
+    database->receiveData(*ppFHead, *ppFTail);
+    database->receiveData(*ppPHead, *ppPTail);
     database->close();
 
     // Free allocated memory
-    QTrace::free(fHead, fTail, pHead, pTail);
+    QTrace::free(*ppFHead, *ppFTail, *ppPHead, *ppPTail);
+    delete *ppFHead;
+    delete *ppFTail;
+    delete *ppPHead;
+    delete *ppPTail;
+    ppFHead = nullptr;
+    ppFTail = nullptr;
+    ppPHead = nullptr;
+    ppPTail = nullptr;
 
     return 0;
 }

@@ -11,7 +11,7 @@ bool ICaptureDriver::doContinue()
 {
     if(this->captureTimeoutSec > 0)
     {
-        double elapsedTime = interArrival(this->firstTs, this->lastTs);
+        double elapsedTime = inter_arrival(this->firstTs, this->lastTs);
         if (elapsedTime > this->captureTimeoutSec)
         {
             return false;

@@ -22,6 +22,7 @@ class QFlow
 
 
         // PAYLOAD
+        void setFlowId(flow_id flowId);
         void setProtocols(NetworkProtocol n, TransportProtocol t, ApplicationProtocol a);
         void setNet4Addr(ipv4_address dst, ipv4_address src);
         void setNet6Addr(const char* dst, const char* src);

@@ -50,27 +50,29 @@ void QTrace::push(NetworkPacket p)
     {
         // add flow and packet
         QFlow* f = new QFlow();
+        f->setFlowId(p.getFlowId());
         f->setProtocols(p.getNetworkProtocol(), p.getTransportProtocol(), p.getApplicationProtocol());
         f->setNet4Addr(p.getIPv4Dst(), p.getIPv4Src());
         f->setPorts(p.getPortDst(), p.getPortSrc());
-        if(p.getIPv6Dst() != "")
-        {
-            f->setNet6Addr(p.getIPv6Dst().c_str(), p.getIPv6Src().c_str());
-        }
-        if(this->fHead == nullptr)
+        f->setNet6Addr(p.getIPv6Dst().c_str(), p.getIPv6Src().c_str());
+        if(this->fHead == nullptr) // first flow, update head
         {
             this->fHead = f;
         }
         if (this->fTail != nullptr)
         {
-            // updata tail flow
+            // current tail must point to the new flow
             this->fTail->setNext(f);
         }
+        // swap tail and current flow pointer
         f->setNext(nullptr);
         this->fTail = f;
 
         // update last flow
         this->lastFlow = p.getFlowId();
+
+        // debug 
+        // printf("Flow added %s\n", f->toString().c_str());
     }
 
     // add packet
@@ -91,14 +93,18 @@ void QTrace::push(NetworkPacket p)
     }
     fp->setNext(nullptr);
     this->pTail = fp;
+
+    
+    // debug 
+    // printf("Packet added %s\n", fp->toString().c_str());
 }
 
-void QTrace::consume(QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHead, QFlowPacket *flowPacketTail)
+void QTrace::consume(QFlow** flowHead, QFlow** flowTail, QFlowPacket** flowPacketHead,  QFlowPacket** flowPacketTail)
 {
-    flowHead = this->fHead;
-    flowTail = this->fTail;
-    flowPacketHead = this->pHead;
-    flowPacketTail = this->pTail;
+    *flowHead = this->fHead;
+    *flowTail = this->fTail;
+    *flowPacketHead = this->pHead;
+    *flowPacketTail = this->pTail;
 
     this->fHead = nullptr;
     this->fTail = nullptr;
@@ -138,10 +144,10 @@ const void QTrace::free(QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacke
 
 const void QTrace::echo(QTrace &obj, QFlow *flowHead, QFlow *flowTail, QFlowPacket *flowPacketHead, QFlowPacket *flowPacketTail)
 {
-    printf("** QTrace data dump **\n%s", obj.toString().c_str());
+    printf("** QTrace data dump **\n\t%s\n", obj.toString().c_str());
 
     unsigned long i = 0;
-    printf("** QFlow data dump**\n");
+    printf("\n** QFlow data dump**\n");
     QFlow *flowPtr;
     flowPtr = flowHead;
     while (flowPtr != nullptr)
@@ -152,20 +158,22 @@ const void QTrace::echo(QTrace &obj, QFlow *flowHead, QFlow *flowTail, QFlowPack
         {
             break;;
         }
+        i++;
     }
 
     i = 0;
-    printf("** QFlowPacket data dump**\n");
+    printf("\n** QFlowPacket data dump**\n");
     QFlowPacket *pktPtr;
     pktPtr = flowPacketHead;
     while (pktPtr != nullptr)
     {
         printf("\t[pkt-%lu] %s\n", i, pktPtr->toString().c_str());
-        flowPtr = flowPtr->next();
+        pktPtr = pktPtr->next();
         if(pktPtr == flowPacketTail)
         {
             break;;
         }
+        i++;
     }
 
     return void();

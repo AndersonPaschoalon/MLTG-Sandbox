@@ -126,14 +126,14 @@ std::string to_string(ApplicationProtocol protocol)
 }
 
 
-std::string hexToDottedDecimal(ipv4_address hexAddress)
+std::string hex_to_dotted_decimal(ipv4_address hexAddress)
 {
     std::stringstream ss;
     ss << ((hexAddress >> 24) & 0xFF) << '.' << ((hexAddress >> 16) & 0xFF) << '.' << ((hexAddress >> 8) & 0xFF) << '.' << (hexAddress & 0xFF);
     return ss.str();
 }
 
-double interArrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
+double inter_arrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
 {
     double sec_diff = t1.sec - t0.sec;
     double usec_diff = t1.usec - t0.usec;
@@ -173,6 +173,39 @@ flow_hash zip_ipv4(ipv4_address dst, ipv4_address src)
     return IPV4_OFFSET_VALUE*dst + src;
 }
 
+size_t hash_strings(std::string a, std::string b)
+{
+    std::hash<std::string> hasher;
+    std::string strToHash = a + b;
+    size_t hash = hasher(strToHash);
+    return hash;    
+}
+
+void recover_ipv4(flow_hash summ, ipv4_address &dst, ipv4_address &src)
+{
+    flow_hash lsbValue = summ & IPV4_LSB_MASK;
+    flow_hash msbValue = (summ & IPV4_MSB_MASK) >> 16*2;
+    src = (ipv4_address)lsbValue;
+    dst = (ipv4_address)msbValue;    
+}
+
+void recover_ports(flow_hash summ, port_number &dst, port_number &src)
+{
+    flow_hash lsbValue = summ & PORT_LSB_MASK;
+    flow_hash msbValue = (summ & PORT_MSB_MASK) >> 16;
+    src = (port_number)lsbValue;
+    dst = (port_number)msbValue;    
+}
+
+void recover_ipv4_str(flow_hash summ, std::string& dst, std::string& src)
+{
+    ipv4_address val_dst = 0;
+    ipv4_address val_src = 0;
+    recover_ipv4(summ, val_dst, val_src);
+    dst = hex_to_dotted_decimal(val_dst);
+    src = hex_to_dotted_decimal(val_src);
+}
+
 /// @brief Returns the Network Protocol from the bitmap protocol stack.
 /// @param stack Bitmap.
 /// @return Network Protocol Enum.
@@ -198,28 +231,3 @@ ApplicationProtocol to_application_protocol(protocol_stack stack)
 }
 
 
-/*
-
-int main()
-{
-    // create a protocol stack bitmap
-    protocol_stack stack = zip_stack(NetworkProtocol::IPv4, TransportProtocol::TCP, ApplicationProtocol::HTTPS);
-
-    // extract the individual protocols
-    NetworkProtocol n = to_network_protocol(stack);
-    TransportProtocol t = to_transport_protocol(stack);
-    ApplicationProtocol a = to_application_protocol(stack);
-
-    // print the protocols
-    std::cout << "Network protocol: " << n << std::endl;
-    std::cout << "Transport protocol: " << t << std::endl;
-    std::cout << "Application protocol: " << a << std::endl;
-
-    return 0;
-}
-Output:
-Network protocol: IPv4
-Transport protocol: TCP
-Application protocol: HTTPS
-
-**/

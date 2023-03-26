@@ -16,7 +16,28 @@ QFlow::~QFlow()
 
 std::string QFlow::toString()
 {
-    return std::string();
+    std::string ipv4DstStr = "";
+    std::string ipv4SrcStr = "";
+    port_number portSrc = 0;
+    port_number portDst = 0;
+    NetworkProtocol n = to_network_protocol(this->stack);
+    TransportProtocol t = to_transport_protocol(this->stack);
+    ApplicationProtocol a = to_application_protocol(this->stack);
+    recover_ipv4_str(this->net4DstSrcSumm, ipv4DstStr, ipv4SrcStr);
+    recover_ports(this->portDstSrc, portDst, portSrc);
+    return std::string("{ flowId:") + std::to_string(this->flowId) + 
+           // network
+           std::string(", netProto:") + to_string(n) +
+           std::string(", net4Dst:") + ipv4DstStr + 
+           std::string(", net4Src:") + ipv4SrcStr  + 
+           std::string(", net6Hash:") + this->net6DstSrc + 
+           // transport
+           std::string(", transProto:") + to_string(t) +
+           std::string(", portDst:") + std::to_string(portDst) +
+           std::string(", portSrc:") + std::to_string(portSrc) +
+           // application
+           std::string(", appProto:") + to_string(a) +
+           std::string("}");
 }
 
 //QFlow::QFlow(const QFlow &obj)
@@ -27,6 +48,11 @@ std::string QFlow::toString()
 //{
 //    // TODO: insert return statement here
 //}
+
+void QFlow::setFlowId(flow_id flowId)
+{
+    this->flowId = flowId;
+}
 
 void QFlow::setProtocols(NetworkProtocol n, TransportProtocol t, ApplicationProtocol a)
 {

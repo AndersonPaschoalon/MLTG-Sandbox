@@ -31,10 +31,10 @@ std::string QFlowPacket::toString()
 {
     std::string pktData = "{packetID:" + std::to_string(this->pktId) +
                           ", flowId:" + std::to_string(this->flowId) + 
-                          ", timeStamp:" + std::to_string(this->timeStamp.sec) + "s " +
-                                           std::to_string(this->timeStamp.usec) + "us" +
+                          ", timeStamp:(" + std::to_string(this->timeStamp.sec) + "s " +
+                                           std::to_string(this->timeStamp.usec) + "us)" +
                           ", packetSize:" + std::to_string(this->pktSize) + 
-                          ", ttl" + std::to_string(this->timeToLive)  + "}";
+                          ", ttl:" + std::to_string(this->timeToLive)  + "}";
     return pktData;
 }
 

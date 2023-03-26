@@ -117,8 +117,8 @@ std::string FlowIdCalc::toString()
                 FlowIdCalc::recoverIpv4(itrL2->dstSrcSumm, dstIp, srcIp);
                 dump += "flow:" + std::to_string(itrL2->flowId) + 
                         ", net:" + to_string(itrL1->proto) + 
-                        ", netSrc:" + hexToDottedDecimal(srcIp) + 
-                        ", netDst:" + hexToDottedDecimal(dstIp) + "\n";
+                        ", netSrc:" + hex_to_dotted_decimal(srcIp) + 
+                        ", netDst:" + hex_to_dotted_decimal(dstIp) + "\n";
             }
         }
 
@@ -158,8 +158,8 @@ std::string FlowIdCalc::toString()
                         FlowIdCalc::recoverPorts(itrL4->dstSrcSumm, dstPort, srcPort);
                         dump += "flow:" + std::to_string(flowId) + 
                                 ", net:" + to_string(netProto) + 
-                                ", netSrc:" + hexToDottedDecimal(srcIp) + 
-                                ", netDst:" + hexToDottedDecimal(dstIp) +
+                                ", netSrc:" + hex_to_dotted_decimal(srcIp) + 
+                                ", netDst:" + hex_to_dotted_decimal(dstIp) +
                                 ", trans:" + to_string(transProto) +
                                 ", portSrc:" + std::to_string(srcPort) +
                                 ", portDst:" + std::to_string(dstPort) + "\n";
@@ -553,34 +553,31 @@ const flow_hash FlowIdCalc::summPorts(port_number dst, port_number src)
 
 const void FlowIdCalc::recoverPorts(flow_hash summ, port_number &dst, port_number &src)
 {
-    flow_hash lsbValue = summ & PORT_LSB_MASK;
-    flow_hash msbValue = (summ & PORT_MSB_MASK) >> 16;
-    src = (port_number)lsbValue;
-    dst = (port_number)msbValue;
-    return;
+    //flow_hash lsbValue = summ & PORT_LSB_MASK;
+    //flow_hash msbValue = (summ & PORT_MSB_MASK) >> 16;
+    //src = (port_number)lsbValue;
+    //dst = (port_number)msbValue;
+    //return;
+    recover_ports(summ, dst, src);
 }
 
 const flow_hash FlowIdCalc::summIpv4(ipv4_address dst, ipv4_address src)
 {
     return zip_ipv4(dst, src);
-    // return IPV4_OFFSET_VALUE*dst + src;
 }
 
 const void FlowIdCalc::recoverIpv4(flow_hash summ, ipv4_address &dst, ipv4_address &src)
 {
-    flow_hash lsbValue = summ & IPV4_LSB_MASK;
-    flow_hash msbValue = (summ & IPV4_MSB_MASK) >> 16*2;
-    src = (ipv4_address)lsbValue;
-    dst = (ipv4_address)msbValue;
-    return;
+    recover_ipv4(summ, dst, src);
 }
 
 const size_t FlowIdCalc::hashStrings(std::string a, std::string b)
 {
-    std::hash<std::string> hasher;
-    std::string strToHash = a + b;
-    size_t hash = hasher(strToHash);
-    return hash;
+    //std::hash<std::string> hasher;
+    //std::string strToHash = a + b;
+    //size_t hash = hasher(strToHash);
+    //return hash;
+    return hash_strings(a, b);
 }
 
 flow_id FlowIdCalc::getNextFlowId()

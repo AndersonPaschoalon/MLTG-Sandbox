@@ -13,7 +13,8 @@ LocalDbServiceV1_Naive::~LocalDbServiceV1_Naive()
         this->close();
     }
     // already free
-    this->db = nullptr;
+    this->traceDb = nullptr;
+    this->flowDb = nullptr;
 
     // this class does not manage this memory
     this->qTracePtr = nullptr;
@@ -27,10 +28,10 @@ std::string LocalDbServiceV1_Naive::toString()
 
 int LocalDbServiceV1_Naive::open()
 {
-        int rc = sqlite3_open(FILE_TRACE_DATABASE, &db);
+        int rc = sqlite3_open(FILE_TRACE_DATABASE, &this->traceDb);
         if (rc) 
         {
-            LOGGER(ERROR, "Error opening SQLite database: %s",  sqlite3_errmsg(db));
+            LOGGER(ERROR, "Error opening SQLite database: %s",  sqlite3_errmsg(this->traceDb));
             return rc;
         }
 
@@ -42,10 +43,10 @@ int LocalDbServiceV1_Naive::open()
                           "tsSec INTEGER NOT NULL,"
                           "tsUsec INTEGER NOT NULL"
                           ");";
-        rc = sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
+        rc = sqlite3_exec(this->traceDb, sql, nullptr, nullptr, nullptr);
         if (rc) 
         {
-            LOGGER(ERROR, "Error creating Trace table: %s",  sqlite3_errmsg(db));
+            LOGGER(ERROR, "Error creating Trace table: %s",  sqlite3_errmsg(this->traceDb));
             return rc;
         }
 
@@ -125,16 +126,16 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
 
     // Open the <traceName>_Flow.db database
     std::string flowDbName = this->qTracePtr->getTraceName() + "_Flow.db";
-    int rc = sqlite3_open(flowDbName.c_str(), &this->db);
+    int rc = sqlite3_open(flowDbName.c_str(), &this->flowDb);
     if (rc != SQLITE_OK) 
     {
-        std::cerr << "Error opening database " << flowDbName << ": " << sqlite3_errmsg(this->db) << std::endl;
-        sqlite3_close(this->db);
+        std::cerr << "Error opening database " << flowDbName << ": " << sqlite3_errmsg(this->flowDb) << std::endl;
+        sqlite3_close(this->flowDb);
         return rc;
     }
 
     // Create the Flows and Packets tables if they don't exist
-    rc = sqlite3_exec(this->db, "CREATE TABLE IF NOT EXISTS Flows ("
+    rc = sqlite3_exec(this->flowDb, "CREATE TABLE IF NOT EXISTS Flows ("
                                  "flowID INTEGER PRIMARY KEY AUTOINCREMENT,"
                                  "stack INTEGER,"
                                  "portDstSrc INTEGER,"
@@ -144,11 +145,11 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                       nullptr, nullptr, nullptr);
     if (rc != SQLITE_OK) 
     {
-        std::cerr << "Error creating Flows table: " << sqlite3_errmsg(this->db) << std::endl;
-        sqlite3_close(this->db);
+        std::cerr << "Error creating Flows table: " << sqlite3_errmsg(this->flowDb) << std::endl;
+        sqlite3_close(this->flowDb);
         return rc;
     }
-    rc = sqlite3_exec(this->db, "CREATE TABLE IF NOT EXISTS Packets ("
+    rc = sqlite3_exec(this->flowDb, "CREATE TABLE IF NOT EXISTS Packets ("
                                 "packetID INTEGER PRIMARY KEY AUTOINCREMENT,"
                                 "flowID INTEGER,"
                                 "tsSec INTEGER,"
@@ -161,13 +162,13 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                       nullptr);
     if (rc != SQLITE_OK) 
     {
-        std::cerr << "Error creating Packets table: " << sqlite3_errmsg(this->db) << std::endl;
-        sqlite3_close(this->db);
+        std::cerr << "Error creating Packets table: " << sqlite3_errmsg(this->flowDb) << std::endl;
+        sqlite3_close(this->flowDb);
         return rc;
     }
 
     // Start a transaction
-    sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, NULL);
+    sqlite3_exec(this->flowDb, "BEGIN TRANSACTION", NULL, NULL, NULL);
 
     // Insert Flows
     flow_id flowId = -1;
@@ -186,10 +187,10 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                                     + std::to_string(stack) + ", "
                                     + std::to_string(portDstSrc) + ", " 
                                     + std::to_string(net4DstSrcSumm) + ", "
-                                    + net6DstSrc + ")";
+                                    + "\"" + net6DstSrc + + "\"" + ")";
 
         // Execute the INSERT statement
-        sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL);
+        sqlite3_exec(this->flowDb, sql.c_str(), NULL, NULL, NULL);
     }
     // Insert Packets
     size_t pktId = -1;
@@ -213,14 +214,14 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                                     + std::to_string(timeToLive) + ")";
 
         // Execute the INSERT statement
-        sqlite3_exec(db, sql.c_str(), NULL, NULL, NULL);
+        sqlite3_exec(this->flowDb, sql.c_str(), NULL, NULL, NULL);
     }
 
     // Commit the transaction
-    rc = sqlite3_exec(db, "COMMIT TRANSACTION", NULL, NULL, NULL);
+    rc = sqlite3_exec(this->flowDb, "COMMIT TRANSACTION", NULL, NULL, NULL);
 
     // Close the database connection
-    rc = sqlite3_close(db);
+    rc = sqlite3_close(this->flowDb);
 
     return rc;
 }

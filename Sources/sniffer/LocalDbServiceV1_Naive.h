@@ -71,7 +71,8 @@ class LocalDbServiceV1_Naive: public ILocalDbService
     private:
 
         /// @brief Pointer to the Trace database
-        sqlite3* db;
+        sqlite3* traceDb;
+        sqlite3* flowDb;
         QTrace* qTracePtr;
         std::vector<QFlow*> qFlowPtrVec;
         std::vector<QFlowPacket*> qPktPtrVec;
@@ -80,6 +81,7 @@ class LocalDbServiceV1_Naive: public ILocalDbService
 
 
         int commitToFlowDatabase();
+        int commitToTraceDatabase();
 
 
 };
