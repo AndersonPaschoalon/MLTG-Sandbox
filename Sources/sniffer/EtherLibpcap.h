@@ -3,7 +3,7 @@
 
 #include "ICaptureDriver.h"
 
-class EtherLibpcap: ICaptureDriver
+class EtherLibpcap: public ICaptureDriver
 {
     public:
 
@@ -25,7 +25,6 @@ class EtherLibpcap: ICaptureDriver
         ///////////////////////////////////////////////////////////////////////
         // Driver Methods
         ///////////////////////////////////////////////////////////////////////
-
 
         // listen device
         virtual int listen(const char* deviceName, double captureTimeoutSec, long maxPackets);

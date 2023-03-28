@@ -36,7 +36,7 @@ class ICaptureDriver
         // read packets
         virtual int nextPacket(NetworkPacket& packet) = 0;
         // o que pode parar: ultimo pacote (arquivo), timeout ou thread de interrupção.
-        virtual bool doContinue();
+        bool doContinue();
 
         // retrieve information
         virtual void getDeviceInfo(std::string& deviceName, std::string& lastErrorDescription, double& captureTimeoutSec);

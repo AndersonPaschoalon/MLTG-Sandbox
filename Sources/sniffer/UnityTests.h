@@ -14,6 +14,7 @@
 #include "ILocalDbService.h"
 #include "LocalDbServiceV1_Naive.h"
 #include "ISniffer.h"
+#include "EtherLibpcap.h"
 #include "Sniffer_v01.h"
 
 class UnityTests{
@@ -25,6 +26,9 @@ private:
 
     static void test_FlowIdCalc();
     static void test_NaiveDatabase_Sniffer_Integration();
+    static void test_DriverLibpcap_Live();
+    static void test_DriverLibpcap_File();
+
 
     // helpers
     static ISniffer* makeNewSniffer(const char* snifferImplementation);

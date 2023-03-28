@@ -55,6 +55,27 @@ void UnityTests::test_NaiveDatabase_Sniffer_Integration()
     int ret = sniffer->run();
 }
 
+void UnityTests::test_DriverLibpcap_Live()
+{
+    EtherLibpcap driverLibpcap;
+    driverLibpcap.listen("eth0", 30, 100);
+    while ( true)
+    {
+        bool ret = driverLibpcap.doContinue();
+        if(ret == false)
+        {
+            break;
+        }
+        NetworkPacket p;
+        driverLibpcap.nextPacket(p);
+        printf("[Captured Packet] %s\n", p.toString().c_str());
+    }
+}
+
+void UnityTests::test_DriverLibpcap_File()
+{
+}
+
 ISniffer *UnityTests::makeNewSniffer(const char *snifferImplementation)
 {
     ISniffer* snifferImpl = nullptr;

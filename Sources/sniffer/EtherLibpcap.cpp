@@ -8,9 +8,14 @@ EtherLibpcap::~EtherLibpcap()
 {
 }
 
+EtherLibpcap::EtherLibpcap(const EtherLibpcap &obj)
+{
+}
+
 EtherLibpcap &EtherLibpcap::operator=(EtherLibpcap other)
 {
     // TODO: insert return statement here
+    return *this;
 }
 
 std::string EtherLibpcap::toString()
