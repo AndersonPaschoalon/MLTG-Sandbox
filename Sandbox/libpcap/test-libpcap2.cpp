@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <string.h>
 
 #include <arpa/inet.h>
 #include <netinet/ip.h>
@@ -34,6 +35,8 @@ double calculateTimestampInSec(const struct timeval t0, const struct timeval cur
 void process_icmp_segment(const u_char* packet);
 void process_tcp_segment(const u_char* packet);
 void process_udp_segment(const u_char* packet);
+void process_tcp_segment2(const u_char* packet);
+void process_udp_segment2(const u_char* packet);
 void process_sctp_segment(const u_char* packet);
 
 void process_ipv4_packet(const u_char* packet);
@@ -41,7 +44,7 @@ void process_rarp_packet(const u_char* packet);
 void process_arp_packet(const u_char* packet) ;
 void process_loopback_packet(const u_char* packet_data);
 void process_wol_packet(const u_char *packet) ;
-void process_icmp_packet(const u_char* packet);
+
 
 
 struct rarp_header {
@@ -64,6 +67,8 @@ struct sctp_header {
     /* more fields can be added here */
 };
 
+const char LOOPBACK_NULL_ENCAPSULATION[] = {0x00, 0x00, 0x00, 0x02};
+
 int main(int argc, char* argv[])
 {
     bool test01 = true;
@@ -75,11 +80,11 @@ int main(int argc, char* argv[])
 void test_pcap_file()
 {
 
-    read_pcap_file("../../Pcap/arp_pcap.pcapng.cap.pcap");
-    read_pcap_file("../../Pcap/mysql_complete.pcap");
+    // read_pcap_file("../../Pcap/arp_pcap.pcapng.cap.pcap");
+    // read_pcap_file("../../Pcap/mysql_complete.pcap");
     // read_pcap_file("../../Pcap/http_PPI.pcap");
-    read_pcap_file("../../Pcap/telnet-cooked.pcap");
-    read_pcap_file("../../Pcap/SkypeIRC.cap.pcap");
+    // read_pcap_file("../../Pcap/telnet-cooked.pcap");
+    // read_pcap_file("../../Pcap/SkypeIRC.cap.pcap");
     read_pcap_file("../../Pcap/snmp_usm.pcap");
     
 }
@@ -104,8 +109,16 @@ void read_pcap_file(const char* filename)
 
 void process_packet(u_char* user, const struct pcap_pkthdr* pkt_header, const u_char* packet)
 {
+    // check encapsulation
+    // NULL/Loopback Encapsulation if packet_data starts with 00 00 00 02
+    //if (packet[0] == 0x00 && packet[1] == 0x00 && packet[2] == 0x00 && packet[3] == 0x02)
+    //{
+    //    packet = &packet[4];
+    //}
+
     // Process the packet here
     const struct ether_header* ether_hdr = (const struct ether_header*)packet;
+    
 
     if(firstTimeStamp.tv_sec == 0)
     {
@@ -113,7 +126,6 @@ void process_packet(u_char* user, const struct pcap_pkthdr* pkt_header, const u_
         firstTimeStamp.tv_usec = pkt_header->ts.tv_usec;
     }
     int frame_len = pkt_header->len;
-    // printf("Packet timestamp: %ld.%06ld\n", pkt_header->ts.tv_sec, pkt_header->ts.tv_usec);
     printf("[ETHERNET FRAME] Timestamp [%f] EtherType:%X, FrameLen:%d ", calculateTimestampInSec(firstTimeStamp, pkt_header->ts), ether_hdr->ether_type, frame_len);
 
     // Check if it is an IP packet
@@ -153,6 +165,22 @@ void process_packet(u_char* user, const struct pcap_pkthdr* pkt_header, const u_
     {
         process_loopback_packet(packet);
     }
+    // NULL/Loopback Encapsulation if packet_data starts with 00 00 00 02
+    else if ( memcmp(packet, LOOPBACK_NULL_ENCAPSULATION, 4) == 0 )
+    {
+        struct iphdr* ip_hdr = (struct iphdr*)(packet + sizeof(LOOPBACK_NULL_ENCAPSULATION));
+        printf("[*IP PACKET] version:%d, ihl:%d, tot_len:%d, ttl:%d, daddr:%X, saddr:%X ", ip_hdr->version, ip_hdr->ihl, ip_hdr->tot_len, ip_hdr->ttl, ntohl(ip_hdr->daddr), ntohl(ip_hdr->saddr));
+        u_char* packet2 = (u_char*)(packet + sizeof(LOOPBACK_NULL_ENCAPSULATION));
+        if(ip_hdr->protocol == IPPROTO_IP || ip_hdr->protocol == IPPROTO_TCP)
+        {
+            process_tcp_segment2(packet2);
+        } 
+        else if (ip_hdr->protocol == IPPROTO_UDP) 
+        {
+            process_udp_segment2(packet2);
+        }
+
+    }
     else
     {
         printf("UNKNOWN PACKET %X\n", ntohs(ether_hdr->ether_type));
@@ -165,7 +193,9 @@ double calculateTimestampInSec(const struct timeval t0, const struct timeval cur
     return timestampInSeconds;
 }
 
-void process_tcp_segment(const u_char* packet) {
+
+void process_tcp_segment(const u_char* packet) 
+{
     // Cast packet to IP header
     const struct iphdr* ip_hdr = (const struct iphdr*)(packet + sizeof(struct ether_header));
 
@@ -188,6 +218,30 @@ void process_tcp_segment(const u_char* packet) {
     printf("fin_flag:%d\n", tcp_hdr->fin);
 }
 
+void process_tcp_segment2(const u_char* packet) {
+    // Cast packet to IP header
+    const struct iphdr* ip_hdr = (const struct iphdr*)(packet);
+
+    // Calculate TCP header pointer based on IP header length
+    int tcp_hdr_length = (ip_hdr->ihl * 4) + sizeof(struct tcphdr);
+    const struct tcphdr* tcp_hdr = (const struct tcphdr*)(packet + (ip_hdr->ihl * 4));
+
+    // Print TCP header information
+    printf("[TCP SEGMENT] ");
+    printf("src_port:%d, ", ntohs(tcp_hdr->source));
+    printf("dst_port:%d, ", ntohs(tcp_hdr->dest));
+    printf("seq_num:%u, ", ntohl(tcp_hdr->seq));
+    printf("ack_num:%u, ", ntohl(tcp_hdr->ack_seq));
+    printf("data_offset:%d, ", tcp_hdr->doff);
+    printf("urg_flag:%d, ", tcp_hdr->urg);
+    printf("ack_flag:%d, ", tcp_hdr->ack);
+    printf("psh_flag:%d, ", tcp_hdr->psh);
+    printf("rst_flag:%d, ", tcp_hdr->rst);
+    printf("syn_flag:%d, ", tcp_hdr->syn);
+    printf("fin_flag:%d\n", tcp_hdr->fin);
+}
+
+
 void process_udp_segment(const u_char* packet) {
     const struct udphdr* udp_hdr;
     udp_hdr = (const struct udphdr*)(packet + sizeof(struct ether_header) + sizeof(struct ip));
@@ -197,6 +251,18 @@ void process_udp_segment(const u_char* packet) {
     printf("dest_port:%u, ", ntohs(udp_hdr->uh_dport));
     printf("length:%u\n", ntohs(udp_hdr->uh_ulen));
 }
+
+
+void process_udp_segment2(const u_char* packet) {
+    const struct udphdr* udp_hdr;
+    udp_hdr = (const struct udphdr*)(packet + sizeof(struct ip));
+
+    printf("[UDP SEGMENT]");
+    printf("source_port:%u, ", ntohs(udp_hdr->uh_sport));
+    printf("dest_port:%u, ", ntohs(udp_hdr->uh_dport));
+    printf("length:%u\n", ntohs(udp_hdr->uh_ulen));
+}
+
 
 
 void process_icmp_segment(const u_char* packet) {
@@ -212,6 +278,7 @@ void process_icmp_segment(const u_char* packet) {
                icmp_hdr->type, icmp_hdr->code, ntohs(icmp_hdr->checksum));
     }
 }
+
 
 void process_sctp_segment(const u_char* packet) {
     struct sctp_header* sctp_hdr = (struct sctp_header*)(packet + sizeof(struct ip) + sizeof(struct ether_header));
@@ -242,6 +309,7 @@ void process_arp_packet(const u_char* packet)
               << std::endl;
 }
 
+
 void process_rarp_packet(const u_char* packet) 
 {
     // Ethernet header
@@ -268,6 +336,7 @@ void process_rarp_packet(const u_char* packet)
     printf("  Target IP: %d.%d.%d.%d\n",
            rarp_hdr->tpa[0], rarp_hdr->tpa[1], rarp_hdr->tpa[2], rarp_hdr->tpa[3]);
 }
+
 
 void process_ipv4_packet(const u_char* packet) 
 {
@@ -328,6 +397,7 @@ void process_ipv4_packet(const u_char* packet)
     }
 }
 
+
 void process_loopback_packet(const u_char* packet_data) 
 {
     // printf("---------- Loopback Packet ----------\n");
@@ -352,6 +422,7 @@ void process_loopback_packet(const u_char* packet_data)
     //printf("\n");
 }
 
+
 void process_wol_packet(const u_char *packet) 
 {
     // Cast the packet pointer to an Ethernet header structure pointer
@@ -369,41 +440,7 @@ void process_wol_packet(const u_char *packet)
     }
 }
 
-void process_icmp_packet(const u_char* packet) 
-{
-    // Get the Ethernet header
-    struct ether_header* ether_hdr = (struct ether_header*)packet;
 
-    // Get the IP header
-    struct iphdr* ip_hdr = (struct iphdr*)(packet + sizeof(struct ether_header));
-
-    // Get the ICMP header
-    struct icmphdr* icmp_hdr = (struct icmphdr*)(packet + sizeof(struct ether_header) + sizeof(struct iphdr));
-
-    // Print the source and destination MAC addresses
-    printf("Source MAC: ");
-    for (int i = 0; i < 6; i++) {
-        printf("%02X", ether_hdr->ether_shost[i]);
-        if (i < 5) printf(":");
-    }
-    printf("\n");
-
-    printf("Destination MAC: ");
-    for (int i = 0; i < 6; i++) {
-        printf("%02X", ether_hdr->ether_dhost[i]);
-        if (i < 5) printf(":");
-    }
-    printf("\n");
-
-    // Print the source and destination IP addresses
-    printf("Source IP: %s\n", inet_ntoa(*(struct in_addr*)&ip_hdr->saddr));
-    printf("Destination IP: %s\n", inet_ntoa(*(struct in_addr*)&ip_hdr->daddr));
-
-    // Print the ICMP type and code
-    printf("ICMP type: %d\n", icmp_hdr->type);
-    printf("ICMP code: %d\n", icmp_hdr->code);
-
-}
 
 
 

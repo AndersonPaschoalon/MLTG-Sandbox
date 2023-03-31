@@ -156,9 +156,8 @@ int chatGPT_implementation()
     return 0;
 }
 
-void process_arp_packet(const u_char* packet, const struct pcap_pkthdr* pkt_header) 
+void process_arp_packet(const struct ether_arp* arp_header, const u_char* packet) 
 {
-    const struct ether_arp* arp_header = (const struct ether_arp*)(packet + sizeof(struct ether_header));
     char src_mac[18];
     char dst_mac[18];
     char src_ip[INET_ADDRSTRLEN];
