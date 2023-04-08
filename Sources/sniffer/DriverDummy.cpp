@@ -1,20 +1,20 @@
-#include "EtherDummy.h"
+#include "DriverDummy.h"
 
-EtherDummy::EtherDummy()
+DriverDummy::DriverDummy()
 {
-    printf("EtherDummy\n");
+    printf("DriverDummy\n");
     this->vecPackets = new std::vector<NetworkPacket>();
     this->currentElement = -1;
     this->active = false;
 }
 
-EtherDummy::~EtherDummy()
+DriverDummy::~DriverDummy()
 {
     this->vecPackets->clear();
     delete this->vecPackets;
 }
 
-EtherDummy::EtherDummy(const EtherDummy &obj)
+DriverDummy::DriverDummy(const DriverDummy &obj)
 {
     this->active = obj.active;
     this->currentElement = obj.currentElement;
@@ -28,7 +28,7 @@ EtherDummy::EtherDummy(const EtherDummy &obj)
 
 }
 
-EtherDummy &EtherDummy::operator=(EtherDummy other)
+DriverDummy &DriverDummy::operator=(DriverDummy other)
 {
     if(this != &other)
     {
@@ -45,7 +45,7 @@ EtherDummy &EtherDummy::operator=(EtherDummy other)
     return *this;
 }
 
-std::string EtherDummy::toString()
+std::string DriverDummy::toString()
 {
     return std::string("{ active:") + std::to_string(this->active) + 
            std::string(", currentElement:") + std::to_string(this->currentElement) +
@@ -53,7 +53,7 @@ std::string EtherDummy::toString()
            std::string(", deviceName:") + this->deviceName + std::string("}");
 }
 
-int EtherDummy::listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter)
+int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter)
 {
     this->setListenVars(deviceName, captureTimeoutSec, maxPacketCounter);
     int nElements = 0;
@@ -173,12 +173,12 @@ int EtherDummy::listen(const char* deviceName, double captureTimeoutSec, long ma
     return  DEVICE_SUCCESS;
 }
 
-int EtherDummy::listen(const char *deviceName)
+int DriverDummy::listen(const char *deviceName)
 {
     return this->listen(deviceName, 0, -1);
 }
 
-int EtherDummy::nextPacket(NetworkPacket &packet)
+int DriverDummy::nextPacket(NetworkPacket &packet)
 {
     if(this->active == false)
     {
@@ -203,7 +203,7 @@ int EtherDummy::nextPacket(NetworkPacket &packet)
     return NEXT_PACKET_OK;
 }
 
-int EtherDummy::stop()
+int DriverDummy::stop()
 {
     this->currentElement = -1;
     this->nPackets = 0;

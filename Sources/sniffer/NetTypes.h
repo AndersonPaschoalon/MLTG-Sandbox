@@ -61,13 +61,13 @@ PacketTimeStamp delta(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
 enum class NetworkProtocol
 {   
     NONE,
-    ARP,
-    ICMP,
-    ICMPv6,
     IPv4,
     IPv6,
-    RIPv1,
-    RIPv2,
+    ARP,
+    RARP,
+    LOOPBACK,
+    WOL,
+    ATA,
 };
 
 enum class TransportProtocol
@@ -75,8 +75,11 @@ enum class TransportProtocol
     NONE,
     TCP,
     UDP,
+    ICMP,
+    ICMPv6,
     DCCP,
-    SCTP
+    SCTP,
+    IGMP,
 };
 
 enum class ApplicationProtocol

@@ -5,13 +5,13 @@ std::ostream& operator<<(std::ostream& os, const NetworkProtocol& n)
     switch (n)
     {
         case NetworkProtocol::NONE: os << "NONE"; break;
-        case NetworkProtocol::ARP: os << "ARP"; break;
-        case NetworkProtocol::ICMP: os << "ICMP"; break;
-        case NetworkProtocol::ICMPv6: os << "ICMPv6"; break;
         case NetworkProtocol::IPv4: os << "IPv4"; break;
         case NetworkProtocol::IPv6: os << "IPv6"; break;
-        case NetworkProtocol::RIPv1: os << "RIPv1"; break;
-        case NetworkProtocol::RIPv2: os << "RIPv2"; break;
+        case NetworkProtocol::ARP: os << "ARP"; break;
+        case NetworkProtocol::RARP: os << "RARP"; break;
+        case NetworkProtocol::LOOPBACK: os << "LOOPBACK"; break;
+        case NetworkProtocol::WOL: os << "WOL"; break;
+        case NetworkProtocol::ATA: os << "ATA"; break;
         default: os.setstate(std::ios_base::failbit);
     }
     return os;
@@ -24,9 +24,11 @@ std::ostream& operator<<(std::ostream& os, const TransportProtocol& n)
         case TransportProtocol::NONE: os << "NONE"; break;
         case TransportProtocol::TCP: os << "TCP"; break;
         case TransportProtocol::UDP: os << "UDP"; break;
+        case TransportProtocol::ICMP: os << "ICMP"; break;
+        case TransportProtocol::ICMPv6: os << "ICMPv6"; break;
         case TransportProtocol::DCCP: os << "DCCP"; break;
         case TransportProtocol::SCTP: os << "SCTP"; break;
-        
+        case TransportProtocol::IGMP: os << "IGMP"; break;
         default: os.setstate(std::ios_base::failbit);
     }
     return os;
@@ -58,20 +60,20 @@ std::string to_string(NetworkProtocol protocol)
     {
         case NetworkProtocol::NONE:
             return "NONE";
-        case NetworkProtocol::ARP:
-            return "ARP";
-        case NetworkProtocol::ICMP:
-            return "ICMP";
-        case NetworkProtocol::ICMPv6:
-            return "ICMPv6";
         case NetworkProtocol::IPv4:
             return "IPv4";
         case NetworkProtocol::IPv6:
-            return "IPv6";
-        case NetworkProtocol::RIPv1:
-            return "RIPv1";
-        case NetworkProtocol::RIPv2:
-            return "RIPv2";
+            return "IPv6";            
+        case NetworkProtocol::ARP:
+            return "ARP";
+        case NetworkProtocol::RARP:
+            return "RARP";
+        case NetworkProtocol::LOOPBACK:
+            return "LOOPBACK";
+        case NetworkProtocol::WOL:
+            return "WOL";
+        case NetworkProtocol::ATA:
+            return "ATA";
         default:
             return "UNKNOWN";
     }
@@ -87,10 +89,16 @@ std::string to_string(TransportProtocol protocol)
             return "TCP";
         case TransportProtocol::UDP:
             return "UDP";
+        case TransportProtocol::ICMP:
+            return "ICMP";
+        case TransportProtocol::ICMPv6:
+            return "ICMPv6";
         case TransportProtocol::DCCP:
             return "DCCP";
         case TransportProtocol::SCTP:
             return "SCTP";
+        case TransportProtocol::IGMP:
+            return "IGMP";            
         default:
             return "UNKNOWN";
     }

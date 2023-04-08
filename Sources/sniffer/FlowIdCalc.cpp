@@ -553,11 +553,6 @@ const flow_hash FlowIdCalc::summPorts(port_number dst, port_number src)
 
 const void FlowIdCalc::recoverPorts(flow_hash summ, port_number &dst, port_number &src)
 {
-    //flow_hash lsbValue = summ & PORT_LSB_MASK;
-    //flow_hash msbValue = (summ & PORT_MSB_MASK) >> 16;
-    //src = (port_number)lsbValue;
-    //dst = (port_number)msbValue;
-    //return;
     recover_ports(summ, dst, src);
 }
 
@@ -573,10 +568,6 @@ const void FlowIdCalc::recoverIpv4(flow_hash summ, ipv4_address &dst, ipv4_addre
 
 const size_t FlowIdCalc::hashStrings(std::string a, std::string b)
 {
-    //std::hash<std::string> hasher;
-    //std::string strToHash = a + b;
-    //size_t hash = hasher(strToHash);
-    //return hash;
     return hash_strings(a, b);
 }
 

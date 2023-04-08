@@ -1,259 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <string.h>
-#include <csignal>
-#include <unistd.h>
+#include "WrapperLibpcap.h"
 
-#include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/ip6.h>
-#include <netinet/icmp6.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <linux/if_packet.h>
-#include <linux/dccp.h>
-#include <netinet/igmp.h>
-#include <arpa/inet.h>
-#include <netinet/ip_icmp.h> 
-#include <netinet/if_ether.h> /* includes net/ethernet.h */
-#include <pcap.h> /* if this gives you an error try pcap/pcap.h */
-#include <sys/socket.h>
-
-#define PROMISCUOUS_MODE            1
-#define ETHERTYPE_WAKE_ON_LAN       0x0842
-#define ETHERTYPE_ATA               0x88A2
-
-#define LOG_VERBOSE                 1
-
-// global variables
-struct timeval firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
-unsigned int packetCounter = 0;
-volatile sig_atomic_t stop_capture = 0;
-
-void test_pcap_capture();
-void start_capture(const char* interfaceName);
-void read_pcap_file(const char* filename);
-void pcap_live_capture(const char* etherInterface);
-void signalHandler(int signum);
-
-///////////////////////////////////////////////////////////////////////////////
-// LINK LAYER PARSES
-///////////////////////////////////////////////////////////////////////////////
-
-void process_ethernet_frame(u_char* user, const struct pcap_pkthdr* framw_header, const u_char* frame);
-double calculateTimestampInSec(const struct timeval t0, const struct timeval currentTimestamp);
-
-///////////////////////////////////////////////////////////////////////////////
-// TRANSPORT LAYER PARSES
-///////////////////////////////////////////////////////////////////////////////
-
-// Internet Control Message Protocol.
-void process_icmp_segment(const struct icmphdr* icmp_hdr, const u_char* icmp_segment);
-// Transmission Control Protocol. 
-void process_tcp_segment(const struct tcphdr* tcp_hdr, const u_char* tcp_segment);
-// User Datagram Protocol. 
-void process_udp_segment(const struct udphdr* udp_hdr, const u_char* udp_segment);
-// Stream Control Transmission Protocol. 
-void process_sctp_segment(const struct sctp_header* sctp_hdr, const u_char* sctp_segment);
-// ICMPv6
-void process_icmpv6_segment(const struct icmp6_hdr* icmpv6_hd, const u_char* icmpv6_segment);
-// Datagram Congestion Control Protocol. 
-void process_dccp_segment(const struct dccp_hdr* dccp_hdr, const u_char* dccp_segment);
-void process_igmp_segment(const struct igmp* igmp_hdr, const u_char* igmp_segment);
-
-///////////////////////////////////////////////////////////////////////////////
-// NETWORK LAYER PARSES
-///////////////////////////////////////////////////////////////////////////////
-
-void process_ipv4_packet(struct iphdr* ip_hdr, const u_char* packet);
-void process_ipv6_packet(struct ip6_hdr* ip6_hdr, const u_char* packet);
-void process_rarp_packet(const struct rarp_header* rarp_hdr, const u_char* rarp_packet);
-void process_arp_packet(const struct ether_arp* arp_header, const u_char* arp_packet);
-void process_loopback_packet(const struct loopback_header* loop_header, const u_char* loop_packet);
-void process_wol_packet(const struct wol_header* wol_header, const u_char* wol_packet);
-void process_ata_packet(const struct ata_header* ata_hd, const u_char* ata_packet);
-
-///////////////////////////////////////////////////////////////////////////////
-// Application LAYER PARSES
-///////////////////////////////////////////////////////////////////////////////
-
-struct rarp_header {
-    uint16_t htype;
-    uint16_t ptype;
-    uint8_t hlen;
-    uint8_t plen;
-    uint16_t oper;
-    uint8_t sha[6];
-    uint8_t spa[4];
-    uint8_t tha[6];
-    uint8_t tpa[4];
-};
-
-struct sctp_header {
-    uint16_t source_port;
-    uint16_t destination_port;
-    uint32_t verification_tag;
-    uint32_t checksum;
-};
-
-// Loopback header
-struct loopback_header {
-    unsigned char packet_type;
-    unsigned char flags;
-    unsigned short protocol_type;
-};
-
-// ??
-struct wol_header {
-    uint8_t dest_mac[6];
-    uint8_t src_mac[6];
-    uint8_t magic_packet[6];
-    uint8_t payload[0]; // variable-length payload
-};
-
-struct ata_header
-{
-    unsigned char version;
-    unsigned char flags;
-    unsigned char major[2];
-    unsigned char minor;
-    unsigned char command;
-    unsigned char tag[4];
-};
-
-
-const char LOOPBACK_NULL_ENCAPSULATION[] = {0x00, 0x00, 0x00, 0x02};
-
-int main(int argc, char* argv[])
-{
-    bool test01 = true;
-    if (test01) test_pcap_capture();
-
-    return 0;
-}
-
-void test_pcap_capture()
-{
-    printf("oi\n");
-    ///start_capture("eth0");
-    start_capture("../../Pcap/SkypeIRC.cap.pcap");
-    start_capture("../../Pcap/v6-http.cap.pcap");
-    start_capture("../../Pcap/arp_pcap.pcapng.cap.pcap");
-    start_capture("../../Pcap/mysql_complete.pcap");
-    start_capture("../../Pcap/telnet-cooked.pcap");
-    start_capture("../../Pcap/snmp_usm.pcap");
-    start_capture("../../Pcap/wol.pcap");
-    // start_capture("../../Pcap/bigFlows.pcap");
-    // read_pcap_file("../../Pcap/http_PPI.pcap"); // wifi
-}
-
-void start_capture(const char* interfaceName)
-{
-    if(access(interfaceName, F_OK ) != -1 ) 
-    {
-        // file exists, read pcap
-        read_pcap_file(interfaceName);
-    } 
-    else 
-    {
-        // file does not exist, assume it is an interface
-        pcap_live_capture(interfaceName);
-    }
-}
-
-void read_pcap_file(const char* filename) 
-{
-    firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
-    packetCounter = 0;
-    printf("************************************************************\n");
-    printf("** %s\n", filename);
-    printf("************************************************************\n");
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* pcap_handle = pcap_open_offline(filename, errbuf);
-    if (pcap_handle == nullptr) 
-    {
-        std::cerr << "Error opening pcap file: " << errbuf << std::endl;
-        return;
-    }
-
-    pcap_loop(pcap_handle, 0, process_ethernet_frame, nullptr);
-    pcap_close(pcap_handle);
-    printf("\n");
-    printf("** %s completed\n", filename);
-}
-
-
-void pcap_live_capture(const char* etherInterface)
-{
-    char *dev;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *handle;
-
-    printf("************************************************************\n");
-    printf("** Starting live capture @ %s\n", etherInterface);
-    printf("************************************************************\n");
-    // Find a suitable network interface to capture packets from
-    dev = pcap_lookupdev(errbuf);
-    if (dev == NULL) 
-    {
-        fprintf(stderr, "pcap_lookupdev() failed: %s\n", errbuf);
-        return;
-    }
-
-    // Open the network interface for packet capture
-    handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-    if (handle == NULL) 
-    {
-        fprintf(stderr, "pcap_open_live() failed: %s\n", errbuf);
-        return;
-    }
-
-    // Register a signal handler for SIGINT
-    printf("Register a signal handler for SIGINT\n");
-    signal(SIGINT, signalHandler);
-
-    // Start capturing packets
-    printf("Start capturing packets\n");
-    while (stop_capture != 1) 
-    {
-        struct pcap_pkthdr frame_header;
-        const u_char *frame = pcap_next(handle, &frame_header);
-        process_ethernet_frame(NULL, &frame_header, frame);
-        if (frame == NULL) 
-        {
-            continue;
-        }
-    }
-
-    // Get statistics
-    struct pcap_stat stats;
-    if (pcap_stats(handle, &stats) == -1) 
-    {
-        fprintf(stderr, "Failed to get statistics: %s\n", pcap_geterr(handle));
-        return;
-    }
-
-    // Print statistics
-    printf("Packets received: %d\n", stats.ps_recv);
-    printf("Packets dropped by kernel: %d\n", stats.ps_drop);
-    printf("Packets dropped by interface: %d\n", stats.ps_ifdrop);
-
-
-    // Clean up
-    pcap_close(handle);
-
-    return;
-}
-
-void signalHandler(int signum)
-{
-    stop_capture = 1;
-}
 
 
 void process_ethernet_frame(u_char* user, const struct pcap_pkthdr* frame_header, const u_char* frame)
@@ -342,13 +88,13 @@ void process_ethernet_frame(u_char* user, const struct pcap_pkthdr* frame_header
     }
 }
 
-double calculateTimestampInSec(const struct timeval t0, const struct timeval currentTimestamp) 
+double calculateTimestampInSec(const struct timeval t0, const struct timeval currentTimestamp, NetworkPacket* netPkt) 
 {
     double timestampInSeconds = (currentTimestamp.tv_sec - t0.tv_sec) + ((currentTimestamp.tv_usec - t0.tv_usec) / 1000000.0);
     return timestampInSeconds;
 }
 
-void process_ipv4_packet(struct iphdr* ip_hdr, const u_char* packet)
+void process_ipv4_packet(struct iphdr* ip_hdr, const u_char* packet, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     printf("[IP PACKET] version:%d, ihl:%d, tot_len:%d, ttl:%d, daddr:%X, saddr:%X ", ip_hdr->version, ip_hdr->ihl, ip_hdr->tot_len, ip_hdr->ttl, ntohl(ip_hdr->daddr), ntohl(ip_hdr->saddr));
@@ -400,7 +146,7 @@ void process_ipv4_packet(struct iphdr* ip_hdr, const u_char* packet)
 
 }
 
-void process_ipv6_packet(struct ip6_hdr* ip_hdr, const u_char* packet)
+void process_ipv6_packet(struct ip6_hdr* ip_hdr, const u_char* packet, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     char src_str[INET6_ADDRSTRLEN];
@@ -456,7 +202,7 @@ void process_ipv6_packet(struct ip6_hdr* ip_hdr, const u_char* packet)
     }    
 }
 
-void process_igmp_segment(const struct igmp* igmp_hdr, const u_char* igmp_segment) 
+void process_igmp_segment(const struct igmp* igmp_hdr, const u_char* igmp_segment, NetworkPacket* netPkt) 
 {
     uint8_t igmp_type = igmp_hdr->igmp_type;
     uint8_t igmp_code = igmp_hdr->igmp_code;
@@ -467,7 +213,7 @@ void process_igmp_segment(const struct igmp* igmp_hdr, const u_char* igmp_segmen
 #endif
 }
 
-void process_tcp_segment(const struct tcphdr* tcp_hdr, const u_char* tcp_segment)
+void process_tcp_segment(const struct tcphdr* tcp_hdr, const u_char* tcp_segment, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     // Print TCP header information
@@ -487,7 +233,7 @@ void process_tcp_segment(const struct tcphdr* tcp_hdr, const u_char* tcp_segment
 }
 
 
-void process_udp_segment(const struct udphdr* udp_hdr, const u_char* udp_segment)
+void process_udp_segment(const struct udphdr* udp_hdr, const u_char* udp_segment, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     printf("[UDP SEGMENT]");
@@ -498,7 +244,7 @@ void process_udp_segment(const struct udphdr* udp_hdr, const u_char* udp_segment
 }
 
 
-void process_icmp_segment(const struct icmphdr* icmp_hdr, const u_char* icmp_segment)
+void process_icmp_segment(const struct icmphdr* icmp_hdr, const u_char* icmp_segment, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     printf("[ICMP SEGMENT] type:%d, code:%d, checksum:%d\n",
@@ -507,7 +253,7 @@ void process_icmp_segment(const struct icmphdr* icmp_hdr, const u_char* icmp_seg
 } 
 
 
-void process_sctp_segment(const struct sctp_header* sctp_hdr, const u_char* sctp_segment) 
+void process_sctp_segment(const struct sctp_header* sctp_hdr, const u_char* sctp_segment, NetworkPacket* netPkt) 
 {
     uint16_t src_port = ntohs(sctp_hdr->source_port);
     uint16_t dst_port = ntohs(sctp_hdr->destination_port);
@@ -518,7 +264,7 @@ void process_sctp_segment(const struct sctp_header* sctp_hdr, const u_char* sctp
 #endif
 }
 
-void process_icmpv6_segment(const icmp6_hdr *icmpv6_hd, const u_char *icmpv6_segment)
+void process_icmpv6_segment(const icmp6_hdr *icmpv6_hd, const u_char *icmpv6_segment, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     printf("[ICMPv6 SEGMENT] type:%d, code:%d, checksum:%d\n",
@@ -526,7 +272,7 @@ void process_icmpv6_segment(const icmp6_hdr *icmpv6_hd, const u_char *icmpv6_seg
 #endif
 }
 
-void process_dccp_segment(const struct dccp_hdr* dccp_hdr, const u_char* dccp_segment) 
+void process_dccp_segment(const struct dccp_hdr* dccp_hdr, const u_char* dccp_segment, NetworkPacket* netPkt) 
 {
     uint16_t src_port = ntohs(dccp_hdr->dccph_sport);
     uint16_t dst_port = ntohs(dccp_hdr->dccph_dport);
@@ -543,7 +289,7 @@ void process_dccp_segment(const struct dccp_hdr* dccp_hdr, const u_char* dccp_se
 #endif
 }
 
-void process_arp_packet(const struct ether_arp* arp_header, const u_char* arp_packet)
+void process_arp_packet(const struct ether_arp* arp_header, const u_char* arp_packet, NetworkPacket* netPkt)
 {
     //const struct ether_arp* arp_header = (const struct ether_arp*)(frame + sizeof(struct ether_header));
     char src_mac[18];
@@ -562,7 +308,7 @@ void process_arp_packet(const struct ether_arp* arp_header, const u_char* arp_pa
 #endif              
 }
 
-void process_rarp_packet(const struct rarp_header* rarp_hdr, const u_char* rarp_packet)
+void process_rarp_packet(const struct rarp_header* rarp_hdr, const u_char* rarp_packet, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     // Print RARP header informatio
@@ -580,7 +326,7 @@ void process_rarp_packet(const struct rarp_header* rarp_hdr, const u_char* rarp_
 #endif
 }
 
-void process_loopback_packet(const struct loopback_header* loop_header, const u_char* loop_packet) 
+void process_loopback_packet(const struct loopback_header* loop_header, const u_char* loop_packet, NetworkPacket* netPkt) 
 {
 #ifdef LOG_VERBOSE
     printf("[LOOPBACK PACKET] ");
@@ -589,7 +335,7 @@ void process_loopback_packet(const struct loopback_header* loop_header, const u_
 }
 
 
-void process_wol_packet(const struct wol_header* wol_header, const u_char* wol_packet)
+void process_wol_packet(const struct wol_header* wol_header, const u_char* wol_packet, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     printf("[WOL PACKET]");
@@ -605,7 +351,7 @@ void process_wol_packet(const struct wol_header* wol_header, const u_char* wol_p
 #endif
 }
 
-void process_ata_packet(const ata_header *ata_hd, const u_char *ata_packet)
+void process_ata_packet(const ata_header *ata_hd, const u_char *ata_packet, NetworkPacket* netPkt)
 {
 #ifdef LOG_VERBOSE
     printf("[ATA PACKET] version=0x%02x, flags=0x%02x, major=0x%02x%02x, minor=0x%02x, command=0x%02x, tag=0x%02x%02x%02x%02x\n", ata_hd->version, ata_hd->flags, ata_hd->major[0], ata_hd->major[1], ata_hd->minor, ata_hd->command, ata_hd->tag[0], ata_hd->tag[1], ata_hd->tag[2], ata_hd->tag[3]);

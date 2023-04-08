@@ -76,6 +76,11 @@ const std::string QTrace::getComment()
     return this->comment;
 }
 
+const std::string QTrace::getTags()
+{
+    return std::string();
+}
+
 bool QTrace::isEmpty()
 {
     if(this->traceName == "")

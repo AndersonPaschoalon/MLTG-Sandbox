@@ -8,7 +8,16 @@
 # ./test-libpcap2.exe | tee test-libpcap2.log
 
 g++ -fdiagnostics-color=always -g test-libpcap3.cpp -lpcap -o ./test-libpcap3.exe
-echo "----------------------------------------------------------------------------"
-./test-libpcap3.exe | tee test-libpcap3.log
+if [ $? -eq 0 ]; then
+    echo "Compilation success"
+    echo "----------------------------------------------------------------------------"
+    # ./test-libpcap3.exe | tee test-libpcap3.log
+    ./test-libpcap3.exe
+else
+    echo "*Compilation error*"
+fi
+
+
+
 
 

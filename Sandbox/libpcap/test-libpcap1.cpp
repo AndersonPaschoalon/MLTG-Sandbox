@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <csignal>
+#include <thread>
+
 
 #include <arpa/inet.h>
 #include <netinet/ip.h>
@@ -18,14 +21,18 @@
 #define PROMISCUOUS_MODE            1
 #define ETHERTYPE_WAKE_ON_LAN       0x0842
 
+volatile sig_atomic_t stop_capture = 0;
 struct timeval firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
 
 // Utils
 int logOnfile(const char* fileName, const char* msg);
+void signalHandler(int signum);
 
 // ChatGPT implementation
 void packetHandler(u_char* userData, const struct pcap_pkthdr* pkthdr, const u_char* packetData);
 int chatGPT_implementation();
+int live_capture_all_packets();
+int live_capture_all_packets2();
 // read offline packets
 void test_pcap_file();
 void read_pcap_file(const char* filename);
@@ -33,7 +40,8 @@ void process_packet(u_char* user, const struct pcap_pkthdr* pkt_header, const u_
 // protocol parses
 void process_ipv4_packet(const u_char* packet);
 void process_rarp_packet(const u_char* packet, int packet_len);
-void process_arp_packet(const u_char* packet, const struct pcap_pkthdr* pkt_header) ;
+void process_arp_packet(const struct ether_arp* arp_header, const u_char* packet);
+//void process_arp_packet(const u_char* packet, const struct pcap_pkthdr* pkt_header) ;
 void process_loopback_packet(const u_char* packet_data, const struct pcap_pkthdr* pkthdr);
 void process_wol_packet(const u_char *packet) ;
 void process_icmp_packet(const u_char* packet, const struct pcap_pkthdr* pkthdr);
@@ -61,14 +69,23 @@ int main(int argc, char* argv[])
     bool test01 = false; // promissor
     bool test02 = false;
     bool test03 = false;
-    bool test04 = true;
+    bool test04 = false;
+    bool test05 = false;
+    bool test06 = true;
 
     if (test01) chatGPT_implementation();
     if (test02) libpcap_tutorial_section01();
     if (test03) libpcap_tutorial_section02();
     if (test04) test_pcap_file();
+    if (test05) live_capture_all_packets();
+    if (test06) live_capture_all_packets2();
 
     return 0;
+}
+
+void signalHandler(int signum)
+{
+    stop_capture = 1;
 }
 
 int logOnfile(const char* fileName, const char* msg) 
@@ -98,12 +115,6 @@ void packetHandler(u_char* userData, const struct pcap_pkthdr* pkthdr, const u_c
     const ether_header* ethernetHeader = reinterpret_cast<const ether_header*>(packetData);
     int headerLength = sizeof(ether_header);
 
-    // Only process Ethernet packets with IP payload
-    //if (ntohs(ethernetHeader->ether_type) != ETHERTYPE_IP) 
-    //{
-    //    return;
-    //}
-
     const struct ip* ipHeader = reinterpret_cast<const struct ip*>(packetData + headerLength);
     headerLength += sizeof(struct ip);
 
@@ -112,7 +123,6 @@ void packetHandler(u_char* userData, const struct pcap_pkthdr* pkthdr, const u_c
 
     std::string msg = "Received packet with source IP address: " + std::string(ipAddress);
     std::cout << msg << std::endl;
-    // std::cout << "Received packet with source IP address: " << ipAddress << std::endl;
     logOnfile(LOG_FILE, msg.c_str());
 }
 
@@ -152,6 +162,102 @@ int chatGPT_implementation()
 
     // Capture packets
     pcap_loop(descr, -1, packetHandler, NULL);
+
+    return 0;
+}
+
+int live_capture_all_packets()
+{
+    pcap_t* descr;
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+    // Open the capture device
+    descr = pcap_open_live("eth0", BUFSIZ, 0, -1, errbuf);
+    //descr = pcap_open_live("eth0", BUFSIZ, 1, 1000, errbuf);
+    if(descr == NULL) 
+    {
+        printf("pcap_open_live() failed: %s\n", errbuf);
+        return 1;
+    }
+
+    // Capture packets
+    printf("Starting live capture...\n");
+    int status = pcap_loop(descr, 20, packetHandler, NULL);
+    // Check the status and print information about the capture
+    if (status == -1) 
+    {
+        printf("pcap_loop() failed: %s\n", pcap_geterr(descr));
+    } 
+    else if (status == -2) 
+    {
+        printf("pcap_loop() ended due to timeout.\n");
+    } else 
+    {
+        printf("pcap_loop() ended normally.\n");
+    }
+
+    return 0;
+}
+
+int live_capture_all_packets2()
+{
+    char *dev;
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t *handle;
+
+    // Find a suitable network interface to capture packets from
+    printf("Find a suitable network interface to capture packets from\n");
+    dev = pcap_lookupdev(errbuf);
+    if (dev == NULL) {
+        fprintf(stderr, "pcap_lookupdev() failed: %s\n", errbuf);
+        return 1;
+    }
+
+    // Open the network interface for packet capture
+    printf("\n");
+    handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+    if (handle == NULL) {
+        fprintf(stderr, "pcap_open_live() failed: %s\n", errbuf);
+        return 1;
+    }
+
+    // Register a signal handler for SIGINT
+    printf("Register a signal handler for SIGINT\n");
+    signal(SIGINT, signalHandler);
+
+    // Start capturing packets
+    printf("Start capturing packets\n");
+    while (stop_capture != 1) 
+    {
+        struct pcap_pkthdr header;
+        const u_char *packet = pcap_next(handle, &header);
+        packetHandler(NULL, &header, packet);
+        if (packet == NULL) 
+        {
+            continue;
+        }
+
+        // Process the captured packet here
+        printf("Captured a packet of length %d\n", header.len);
+    }
+
+    // Get statistics
+    struct pcap_stat stats;
+    if (pcap_stats(handle, &stats) == -1) 
+    {
+        fprintf(stderr, "Failed to get statistics: %s\n", pcap_geterr(handle));
+        return 1;
+    }
+
+    // Print statistics
+    printf("Packets received: %d\n", stats.ps_recv);
+    printf("Packets dropped by kernel: %d\n", stats.ps_drop);
+    printf("Packets dropped by interface: %d\n", stats.ps_ifdrop);
+
+
+
+    // Clean up
+    pcap_close(handle);
 
     return 0;
 }
@@ -370,7 +476,10 @@ void process_packet(u_char* user, const struct pcap_pkthdr* pkt_header, const u_
     // Check if it is an ARP packet
     else if (ntohs(ether_hdr->ether_type) == ETHERTYPE_ARP) 
     {
-        process_arp_packet(packet, pkt_header);
+        u_char* arp_packet = (u_char*)(packet + sizeof(struct ether_header));
+        const struct ether_arp* arp_header = (const struct ether_arp*)(arp_packet);
+
+        process_arp_packet(arp_header, arp_packet);
     }
     //
     else if (ntohs(ether_hdr->ether_type) == ETHERTYPE_WAKE_ON_LAN) 

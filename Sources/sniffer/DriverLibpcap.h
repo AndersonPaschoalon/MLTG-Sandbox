@@ -3,7 +3,7 @@
 
 #include "ICaptureDriver.h"
 
-class EtherLibpcap: public ICaptureDriver
+class DriverLibpcap: public ICaptureDriver
 {
     public:
 
@@ -11,13 +11,13 @@ class EtherLibpcap: public ICaptureDriver
         // Class Methods
         ///////////////////////////////////////////////////////////////////////
 
-        EtherLibpcap();
+        DriverLibpcap();
 
-        ~EtherLibpcap();
+        ~DriverLibpcap();
 
-        EtherLibpcap(const EtherLibpcap& obj);
+        DriverLibpcap(const DriverLibpcap& obj);
 
-        EtherLibpcap& operator=(EtherLibpcap other);
+        DriverLibpcap& operator=(DriverLibpcap other);
 
         std::string toString();
 

@@ -9,7 +9,7 @@
 #define DUMMY_DEVICE_RANDOM   "random"
 
 /// @brief This class creates some fixed pre-defined packets. For test purpose only.
-class EtherDummy: public ICaptureDriver
+class DriverDummy: public ICaptureDriver
 {
     public:
 
@@ -17,13 +17,13 @@ class EtherDummy: public ICaptureDriver
         // Class Methods
         ///////////////////////////////////////////////////////////////////////
 
-        EtherDummy();
+        DriverDummy();
 
-        ~EtherDummy();
+        ~DriverDummy();
 
-        EtherDummy(const EtherDummy& obj);
+        DriverDummy(const DriverDummy& obj);
 
-        EtherDummy& operator=(EtherDummy other);
+        DriverDummy& operator=(DriverDummy other);
 
         std::string toString();
 

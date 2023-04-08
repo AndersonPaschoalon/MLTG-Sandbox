@@ -37,6 +37,7 @@ class QTrace
         const std::string getTraceName();
         const std::string getTraceSource();
         const std::string getComment();
+        const std::string getTags();
         bool isEmpty();
 
 
@@ -65,6 +66,7 @@ class QTrace
         void set(const char*  traceName,
                  const char*  traceSource,
                  const char*  comment);
+        void setTags(const char* csvTags);
 
 };
 
