@@ -32,6 +32,10 @@ int DriverLibpcap::listen(const char *deviceName, double captureTimeoutSec, long
 
 int DriverLibpcap::nextPacket(NetworkPacket &packet)
 {
+    NetworkPacket* ptrPkt = packetsQueue->pop();
+    packet = *ptrPkt;
+    delete ptrPkt;
+
     return 0;
 }
 

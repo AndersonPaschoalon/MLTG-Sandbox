@@ -7,12 +7,15 @@
             "args": [
                 "-std=gnu++17",
                 "-fdiagnostics-color=always",
+                "-Wdeprecated-declarations",
                 "-I./*.h",
                 "-g",
                 "${workspaceFolder}/*.cpp",
                 "-o",
                 "${fileDirname}/bin/test-app.exe",
                 "-lsqlite3",
+                "-lpcap",
+                "-pthread"
             ],
             "options": {
                 "cwd": "${fileDirname}"

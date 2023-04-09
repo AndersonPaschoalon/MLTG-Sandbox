@@ -14,7 +14,9 @@ volatile sig_atomic_t stopCapture = 0;
 
 struct timeval firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
 
-volatile TSQueue<NetworkPacket*>* packetsQueue;
+struct timeval currentTimeStamp = {.tv_sec = 0, .tv_usec = 0};
+
+TSQueue<NetworkPacket*>* packetsQueue;
 
 
 //
@@ -108,10 +110,6 @@ void pcap_live_capture(const char* etherInterface)
         struct pcap_pkthdr frame_header;
         const u_char *frame = pcap_next(handle, &frame_header);
         process_ethernet_frame(NULL, &frame_header, frame);
-        if (frame == NULL) 
-        {
-            continue;
-        }
 
         // check the number of packets to capture
         if (maxNumberOfPackets > 0)
@@ -126,7 +124,18 @@ void pcap_live_capture(const char* etherInterface)
         // check the timeout
         if(timeout > 0)
         {
-            double currentTime = 
+            double currentTime = inter_arrival(currentTimeStamp, firstTimeStamp);
+            if (currentTime > timeout)
+            {
+                printf("Reached time limit for packet capture %f", currentTime);
+                break;
+            }
+        }
+
+        // continue
+        if (frame == NULL) 
+        {
+            continue;
         }
 
     }

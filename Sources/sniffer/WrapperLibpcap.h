@@ -43,8 +43,8 @@ extern volatile double timeout;
 extern volatile unsigned int packetCounter;
 extern volatile sig_atomic_t stopCapture;
 extern struct timeval firstTimeStamp;
-extern volatile struct timeval currentTimeStamp;
-extern volatile TSQueue<NetworkPacket*>* packetsQueue;
+extern struct timeval currentTimeStamp;
+extern TSQueue<NetworkPacket*>* packetsQueue;
 
 ///////////////////////////////////////////////////////////////////////////////
 // HEADERS
@@ -102,7 +102,7 @@ const char LOOPBACK_NULL_ENCAPSULATION[] = {0x00, 0x00, 0x00, 0x02};
 // CAPTURE FUNCTIONS
 ///////////////////////////////////////////////////////////////////////////////
 
-void start_capture(const char* interfaceName, unsigned int timeout, unsigned int maxNumberOfPackets);
+void start_capture(const char* interfaceName, double timeout, long maxNumberOfPackets);
 void read_pcap_file(const char* filename);
 void pcap_live_capture(const char* etherInterface);
 void signal_handler(int signum);

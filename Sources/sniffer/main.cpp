@@ -46,22 +46,6 @@ int main()
 
 
 
-// ISniffer* makeNewSniffer(const char* snifferImplementation);
-// ISniffer* makeNewSniffer(const char* snifferImplementation)
-// {
-//     ISniffer* snifferImpl = nullptr;
-//     if(strcmp(snifferImplementation, "Sniffer_v01") == 0)
-//     {
-//         snifferImpl = new Sniffer_v01();
-//     }
-//     else
-//     {
-//         snifferImpl = new Sniffer_v01();
-//     }
-//     return snifferImpl;
-// }
-
-
 
 
 
