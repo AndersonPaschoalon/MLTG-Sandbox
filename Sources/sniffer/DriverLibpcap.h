@@ -1,6 +1,7 @@
 #ifndef _ETHER_LIBPCAP__H_
 #define _ETHER_LIBPCAP__H_ 1
 
+#include <chrono>
 #include <iostream>
 #include <thread>
 #include "ICaptureDriver.h"
@@ -40,6 +41,8 @@ class DriverLibpcap: public ICaptureDriver
 
 
     private:
+
+        bool active;
 
 };
 

@@ -18,6 +18,7 @@ NetworkPacket::NetworkPacket()
     this->ipv6Src = IPV6_NONE;
     this->timeToLive = 0;
     this->comment = "";
+    this->stopPacket = false;
 }
 
 NetworkPacket::NetworkPacket(std::string comment): NetworkPacket()
@@ -48,6 +49,7 @@ NetworkPacket::NetworkPacket(const NetworkPacket &obj)
     this->ipv6Src = obj.ipv6Src;
     this->timeToLive = obj.timeToLive;
     this->comment = obj.comment;
+    this->stopPacket = obj.stopPacket;
 }
 
 NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
@@ -70,6 +72,7 @@ NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
         this->ipv6Src = other.ipv6Src;
         this->timeToLive = other.timeToLive;
         this->comment = other.comment;
+        this->stopPacket = other.stopPacket;
     }
     return *this;
 }
@@ -90,7 +93,9 @@ std::string NetworkPacket::toString()
 		   std::string(", ipv6Dst:") + this->ipv6Dst +
 		   std::string(", ipv6Src:") + this->ipv6Src +
 		   std::string(", timeToLive:") + std::to_string(this->timeToLive) +		   
-           std::string(", comment:") + this->comment + std::string("}");
+           std::string(", comment:") + this->comment + 
+           std::string(", stopPacket:") + std::to_string(this->stopPacket) + 
+           std::string("}");
 }
 
 std::string NetworkPacket::about()
@@ -263,4 +268,14 @@ ApplicationProtocol NetworkPacket::getApplicationProtocol()
 void NetworkPacket::setApplication(ApplicationProtocol app)
 {
     this->aplicationProtocol = app;
+}
+
+bool NetworkPacket::isStopPacket()
+{
+    return this->stopPacket;
+}
+
+void NetworkPacket::setStopPacket(bool val)
+{
+    this->stopPacket = val;
 }

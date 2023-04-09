@@ -53,12 +53,19 @@ int Sniffer_v01::run()
 
     // start packet capture
     captureDriver->listen(this->captureDevice.c_str(), this->timeoutSec, this->maxPacketNumber);
+    int countLoop = 0;
     while(captureDriver->doContinue())
     {
+        countLoop++;
         NetworkPacket p;
+        // printf("--------------------- %d\n", countLoop);
         int ret = captureDriver->nextPacket(p);
-        flowAlgorithm->setFlowId(p);
-        trace.push(p);
+        if (ret == NEXT_PACKET_OK )
+        {
+            flowAlgorithm->setFlowId(p);
+            trace.push(p);
+        }
+
     }
     printf("* Captured Packets %ld\n", captureDriver->getPacketCounter());
 
@@ -83,6 +90,7 @@ int Sniffer_v01::run()
     database->close();
 
     // Free allocated memory
+    printf("-- QTrace::free()\n");
     QTrace::free(*ppFHead, *ppFTail, *ppPHead, *ppPTail);
     delete *ppFHead;
     delete *ppFTail;
@@ -92,6 +100,8 @@ int Sniffer_v01::run()
     ppFTail = nullptr;
     ppPHead = nullptr;
     ppPTail = nullptr;
+
+    captureDriver->stop();
 
     return 0;
 }

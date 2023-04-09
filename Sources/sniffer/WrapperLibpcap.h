@@ -32,7 +32,7 @@
 #define PROMISCUOUS_MODE            1
 #define ETHERTYPE_WAKE_ON_LAN       0x0842
 #define ETHERTYPE_ATA               0x88A2
-#define LOG_VERBOSE                 1
+// #define LOG_VERBOSE                 1
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -42,6 +42,7 @@ extern volatile long int maxNumberOfPackets;
 extern volatile double timeout;
 extern volatile unsigned int packetCounter;
 extern volatile sig_atomic_t stopCapture;
+extern volatile sig_atomic_t endOfFile;
 extern struct timeval firstTimeStamp;
 extern struct timeval currentTimeStamp;
 extern TSQueue<NetworkPacket*>* packetsQueue;
@@ -102,11 +103,12 @@ const char LOOPBACK_NULL_ENCAPSULATION[] = {0x00, 0x00, 0x00, 0x02};
 // CAPTURE FUNCTIONS
 ///////////////////////////////////////////////////////////////////////////////
 
+void initialize_libpcap_wrapper();
 void start_capture(const char* interfaceName, double timeout, long maxNumberOfPackets);
 void read_pcap_file(const char* filename);
 void pcap_live_capture(const char* etherInterface);
 void signal_handler(int signum);
-void clean_capture();
+void finalize_libpcap_wrapper();
 
 
 ///////////////////////////////////////////////////////////////////////////////

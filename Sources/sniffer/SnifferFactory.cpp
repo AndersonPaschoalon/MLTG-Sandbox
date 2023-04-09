@@ -54,7 +54,7 @@ ICaptureDriver* SnifferFactory::makePacketCaptureDriver(const char *driver)
     else if (nameLower == StringUtils::toLower(DRIVER_LIBPCAP))
     {
         // TODO
-        ICaptureDriver* driver = nullptr;
+        ICaptureDriver* driver = new DriverLibpcap();
         return driver;
     }
     else if (nameLower == StringUtils::toLower(DRIVER_PFRING))

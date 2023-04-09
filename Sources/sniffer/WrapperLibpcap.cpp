@@ -11,6 +11,7 @@ volatile double timeout = -1.0;
 volatile unsigned int packetCounter = 0;
 
 volatile sig_atomic_t stopCapture = 0;
+volatile sig_atomic_t endOfFile = 0;
 
 struct timeval firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
 
@@ -28,14 +29,25 @@ void signal_handler(int signum)
     stopCapture = 1;
 }
 
-void clean_capture()
+void finalize_libpcap_wrapper()
 {
-    delete packetsQueue;
+    if (packetsQueue != nullptr)
+    {
+        delete packetsQueue;
+        packetsQueue = nullptr;
+    }
+}
+
+void initialize_libpcap_wrapper()
+{
+    if(packetsQueue == nullptr)
+    {
+        packetsQueue = new TSQueue<NetworkPacket*>();
+    }
 }
 
 void start_capture(const char* interfaceName, double captureTimeout, long  maxPackets)
 {
-    packetsQueue = new TSQueue<NetworkPacket*>();
     maxNumberOfPackets = maxPackets;
     timeout = captureTimeout;
 
@@ -71,6 +83,8 @@ void read_pcap_file(const char* filename)
     pcap_close(pcap_handle);
     printf("\n");
     printf("** %s completed\n", filename);
+    // stop packet capture
+    endOfFile = 1;
 }
 
 
@@ -112,25 +126,25 @@ void pcap_live_capture(const char* etherInterface)
         process_ethernet_frame(NULL, &frame_header, frame);
 
         // check the number of packets to capture
-        if (maxNumberOfPackets > 0)
-        {
-            if (packetCounter > maxNumberOfPackets)
-            {
-                printf("Reached limit of packets to capture %u", packetCounter);
-                break;
-            }
-        }
+        //if (maxNumberOfPackets > 0)
+        //{
+        //    if (packetCounter > maxNumberOfPackets)
+        //    {
+        //        printf("Reached limit of packets to capture %u", packetCounter);
+        //        break;
+        //    }
+        //}
 
         // check the timeout
-        if(timeout > 0)
-        {
-            double currentTime = inter_arrival(currentTimeStamp, firstTimeStamp);
-            if (currentTime > timeout)
-            {
-                printf("Reached time limit for packet capture %f", currentTime);
-                break;
-            }
-        }
+        //if(timeout > 0)
+        //{
+        //    double currentTime = inter_arrival(currentTimeStamp, firstTimeStamp);
+        //    if (currentTime > timeout)
+        //    {
+        //        printf("Reached time limit for packet capture %f", currentTime);
+        //        break;
+        //    }
+        //}
 
         // continue
         if (frame == NULL) 
@@ -181,6 +195,10 @@ void process_ethernet_frame(u_char *user, const struct pcap_pkthdr *frame_header
     packetCounter++;
     PacketTimeStamp pts = delta(firstTimeStamp, frame_header->ts);
     netPacket->setPysical(packetCounter, frame_header->len, pts);
+    currentTimeStamp = {
+        .tv_sec = pts.sec,
+        .tv_usec = pts.usec,
+    };
     // Link layer
     netPacket->setLink(LinkProtocol::ETHERNET);
 
@@ -251,12 +269,13 @@ void process_ethernet_frame(u_char *user, const struct pcap_pkthdr *frame_header
 #ifdef LOG_VERBOSE
         printf("UNKNOWN FRAME %X\n", ntohs(ether_hdr->ether_type));
 #else
-        printf("[ETHERNET FRAME] No.:%u Timestamp [%f] EtherType:%X, FrameLen:%d ", packetCounter, calculateTimestampInSec(firstTimeStamp, frame_header->ts), ether_hdr->ether_type, frame_len);
+        printf("[ETHERNET FRAME] No.:%u Timestamp [%f] EtherType:%X, FrameLen:%d ", packetCounter, inter_arrival(firstTimeStamp, frame_header->ts), ether_hdr->ether_type, frame_len);
         printf("UNKNOWN FRAME %X\n", ntohs(ether_hdr->ether_type));
 #endif
     }
 
     // push to the queue
+    // printf("## push into packetsQueue %d\n", packetCounter);
     packetsQueue->push(netPacket);
 }
 

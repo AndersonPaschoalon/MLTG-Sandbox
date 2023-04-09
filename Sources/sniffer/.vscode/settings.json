@@ -50,6 +50,10 @@
         "cstring": "cpp",
         "csignal": "cpp",
         "cinttypes": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp"
     }
 }

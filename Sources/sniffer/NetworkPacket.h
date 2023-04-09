@@ -113,6 +113,13 @@ class NetworkPacket
 
         void setApplication(ApplicationProtocol app);
 
+        //
+        // Flags
+        //
+
+        bool isStopPacket();
+
+        void setStopPacket(bool val);
 
     private:
 
@@ -132,6 +139,7 @@ class NetworkPacket
         port_number portDst;
         ApplicationProtocol aplicationProtocol;
         std::string comment;
+        bool stopPacket;
 
 
 };

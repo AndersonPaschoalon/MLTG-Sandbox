@@ -4,11 +4,12 @@
 void UnityTests::run()
 {
     bool t01 = false;
-    bool t02 = true;
+    bool t02 = false;
     bool t03 = true;
     bool t04 = true;
-    if(t01) UnityTests::test_FlowIdCalc();
-    if(t02) UnityTests::test_NaiveDatabase_Sniffer_Integration();
+    if (t01) UnityTests::test_FlowIdCalc();
+    if (t02) UnityTests::test_NaiveDatabase_Sniffer_Integration();
+    if (t03) UnityTests::test_DriverLibpcap_File();
 }
 
 void UnityTests::test_FlowIdCalc()
@@ -73,6 +74,23 @@ void UnityTests::test_DriverLibpcap_Live()
 
 void UnityTests::test_DriverLibpcap_File()
 {
+    // const char traceName[] = "01_SkypeIRC.cap.pcap";
+    // const char captureDevice[] = "../../Pcap/SkypeIRC.cap.pcap";
+    const char traceName[] = "01_bigFlows.pcap";
+    const char captureDevice[] = "../../Pcap/bigFlows.pcap";
+
+    const char snifferImplementation[] = "Sniffer_v01";
+    const char captureLibrary[] = "DriverLibpcap";
+    const char databaseManeger[] = "LocalDbServiceV1_Naive";
+    const char flowAlgorithm[] = "FlowIdCalc";
+    const char comments[] = "This is the sniffer first proof of concepts.";
+    double timeoutSec = 30.0;
+    long maxPacketNumber = 1000000;
+
+    // run sniffer implementation
+    ISniffer* sniffer = UnityTests::makeNewSniffer(snifferImplementation);
+    sniffer->configure(traceName, captureLibrary, captureDevice, databaseManeger, flowAlgorithm, comments, timeoutSec, maxPacketNumber);
+    int ret = sniffer->run();
 }
 
 ISniffer *UnityTests::makeNewSniffer(const char *snifferImplementation)
