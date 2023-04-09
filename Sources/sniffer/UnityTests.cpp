@@ -13,8 +13,7 @@ void UnityTests::run()
 
 void UnityTests::test_FlowIdCalc()
 {
-    // EtherDummy dummyIf = EtherDummy();
-    EtherDummy dummyIf;
+    DriverDummy dummyIf;
     FlowIdCalc flowCalc;
     
     dummyIf.listen("DummyDevice");
@@ -40,7 +39,7 @@ void UnityTests::test_NaiveDatabase_Sniffer_Integration()
 {
     const char traceName[] = "POC";
     const char snifferImplementation[] = "Sniffer_v01";
-    const char captureLibrary[] = "EtherDummy";
+    const char captureLibrary[] = "DriverDummy";
     const char captureDevice[] = "";
     const char databaseManeger[] = "LocalDbServiceV1_Naive";
     const char flowAlgorithm[] = "FlowIdCalc";
@@ -57,7 +56,7 @@ void UnityTests::test_NaiveDatabase_Sniffer_Integration()
 
 void UnityTests::test_DriverLibpcap_Live()
 {
-    EtherLibpcap driverLibpcap;
+    DriverLibpcap driverLibpcap;
     driverLibpcap.listen("eth0", 30, 100);
     while ( true)
     {

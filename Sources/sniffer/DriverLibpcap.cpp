@@ -25,6 +25,8 @@ std::string DriverLibpcap::toString()
 
 int DriverLibpcap::listen(const char *deviceName, double captureTimeoutSec, long maxPackets)
 {
+    std::thread t(start_capture, deviceName, captureTimeoutSec, maxPackets);
+    t.detach();
     return 0;
 }
 

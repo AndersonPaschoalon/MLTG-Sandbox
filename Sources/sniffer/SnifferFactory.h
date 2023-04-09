@@ -8,8 +8,8 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "FlowIdCalc.h"
-#include "EtherDummy.h"
-#include "EtherLibpcap.h"
+#include "DriverDummy.h"
+#include "DriverLibpcap.h"
 #include "LocalDbServiceV1_Naive.h"
 
 //
@@ -28,15 +28,15 @@
 
 
 //
-// Ether interfaces drivers
+// Driver interfaces drivers
 //
 
-#define DRIVER_ETHER_DUMMY            "EtherDummy"
-#define DRIVER_ETHER_LIBPCAP          "EtherLibpcap"
-#define DRIVER_ETHER_PFRING           "EtherPfRing"
-#define DRIVER_ETHER_DPDK             "EtherDPDK"
-#define DRIVER_ETHER_LIBTINS          "EtherLibtins"
-#define DRIVER_ETHER_PCAPPLUSPLUS     "EtherLibtins"
+#define DRIVER_DUMMY            "DriverDummy"
+#define DRIVER_LIBPCAP          "DriverLibpcap"
+#define DRIVER_PFRING           "DriverPfRing"
+#define DRIVER_DPDK             "DriverDPDK"
+#define DRIVER_LIBTINS          "DriverLibtins"
+#define DRIVER_PCAPPLUSPLUS     "DriverLibtins"
 
 
 class SnifferFactory

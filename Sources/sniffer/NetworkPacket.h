@@ -40,9 +40,15 @@ class NetworkPacket
         //
         // Flow Level
         //
+
         flow_id getFlowId();
         
         void setFlowId(flow_id flowId);
+
+        //
+        // Link 
+        //
+        void setLink(LinkProtocol proto);
 
         //
         // Network
@@ -74,9 +80,11 @@ class NetworkPacket
 
         ttl getTtl();
 
-        void setNetwork(NetworkProtocol proto, ipv4_address ipSrc,ipv4_address ipDst);
+        void setNetwork(NetworkProtocol proto, ipv4_address ipSrc,ipv4_address ipDst, ttl timeToLive);
 
-        void setNetworkV6(NetworkProtocol proto, std::string src, std::string dst);
+        void setNetwork(NetworkProtocol proto);
+
+        void setNetworkV6(NetworkProtocol proto, std::string src, std::string dst, ttl hopLimit);
 
 
         //
@@ -95,6 +103,8 @@ class NetworkPacket
 
         void setTransport(TransportProtocol proto, port_number src, port_number dst);
 
+        void setTransport(TransportProtocol proto);
+
         //
         // Application
         //
@@ -110,6 +120,7 @@ class NetworkPacket
         PacketTimeStamp timeStamp;
         size_t packetId;
         flow_id flowId;
+        LinkProtocol linkProtocol;
         NetworkProtocol networkProtocol;
         ipv4_address ipv4Src;
         ipv4_address ipv4Dst;

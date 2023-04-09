@@ -222,12 +222,15 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
         // there is packets of this protocol, and it is stored on the current pointer
         switch (currentProtocol)
         {
+            // Non-IP packets
             case NetworkProtocol::ARP:
-            case NetworkProtocol::ICMP:
-            case NetworkProtocol::RIPv1:
-            case NetworkProtocol::RIPv2:
+            case NetworkProtocol::RARP:
+            case NetworkProtocol::LOOPBACK:           
+            case NetworkProtocol::ATA:
+            case NetworkProtocol::WOL:
             case NetworkProtocol::NONE:
             {
+                // if the net protocol doent have ip, it will be set as IPV4_NONE
                 netKey = FlowIdCalc::summIpv4(packet.getIPv4Dst(), packet.getIPv4Src()); 
                 Netv4DstSrc keyToSearch = {.dstSrcSumm=netKey,};
                 if (auto search = netNode->setNetv4DstSrc->find(keyToSearch); search != netNode->setNetv4DstSrc->end())
@@ -246,6 +249,7 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 }
                 break;
             }
+            /*
             case NetworkProtocol::ICMPv6:
             {
                 netKey = FlowIdCalc::hashStrings(packet.getIPv6Dst(), packet.getIPv6Src()); 
@@ -266,6 +270,8 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 }
                 break;
             }
+            **/
+           // IPV4 packets
             case NetworkProtocol::IPv4 :
             {
                 netKey = FlowIdCalc::summIpv4(packet.getIPv4Dst(), packet.getIPv4Src()); 
@@ -343,6 +349,7 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 }
                 break;
             }
+            // IPV6 packets
             case NetworkProtocol::IPv6 :
             {
                 netKey = FlowIdCalc::hashStrings(packet.getIPv6Dst(), packet.getIPv6Src()); 
@@ -432,9 +439,10 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
         switch (currentProtocol)
         {
             case NetworkProtocol::ARP:
-            case NetworkProtocol::ICMP:
-            case NetworkProtocol::RIPv1:
-            case NetworkProtocol::RIPv2:
+            case NetworkProtocol::RARP:
+            case NetworkProtocol::LOOPBACK:           
+            case NetworkProtocol::ATA:
+            case NetworkProtocol::WOL:
             case NetworkProtocol::NONE:
             {
                 // Create new Network element flow element and node
@@ -450,6 +458,7 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 this->netFlowsStack->insert(packetProtoKey);
                 break;
             }
+            /*
             case NetworkProtocol::ICMPv6:
             {
                 // Create new Network element flow element and node
@@ -465,6 +474,7 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 this->netFlowsStack->insert(packetProtoKey);
                 break;
             }
+            **/
             case NetworkProtocol::IPv4 :
             {
                 // Create new Network element flow element and node

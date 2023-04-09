@@ -1,5 +1,9 @@
 #include "Utils.h"
 
+///////////////////////////////////////////////////////////////////////////////
+// StringUtils
+///////////////////////////////////////////////////////////////////////////////
+
 const std::string StringUtils::toLower(const char *strIn)
 {
     std::string str(strIn);
@@ -45,6 +49,10 @@ const std::string StringUtils::trimCopy(std::string s)
     return s;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// OSUtils
+///////////////////////////////////////////////////////////////////////////////
+
 const bool OSUtils::fileExists(const char *fileName)
 {
     FILE *file;
@@ -76,3 +84,4 @@ const bool OSUtils::deleteFileIfExists(const char* filename)
     // Return true if the file was deleted or if it did not exist
     return true;
 }
+

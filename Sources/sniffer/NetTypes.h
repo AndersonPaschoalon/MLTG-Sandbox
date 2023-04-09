@@ -45,18 +45,28 @@ typedef struct packet_time_stamp_struct{
     ts_usec usec;
 }PacketTimeStamp;
 
-//std::string hexToDottedDecimal(ipv4_address hexAddress);
+
 std::string hex_to_dotted_decimal(ipv4_address hexAddress);
 
-// double interArrival(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
 double inter_arrival(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
 
+double inter_arrival(const struct timeval & t0, const struct timeval & t1);
+
 PacketTimeStamp delta(const PacketTimeStamp& t0, const PacketTimeStamp& t1);
+
+PacketTimeStamp delta(const struct timeval & t0, const struct timeval & t1);
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // Protocols
 ///////////////////////////////////////////////////////////////////////////////
+
+enum class LinkProtocol
+{
+    NONE,
+    ETHERNET,
+    IEEE_802_11,
+};
 
 enum class NetworkProtocol
 {   
@@ -146,6 +156,8 @@ TransportProtocol to_transport_protocol(protocol_stack stack);
 /// @return Application Protocol Enum.
 ApplicationProtocol to_application_protocol(protocol_stack stack);
 
+ipv4_address pa_byte_to_int(const uint8_t arp_spa[4]);
+
 /// @brief 
 /// @param summ 
 /// @param dst 
@@ -155,6 +167,7 @@ void recover_ipv4(flow_hash summ, ipv4_address &dst, ipv4_address &src);
 void recover_ipv4_str(flow_hash summ, std::string& dst, std::string& src);
 
 void recover_ports(flow_hash summ, port_number &dst, port_number &src);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // METADATA

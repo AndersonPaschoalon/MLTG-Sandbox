@@ -216,7 +216,8 @@ int live_capture_all_packets2()
     // Open the network interface for packet capture
     printf("\n");
     handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-    if (handle == NULL) {
+    if (handle == NULL) 
+    {
         fprintf(stderr, "pcap_open_live() failed: %s\n", errbuf);
         return 1;
     }
@@ -253,7 +254,6 @@ int live_capture_all_packets2()
     printf("Packets received: %d\n", stats.ps_recv);
     printf("Packets dropped by kernel: %d\n", stats.ps_drop);
     printf("Packets dropped by interface: %d\n", stats.ps_ifdrop);
-
 
 
     // Clean up

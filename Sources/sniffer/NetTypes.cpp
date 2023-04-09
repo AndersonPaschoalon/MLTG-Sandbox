@@ -148,6 +148,13 @@ double inter_arrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
     return sec_diff + usec_diff / 1000000.0;
 }
 
+double inter_arrival(const timeval &t0, const timeval &t1)
+{
+    double sec_diff = t1.tv_sec - t0.tv_sec;
+    double usec_diff = t1.tv_usec - t0.tv_usec;
+    return sec_diff + usec_diff / 1000000.0;
+}
+
 PacketTimeStamp delta(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
 {
     PacketTimeStamp delta = {
@@ -155,6 +162,14 @@ PacketTimeStamp delta(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
         .usec = t1.usec - t0.usec,
     };
     return delta;
+}
+
+PacketTimeStamp delta(const timeval &t0, const timeval &t1)
+{
+    PacketTimeStamp pts;
+    pts.sec = t1.tv_sec - t0.tv_sec;
+    pts.usec = t1.tv_usec - t0.tv_usec;
+    return pts;
 }
 
 /// @brief Compress the network protocols into a bitmap.
@@ -203,6 +218,16 @@ void recover_ports(flow_hash summ, port_number &dst, port_number &src)
     flow_hash msbValue = (summ & PORT_MSB_MASK) >> 16;
     src = (port_number)lsbValue;
     dst = (port_number)msbValue;    
+}
+
+ipv4_address pa_byte_to_int(const uint8_t arp_spa[4])
+{
+    unsigned int result = 0;
+    for (int i = 0; i < 4; i++) {
+        result <<= 8;  // shift left by 8 bits
+        result |= arp_spa[i];  // bitwise OR with the next byte
+    }
+    return result;
 }
 
 void recover_ipv4_str(flow_hash summ, std::string& dst, std::string& src)

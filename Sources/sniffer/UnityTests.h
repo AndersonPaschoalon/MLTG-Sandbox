@@ -7,14 +7,15 @@
 #include <stdio.h>
 #include <iostream>
 #include "UnityTests.h"
-#include "EtherDummy.h"
+
 #include "FlowIdCalc.h"
 #include "NetworkPacket.h"
 #include "Logger.h"
 #include "ILocalDbService.h"
 #include "LocalDbServiceV1_Naive.h"
 #include "ISniffer.h"
-#include "EtherLibpcap.h"
+#include "DriverDummy.h"
+#include "DriverLibpcap.h"
 #include "Sniffer_v01.h"
 
 class UnityTests{

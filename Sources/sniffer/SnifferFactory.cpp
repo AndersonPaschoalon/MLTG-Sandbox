@@ -46,36 +46,36 @@ ILocalDbService* SnifferFactory::makeTraceDatabaseManager(const char *manager)
 ICaptureDriver* SnifferFactory::makePacketCaptureDriver(const char *driver)
 {
     std::string nameLower = StringUtils::toLower(driver);
-    if ( nameLower == StringUtils::toLower(DRIVER_ETHER_DUMMY))
+    if ( nameLower == StringUtils::toLower(DRIVER_DUMMY))
     {
-        ICaptureDriver* driver = new EtherDummy();
+        ICaptureDriver* driver = new DriverDummy();
         return driver;
     }
-    else if (nameLower == StringUtils::toLower(DRIVER_ETHER_LIBPCAP))
+    else if (nameLower == StringUtils::toLower(DRIVER_LIBPCAP))
     {
         // TODO
         ICaptureDriver* driver = nullptr;
         return driver;
     }
-    else if (nameLower == StringUtils::toLower(DRIVER_ETHER_PFRING))
+    else if (nameLower == StringUtils::toLower(DRIVER_PFRING))
     {
         // TODO
         ICaptureDriver* driver = nullptr;
         return driver;
     }   
-    else if (nameLower == StringUtils::toLower(DRIVER_ETHER_DPDK))
+    else if (nameLower == StringUtils::toLower(DRIVER_DPDK))
     {
         // TODO
         ICaptureDriver* driver = nullptr;
         return driver;
     }  
-    else if (nameLower == StringUtils::toLower(DRIVER_ETHER_LIBTINS))
+    else if (nameLower == StringUtils::toLower(DRIVER_LIBTINS))
     {
         // TODO
         ICaptureDriver* driver = nullptr;
         return driver;
     } 
-    else if (nameLower == StringUtils::toLower(DRIVER_ETHER_PCAPPLUSPLUS))
+    else if (nameLower == StringUtils::toLower(DRIVER_PCAPPLUSPLUS))
     {
         // TODO
         ICaptureDriver* driver = nullptr;
@@ -84,7 +84,7 @@ ICaptureDriver* SnifferFactory::makePacketCaptureDriver(const char *driver)
     else // default
     {
         LOGGER(WARN, "**WARN** Invalid name {%s} on fatory.", driver);
-        ICaptureDriver* driver = new EtherDummy();
+        ICaptureDriver* driver = new DriverDummy();
         return driver;        
     }
 

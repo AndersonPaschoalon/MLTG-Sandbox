@@ -47,6 +47,9 @@
         "set": "cpp",
         "ctime": "cpp",
         "iomanip": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "csignal": "cpp",
+        "cinttypes": "cpp",
+        "condition_variable": "cpp"
     }
 }

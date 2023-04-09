@@ -131,6 +131,11 @@ void NetworkPacket::setFlowId(flow_id flowId)
     this->flowId = flowId;
 }
 
+void NetworkPacket::setLink(LinkProtocol proto)
+{
+    this->linkProtocol = proto;
+}
+
 NetworkProtocol NetworkPacket::getNetworkProtocol()
 {
     return this->networkProtocol;
@@ -180,18 +185,27 @@ ttl NetworkPacket::getTtl()
     return this->timeToLive;
 }
 
-void NetworkPacket::setNetwork(NetworkProtocol proto, ipv4_address ipSrc, ipv4_address ipDst)
+void NetworkPacket::setNetwork(NetworkProtocol proto, ipv4_address ipSrc, ipv4_address ipDst, ttl timeToLive)
 {
     this->networkProtocol = proto;
     this->ipv4Src = ipSrc;
     this->ipv4Dst = ipDst;
+    this->timeToLive = timeToLive;
 }
 
-void NetworkPacket::setNetworkV6(NetworkProtocol proto, std::string src, std::string dst)
+void NetworkPacket::setNetwork(NetworkProtocol proto)
+{
+    this->networkProtocol = proto;
+    this->ipv4Src = IPV4_NONE;
+    this->ipv4Dst = IPV4_NONE;
+}
+
+void NetworkPacket::setNetworkV6(NetworkProtocol proto, std::string src, std::string dst, ttl hopLimit)
 {
     this->networkProtocol = proto;
     this->ipv6Src = src;
     this->ipv6Dst = dst;    
+    this->timeToLive = hopLimit;
 }
 
 TransportProtocol NetworkPacket::getTransportProtocol()
@@ -232,6 +246,13 @@ void NetworkPacket::setTransport(TransportProtocol proto, port_number src, port_
     this->transportProtocol = proto;
     this->portSrc = src;
     this->portDst = dst;    
+}
+
+void NetworkPacket::setTransport(TransportProtocol proto)
+{
+    this->transportProtocol = proto;
+    this->portSrc = PORT_NONE;
+    this->portDst = PORT_NONE;   
 }
 
 ApplicationProtocol NetworkPacket::getApplicationProtocol()

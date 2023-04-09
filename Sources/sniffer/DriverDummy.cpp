@@ -74,7 +74,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     pktId++;
     NetworkPacket p1 = NetworkPacket("Flow 1, ip, addr1, addr2, tcp, port1, port2");
     p1.setPysical(pktId, size0, ts);
-    p1.setNetwork(NetworkProtocol::IPv4, addr1, addr2);
+    p1.setNetwork(NetworkProtocol::IPv4, addr1, addr2, 64);
     p1.setTransport(TransportProtocol::TCP, port1, port2);
     p1.setApplication(ApplicationProtocol::HTTP);
 
@@ -83,7 +83,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     ts.sec += 1;
     NetworkPacket p2 = NetworkPacket("Flow 2, ip, addr2, addr1, tcp, port1, port2");
     p2.setPysical(pktId, size1, ts);
-    p2.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
+    p2.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p2.setTransport(TransportProtocol::TCP, port1, port2);
     p2.setApplication(ApplicationProtocol::HTTP);
 
@@ -92,7 +92,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     ts.sec += 1;
     NetworkPacket p3 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
     p3.setPysical(pktId, size2, ts);
-    p3.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
+    p3.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p3.setTransport(TransportProtocol::TCP, port2, port1);
     p3.setApplication(ApplicationProtocol::HTTP);
 
@@ -101,7 +101,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     ts.sec += 1;
     NetworkPacket p4 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
     p4.setPysical(pktId, size1, ts);
-    p4.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
+    p4.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p4.setTransport(TransportProtocol::TCP, port2, port1);
     p4.setApplication(ApplicationProtocol::HTTP);
 
@@ -110,7 +110,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     ts.sec += 1;
     NetworkPacket p5 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
     p5.setPysical(pktId, size0, ts);
-    p5.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
+    p5.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p5.setTransport(TransportProtocol::UDP, port2, port1);
     p5.setApplication(ApplicationProtocol::HTTP);
 
@@ -119,7 +119,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     ts.sec += 1;
     NetworkPacket p6 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
     p6.setPysical(pktId, size1, ts);
-    p6.setNetwork(NetworkProtocol::IPv4, addr2, addr1);
+    p6.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p6.setTransport(TransportProtocol::UDP, port2, port1);
     p6.setApplication(ApplicationProtocol::HTTP);
 
@@ -128,35 +128,53 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     ts.sec += 1;
     NetworkPacket p7 = NetworkPacket("Flow 5, icmp, addr2, addr1");
     p7.setPysical(pktId, size2, ts);
-    p7.setNetwork(NetworkProtocol::ICMP, addr2, addr1);
+    p7.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
+    p7.setTransport(TransportProtocol::ICMP);
 
     // Flow 6
     pktId++;
     ts.sec += 1;
     NetworkPacket p8 = NetworkPacket("Flow 6, icmp, addr1, addr2");
     p8.setPysical(pktId, size3, ts);
-    p8.setNetwork(NetworkProtocol::ICMP, addr1, addr2);
+    p8.setNetwork(NetworkProtocol::IPv4, addr1, addr2, 64);
+    p8.setTransport(TransportProtocol::ICMP);
 
     //  Flow 6
     pktId++;
     ts.sec += 1;
     NetworkPacket p9 = NetworkPacket("Flow 6, icmp, addr1, addr2");
     p9.setPysical(pktId, size3, ts);
-    p9.setNetwork(NetworkProtocol::ICMP, addr1, addr2);
+    p9.setNetwork(NetworkProtocol::IPv4, addr1, addr2, 64);
+    p9.setTransport(TransportProtocol::ICMP);
 
     // Flow 7
     pktId++;
     ts.sec += 1;
     NetworkPacket p10 = NetworkPacket("Flow 7, arp, addr1, addr2");
     p10.setPysical(pktId, size3, ts);
-    p10.setNetwork(NetworkProtocol::ARP, addr1, addr2);
+    p10.setNetwork(NetworkProtocol::ARP, addr1, addr2, 64);
 
     // Flow 8
     pktId++;
     ts.sec += 1;
     NetworkPacket p11 = NetworkPacket("Flow 8, arp, addr2, addr1");
     p11.setPysical(pktId, size0, ts);
-    p11.setNetwork(NetworkProtocol::ARP, addr2, addr1);
+    p11.setNetwork(NetworkProtocol::ARP, addr2, addr1, 0);
+
+    // Flow 9
+    pktId++;
+    ts.sec += 1;
+    NetworkPacket p12 = NetworkPacket("Flow 9, WOL");
+    p12.setPysical(pktId, size0, ts);
+    p12.setNetwork(NetworkProtocol::WOL);
+
+    // Flow 10
+    pktId++;
+    ts.sec += 1;
+    NetworkPacket p13 = NetworkPacket("Flow 10, ATA");
+    p13.setPysical(pktId, size0, ts);
+    p13.setNetwork(NetworkProtocol::ATA);
+
 
     this->vecPackets->push_back(p1);
     this->vecPackets->push_back(p2);
@@ -169,6 +187,8 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     this->vecPackets->push_back(p9);
     this->vecPackets->push_back(p10);
     this->vecPackets->push_back(p11);
+    this->vecPackets->push_back(p12);
+    this->vecPackets->push_back(p13);    
 
     return  DEVICE_SUCCESS;
 }
