@@ -4,20 +4,21 @@
 // GLOBAL VARIABLES
 //
 
-volatile long  maxNumberOfPackets = -1;
+volatile long  gMaxNumberOfPackets = -1;
 
-volatile double timeout = -1.0;
+volatile double gTimeout = -1.0;
 
-volatile unsigned int packetCounter = 0;
+volatile unsigned int gPacketCounter = 0;
 
-volatile sig_atomic_t stopCapture = 0;
-volatile sig_atomic_t endOfFile = 0;
+volatile sig_atomic_t gStopCapture = 0;
 
-struct timeval firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
+volatile sig_atomic_t gEndOfFile = 0;
 
-struct timeval currentTimeStamp = {.tv_sec = 0, .tv_usec = 0};
+struct timeval gFirstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
 
-TSQueue<NetworkPacket*>* packetsQueue;
+struct timeval gCurrentTimeStamp = {.tv_sec = 0, .tv_usec = 0};
+
+TSQueue<NetworkPacket*>* gPacketsQueue;
 
 
 //
@@ -26,30 +27,30 @@ TSQueue<NetworkPacket*>* packetsQueue;
 
 void signal_handler(int signum)
 {
-    stopCapture = 1;
+    gStopCapture = 1;
 }
 
 void finalize_libpcap_wrapper()
 {
-    if (packetsQueue != nullptr)
+    if (gPacketsQueue != nullptr)
     {
-        delete packetsQueue;
-        packetsQueue = nullptr;
+        delete gPacketsQueue;
+        gPacketsQueue = nullptr;
     }
 }
 
 void initialize_libpcap_wrapper()
 {
-    if(packetsQueue == nullptr)
+    if(gPacketsQueue == nullptr)
     {
-        packetsQueue = new TSQueue<NetworkPacket*>();
+        gPacketsQueue = new TSQueue<NetworkPacket*>();
     }
 }
 
 void start_capture(const char* interfaceName, double captureTimeout, long  maxPackets)
 {
-    maxNumberOfPackets = maxPackets;
-    timeout = captureTimeout;
+    gMaxNumberOfPackets = maxPackets;
+    gTimeout = captureTimeout;
 
     if(access(interfaceName, F_OK ) != -1 ) 
     {
@@ -66,8 +67,8 @@ void start_capture(const char* interfaceName, double captureTimeout, long  maxPa
 
 void read_pcap_file(const char* filename) 
 {
-    firstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
-    packetCounter = 0;
+    gFirstTimeStamp = {.tv_sec = 0, .tv_usec = 0};
+    gPacketCounter = 0;
     printf("************************************************************\n");
     printf("** %s\n", filename);
     printf("************************************************************\n");
@@ -84,7 +85,7 @@ void read_pcap_file(const char* filename)
     printf("\n");
     printf("** %s completed\n", filename);
     // stop packet capture
-    endOfFile = 1;
+    gEndOfFile = 1;
 }
 
 
@@ -119,7 +120,7 @@ void pcap_live_capture(const char* etherInterface)
 
     // Start capturing packets
     printf("Start capturing packets\n");
-    while (stopCapture != 1) 
+    while (gStopCapture != 1) 
     {
         struct pcap_pkthdr frame_header;
         const u_char *frame = pcap_next(handle, &frame_header);
@@ -187,19 +188,19 @@ void process_ethernet_frame(u_char *user, const struct pcap_pkthdr *frame_header
 
     // Process the frame here
     const struct ether_header* ether_hdr = (const struct ether_header*)frame;
-    if(firstTimeStamp.tv_sec == 0)
+    if (gFirstTimeStamp.tv_sec == 0)
     {
-        firstTimeStamp.tv_sec = frame_header->ts.tv_sec;
-        firstTimeStamp.tv_usec = frame_header->ts.tv_usec;
+        gFirstTimeStamp.tv_sec = frame_header->ts.tv_sec;
+        gFirstTimeStamp.tv_usec = frame_header->ts.tv_usec;
     }
     // Pysical Layer
     int frame_len = frame_header->len;
-    packetCounter++;
-    PacketTimeStamp pts = delta(firstTimeStamp, frame_header->ts);
-    netPacket->setPysical(packetCounter, frame_header->len, pts);
-    currentTimeStamp = {
-        .tv_sec = pts.sec,
-        .tv_usec = pts.usec,
+    gPacketCounter++;
+    timeval pts = delta(gFirstTimeStamp, frame_header->ts);
+    netPacket->setPysical(gPacketCounter, frame_header->len, pts);
+    gCurrentTimeStamp = {
+        .tv_sec = pts.tv_sec,
+        .tv_usec = pts.tv_usec,
     };
     // Link layer
     netPacket->setLink(LinkProtocol::ETHERNET);
@@ -271,14 +272,13 @@ void process_ethernet_frame(u_char *user, const struct pcap_pkthdr *frame_header
         #ifdef LOG_VERBOSE
         printf("UNKNOWN FRAME %X\n", ntohs(ether_hdr->ether_type));
         #else
-        printf("[ETHERNET FRAME] No.:%u Timestamp [%f] EtherType:%X, FrameLen:%d ", packetCounter, inter_arrival(firstTimeStamp, frame_header->ts), ether_hdr->ether_type, frame_len);
-        printf("UNKNOWN FRAME %X\n", ntohs(ether_hdr->ether_type));
+        // printf("[ETHERNET FRAME] No.:%u Timestamp [%f] EtherType:%X, FrameLen:%d ", gPacketCounter, inter_arrival(gFirstTimeStamp, frame_header->ts), ether_hdr->ether_type, frame_len);
+        // printf("UNKNOWN FRAME %X\n", ntohs(ether_hdr->ether_type));
         #endif
     }
 
     // push to the queue
-    // printf("## push into packetsQueue %d\n", packetCounter);
-    packetsQueue->push(netPacket);
+    gPacketsQueue->push(netPacket);
 }
 
 
@@ -332,7 +332,7 @@ void process_ipv4_packet(struct iphdr* ip_hdr, const u_char* packet, NetworkPack
         #ifdef LOG_VERBOSE
         printf("*********** UNKNOWN PACKET %X\n", ip_hdr->protocol);
         #else
-        printf("[IPV4 PACKET] [UNKNOWN TRANSPORT PROTOCOL %X on packet No.:%u]\n", ip_hdr->protocol, packetCounter);
+        printf("[IPV4 PACKET] [UNKNOWN TRANSPORT PROTOCOL %X on packet No.:%u]\n", ip_hdr->protocol, gPacketCounter);
         #endif        
     }
 
@@ -393,7 +393,7 @@ void process_ipv6_packet(struct ip6_hdr* ip_hdr, const u_char* packet, NetworkPa
         #ifdef LOG_VERBOSE
         printf("*********** UNKNOWN PACKET %X\n", ntohs(ip_hdr->ip6_nxt));
         #else
-        printf("\n[IPV6 PACKET] PROTOCOL [UNKNOWN TRANSPORT PROTOCOL %X on packet No.:%u]\n", ip_hdr->ip6_nxt, packetCounter);
+        printf("\n[IPV6 PACKET] PROTOCOL [UNKNOWN TRANSPORT PROTOCOL %X on packet No.:%u]\n", ip_hdr->ip6_nxt, gPacketCounter);
         #endif        
     }    
 }

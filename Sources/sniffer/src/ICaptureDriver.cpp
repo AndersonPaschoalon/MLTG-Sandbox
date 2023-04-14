@@ -53,10 +53,10 @@ void ICaptureDriver::resetVars()
     this->captureTimeoutSec = 0;
     this->maxPackets = -1;
     this->isLastPacket = false;
-    this->firstTs.sec = 0;
-    this->firstTs.usec = 0;
-    this->lastTs.sec = 0;
-    this->lastTs.usec = 0;
+    this->firstTs.tv_sec = 0;
+    this->firstTs.tv_usec = 0;
+    this->lastTs.tv_sec = 0;
+    this->lastTs.tv_usec = 0;
     this->deviceName = "";
     this->lastErrorDetails = "";
     this->packetCounter = 0;

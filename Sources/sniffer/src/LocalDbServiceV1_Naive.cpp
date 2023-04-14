@@ -289,9 +289,9 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                                   "(flowID, stack, portDstSrc, net4DstSrcSumm, net6DstSrc)" 
                             "VALUES" 
                                 "(" + std::to_string(flowId) + ", " 
-                                    + '"' + StringUtils::to_hex_string(stack) + '"' + ", " 
-                                    + '"' + StringUtils::to_hex_string(portDstSrc) + '"' + ", " 
-                                    + '"' + StringUtils::to_hex_string(net4DstSrcSumm) + '"' + ", "                                    
+                                    + '"' + StringUtils::toHexString(stack) + '"' + ", " 
+                                    + '"' + StringUtils::toHexString(portDstSrc) + '"' + ", " 
+                                    + '"' + StringUtils::toHexString(net4DstSrcSumm) + '"' + ", "                                    
                                     + '"' + net6DstSrc + '"' 
                                     + " )";
 
@@ -309,7 +309,7 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
     // Insert Packets
     size_t pktId = -1;
     flowId = -1;
-    PacketTimeStamp ts;
+    timeval ts;
     packet_size pktSize;
     ttl timeToLive;
     for (QFlowPacket* x: this->qPktPtrVec)
@@ -322,8 +322,8 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                             "VALUES" 
                                 "(" + std::to_string(pktId) + ", " 
                                     + std::to_string(flowId) + ", "
-                                    + std::to_string(ts.sec) + ", " 
-                                    + std::to_string(ts.usec) + ", " 
+                                    + std::to_string(ts.tv_sec) + ", " 
+                                    + std::to_string(ts.tv_usec) + ", " 
                                     + std::to_string(pktSize) + ", " 
                                     + std::to_string(timeToLive) + ")";
 

@@ -56,7 +56,8 @@ std::string DriverDummy::toString()
 int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter)
 {
     this->setListenVars(deviceName, captureTimeoutSec, maxPacketCounter);
-    PacketTimeStamp ts = {.sec=0, .usec=0};
+    // PacketTimeStamp ts = {.sec=0, .usec=0};
+    timeval ts = {.tv_sec=0, .tv_usec=0};
     packet_size size0 = 64;
     packet_size size1 = 128;
     packet_size size2 = 512;
@@ -78,7 +79,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 2
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p2 = NetworkPacket("Flow 2, ip, addr2, addr1, tcp, port1, port2");
     p2.setPysical(pktId, size1, ts);
     p2.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
@@ -87,7 +88,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 3
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p3 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
     p3.setPysical(pktId, size2, ts);
     p3.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
@@ -96,7 +97,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 3
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p4 = NetworkPacket("Flow 3, ip, addr2, addr1, tcp, port2, port1");
     p4.setPysical(pktId, size1, ts);
     p4.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
@@ -105,7 +106,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 4
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p5 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
     p5.setPysical(pktId, size0, ts);
     p5.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
@@ -114,7 +115,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 4
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p6 = NetworkPacket("Flow 4, ip, addr2, addr1, udp, port2, port1");
     p6.setPysical(pktId, size1, ts);
     p6.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
@@ -123,7 +124,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 5
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p7 = NetworkPacket("Flow 5, icmp, addr2, addr1");
     p7.setPysical(pktId, size2, ts);
     p7.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
@@ -131,7 +132,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 6
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p8 = NetworkPacket("Flow 6, icmp, addr1, addr2");
     p8.setPysical(pktId, size3, ts);
     p8.setNetwork(NetworkProtocol::IPv4, addr1, addr2, 64);
@@ -139,7 +140,7 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     //  Flow 6
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p9 = NetworkPacket("Flow 6, icmp, addr1, addr2");
     p9.setPysical(pktId, size3, ts);
     p9.setNetwork(NetworkProtocol::IPv4, addr1, addr2, 64);
@@ -147,28 +148,28 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
 
     // Flow 7
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p10 = NetworkPacket("Flow 7, arp, addr1, addr2");
     p10.setPysical(pktId, size3, ts);
     p10.setNetwork(NetworkProtocol::ARP, addr1, addr2, 64);
 
     // Flow 8
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p11 = NetworkPacket("Flow 8, arp, addr2, addr1");
     p11.setPysical(pktId, size0, ts);
     p11.setNetwork(NetworkProtocol::ARP, addr2, addr1, 0);
 
     // Flow 9
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p12 = NetworkPacket("Flow 9, WOL");
     p12.setPysical(pktId, size0, ts);
     p12.setNetwork(NetworkProtocol::WOL);
 
     // Flow 10
     pktId++;
-    ts.sec += 1;
+    ts.tv_sec += 1;
     NetworkPacket p13 = NetworkPacket("Flow 10, ATA");
     p13.setPysical(pktId, size0, ts);
     p13.setNetwork(NetworkProtocol::ATA);
@@ -212,7 +213,8 @@ int DriverDummy::nextPacket(NetworkPacket &packet)
     // update packet id
     size_t count = (size_t)this->packetCounter;
     packet_size size = packet.getPacketSize();
-    PacketTimeStamp ts = packet.getTimestamp();
+    // PacketTimeStamp ts = packet.getTimestamp();
+    timeval ts = packet.getTimestamp();
     packet.setPysical(count, size, ts);
 
     // update parent class state

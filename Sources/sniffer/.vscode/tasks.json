@@ -8,15 +8,16 @@
                 "-std=gnu++17",
                 "-fdiagnostics-color=always",
                 "-Wdeprecated-declarations",
-                "-I./headers/",
+                "-I${workspaceFolder}/libs/cpptools/include",
+                "-I${workspaceFolder}/include/",
                 "-g",
-                "${workspaceFolder}/*.cpp",
                 "${workspaceFolder}/src/*.cpp",
                 "-o",
                 "${fileDirname}/bin/test-app-vs.exe",
                 "-lsqlite3",
                 "-lpcap",
-                "-pthread"
+                "-pthread",
+                "${workspaceFolder}/libs/cpptools/bin/libcpptools.a",
             ],
             "options": {
                 "cwd": "${fileDirname}"

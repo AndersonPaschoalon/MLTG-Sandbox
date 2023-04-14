@@ -49,19 +49,19 @@ int DriverLibpcap::nextPacket(NetworkPacket &packet)
     while (true)
     {
         NetworkPacket* ptrPkt = nullptr;
-        queueRet = packetsQueue->try_pop(ptrPkt);
+        queueRet = gPacketsQueue->try_pop(ptrPkt);
         // 1. the queue is empty, but there are packets to be pushed, stopCapture == 0
         // 2. the queue is empty, but there are no packets to be pushed, stopCapture == 1
         if(queueRet == false)
         {
-            if (endOfFile == 1)
+            if (gEndOfFile == 1)
             {
                 ret  = STOP_CAPTURE_EOF;
                 // Set the flag, so doContinue() will return with false, and the loop will break
                 this->isLastPacket = true;
                 break;
             }
-            else if (stopCapture == 1 )
+            else if (gStopCapture == 1 )
             {
                 ret  = STOP_CAPTURE_INTERRUPTED;
                 // Set the flag, so doContinue() will return with false, and the loop will break
@@ -80,14 +80,17 @@ int DriverLibpcap::nextPacket(NetworkPacket &packet)
             ret = NEXT_PACKET_OK;
             packet = *ptrPkt;
             delete ptrPkt;
+            
+            // update parent class state
+            this->updatePacketCounter();
             break;
         }        
     }
 
     // update current timestamp to check the timeout
     this->lastTs = {
-        .sec = currentTimeStamp.tv_sec,
-        .usec = currentTimeStamp.tv_usec,
+        .tv_sec = gCurrentTimeStamp.tv_sec,
+        .tv_usec = gCurrentTimeStamp.tv_usec,
     };
 
     return ret;

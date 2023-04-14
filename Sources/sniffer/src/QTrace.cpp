@@ -116,15 +116,12 @@ void QTrace::push(NetworkPacket p)
 
         // update last flow
         this->lastFlow = p.getFlowId();
-
-        // debug 
-        // printf("Flow added %s\n", f->toString().c_str());
     }
 
     // add packet
     size_t packetId = p.getPacketId();
     flow_id flowId = p.getFlowId();
-    PacketTimeStamp ts = p.getTimestamp();
+    timeval ts = p.getTimestamp();
     packet_size pktSize = p.getPacketSize();
     ttl timeToLive = p.getTtl();
     QFlowPacket* fp = new QFlowPacket(packetId, flowId, ts, pktSize, timeToLive);
@@ -139,9 +136,6 @@ void QTrace::push(NetworkPacket p)
     }
     fp->setNext(nullptr);
     this->pTail = fp;
-
-    // debug 
-    // printf("Packet added %s\n", fp->toString().c_str());
 }
 
 void QTrace::consume(QFlow** flowHead, QFlow** flowTail, QFlowPacket** flowPacketHead,  QFlowPacket** flowPacketTail)

@@ -83,14 +83,6 @@ FlowIdCalc::~FlowIdCalc()
     this->netFlowsStack = nullptr;
 }
 
-//FlowIdCalc::FlowIdCalc(const FlowIdCalc &obj)
-//{
-//}
-
-//FlowIdCalc &FlowIdCalc::operator=(FlowIdCalc other)
-//{
-//    // TODO: insert return statement here
-//}
 
 std::string FlowIdCalc::toString()
 {
@@ -209,8 +201,6 @@ std::string FlowIdCalc::toString()
 
 flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
 {
-    // TODO Criar um set somente para pacotes tcp/ip, para tornar o algoritimo mais eficiente.
-    // check if the nework packet is already on the set
     flow_id actualFlowId = 0;
     flow_hash newDstSrcSumm = 0;
     flow_hash newDstSrcHash = 0;
@@ -244,33 +234,11 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                     // not found => therefore a new node with a new flow id must be included
                     actualFlowId = FlowIdCalc::getNextFlowId();
                     keyToSearch.flowId = actualFlowId;
-                    LOGGER(DEBUG, "New {%s} flow {%lu}", to_string(currentProtocol).c_str(), actualFlowId);
+                    // LOGGER(DEBUG, "New {%s} flow {%lu}", to_string(currentProtocol).c_str(), actualFlowId);
                     netNode->setNetv4DstSrc->insert(keyToSearch);
                 }
                 break;
             }
-            /*
-            case NetworkProtocol::ICMPv6:
-            {
-                netKey = FlowIdCalc::hashStrings(packet.getIPv6Dst(), packet.getIPv6Src()); 
-                Netv6DstSrc keyToSearch6 = {.dstSrcHash=netKey,};
-                if (auto search = netNode->setNetv6DstSrc->find(keyToSearch6); search != netNode->setNetv6DstSrc->end())
-                {
-                    // there is already a node with the key netKey, therefore this flow already exist!
-                    // found at (*search)
-                    actualFlowId = search->flowId;
-                }
-                else
-                {
-                    // not found => therefore a new node with a new flow id must be included
-                    actualFlowId = FlowIdCalc::getNextFlowId();
-                    keyToSearch6.flowId = actualFlowId;
-                    LOGGER(DEBUG, "New {%s} flow {%lu}", to_string(currentProtocol).c_str(), actualFlowId);
-                    netNode->setNetv6DstSrc->insert(keyToSearch6);
-                }
-                break;
-            }
-            **/
            // IPV4 packets
             case NetworkProtocol::IPv4 :
             {
@@ -435,7 +403,7 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
     }
     else // no packet of this network protocol was found yet
     {
-        LOGGER(DEBUG, "* No packet of this network protocol {%s} was found yet.\n", to_string(currentProtocol).c_str());
+        // LOGGER(DEBUG, "* No packet of this network protocol {%s} was found yet.\n", to_string(currentProtocol).c_str());
         switch (currentProtocol)
         {
             case NetworkProtocol::ARP:
@@ -458,23 +426,6 @@ flow_id FlowIdCalc::setFlowId(NetworkPacket &packet)
                 this->netFlowsStack->insert(packetProtoKey);
                 break;
             }
-            /*
-            case NetworkProtocol::ICMPv6:
-            {
-                // Create new Network element flow element and node
-                actualFlowId = this->getNextFlowId();
-                std::set<Netv6DstSrc>* newNetSet = new std::set<Netv6DstSrc>();
-                newDstSrcHash = FlowIdCalc::hashStrings(packet.getIPv6Dst(), packet.getIPv6Src());
-                Netv6DstSrc newFlowLeafn6 = {
-                    .dstSrcHash = newDstSrcHash, 
-                    .flowId = actualFlowId};
-                newNetSet->insert(newFlowLeafn6);
-                packetProtoKey.setNetv6DstSrc = newNetSet;
-                // insert it
-                this->netFlowsStack->insert(packetProtoKey);
-                break;
-            }
-            **/
             case NetworkProtocol::IPv4 :
             {
                 // Create new Network element flow element and node

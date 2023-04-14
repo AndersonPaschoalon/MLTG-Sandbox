@@ -76,15 +76,24 @@ void UnityTests::test_DriverLibpcap_File()
 {
     // const char traceName[] = "01_SkypeIRC.cap.pcap";
     // const char captureDevice[] = "../../../Pcap/SkypeIRC.cap.pcap";
-    const char traceName[] = "01_bigFlows.pcap";
-    const char captureDevice[] = "../../../Pcap/bigFlows.pcap";
+    //const char traceName[] = "01_bigFlows.pcap";
+    //const char captureDevice[] = "../../../Pcap/bigFlows.pcap";
+    // const char traceName[] = "lanDiurnal.pcap";
+    // const char captureDevice[] = "../../../../../Pcaps/Pcaps/lanDiurnal.pcap";
+    // const char traceName[] = "lan-firewall-1h.pcap";
+    // const char captureDevice[] = "../../../../../Pcaps/Pcaps/lan-firewall-1h.pcap";    
+    const char traceName[] = "equinix-1s.pcap";
+    const char captureDevice[] = "../../../../../Pcaps/Pcaps/equinix-1s.pcap";
+
+
     const char snifferImplementation[] = "Sniffer_v01";
     const char captureLibrary[] = "DriverLibpcap";
     const char databaseManeger[] = "LocalDbServiceV1_Naive";
     const char flowAlgorithm[] = "FlowIdCalc";
     const char comments[] = "This is the sniffer first proof of concepts.";
     double timeoutSec = 30.0;
-    long maxPacketNumber = 1000000;
+    // long maxPacketNumber = 1000000;
+    long maxPacketNumber = -1;
 
     // run sniffer implementation
     ISniffer* sniffer = UnityTests::makeNewSniffer(snifferImplementation);

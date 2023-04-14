@@ -4,8 +4,8 @@ NetworkPacket::NetworkPacket()
 {
     this->packetId = 0;
     this->packetSize = 0;
-    this->timeStamp.sec = 0;
-    this->timeStamp.usec = 0;
+    this->timeStamp.tv_sec = 0;
+    this->timeStamp.tv_usec = 0;
     this->flowId = FLOW_ID_NONE;
     this->aplicationProtocol = ApplicationProtocol::NONE;
     this->transportProtocol = TransportProtocol::NONE;
@@ -35,8 +35,8 @@ NetworkPacket::NetworkPacket(const NetworkPacket &obj)
 {
     this->packetId = obj.packetId;
     this->packetSize = obj.packetSize;
-    this->timeStamp.sec = obj.timeStamp.sec;
-    this->timeStamp.usec = obj.timeStamp.usec;
+    this->timeStamp.tv_sec = obj.timeStamp.tv_sec;
+    this->timeStamp.tv_usec = obj.timeStamp.tv_usec;
     this->flowId = obj.flowId;
     this->aplicationProtocol = obj.aplicationProtocol;
     this->transportProtocol = obj.transportProtocol;
@@ -58,8 +58,8 @@ NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
     {
         this->packetId = other.packetId;
         this->packetSize = other.packetSize;
-        this->timeStamp.sec = other.timeStamp.sec;
-        this->timeStamp.usec = other.timeStamp.usec;
+        this->timeStamp.tv_sec = other.timeStamp.tv_sec;
+        this->timeStamp.tv_usec = other.timeStamp.tv_usec;
         this->flowId = other.flowId;
         this->aplicationProtocol = other.aplicationProtocol;
         this->transportProtocol = other.transportProtocol;
@@ -80,7 +80,7 @@ NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
 std::string NetworkPacket::toString()
 {
     return std::string("{ packetSize:") + std::to_string(this->packetSize) + 
-           std::string(", timeStamp:") + std::to_string(this->timeStamp.sec) + std::string("s ") +  std::to_string(this->timeStamp.usec) + std::string("us") + 
+           std::string(", timeStamp:") + std::to_string(this->timeStamp.tv_sec) + std::string("s ") +  std::to_string(this->timeStamp.tv_usec) + std::string("us") + 
            std::string(", packetId:") + std::to_string(this->packetId) +
 		   std::string(", flowId:") + std::to_string(this->flowId) +
            std::string(", networkProtocol:") + to_string(this->networkProtocol) +
@@ -113,17 +113,17 @@ packet_size NetworkPacket::getPacketSize()
     return this->packetSize;
 }
 
-PacketTimeStamp NetworkPacket::getTimestamp()
+timeval NetworkPacket::getTimestamp()
 {
     return this->timeStamp;
 }
 
-void NetworkPacket::setPysical(size_t pktId, packet_size packetSize, PacketTimeStamp& timestamp)
+void NetworkPacket::setPysical(size_t pktId, packet_size packetSize, timeval& timestamp)
 {
     this->packetId = pktId;
     this->packetSize = packetSize;
-    this->timeStamp.sec = timestamp.sec;
-    this->timeStamp.usec = timestamp.usec;
+    this->timeStamp.tv_sec = timestamp.tv_sec;
+    this->timeStamp.tv_usec = timestamp.tv_usec;
 }
 
 flow_id NetworkPacket::getFlowId()

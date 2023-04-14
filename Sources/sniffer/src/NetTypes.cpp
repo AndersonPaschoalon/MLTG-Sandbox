@@ -141,36 +141,51 @@ std::string hex_to_dotted_decimal(ipv4_address hexAddress)
     return ss.str();
 }
 
-double inter_arrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
-{
-    double sec_diff = t1.sec - t0.sec;
-    double usec_diff = t1.usec - t0.usec;
-    return sec_diff + usec_diff / 1000000.0;
-}
+// double inter_arrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
+// {
+//     double sec_diff = t1.sec - t0.sec;
+//     double usec_diff = t1.usec - t0.usec;
+//     return sec_diff + usec_diff / 1000000.0;
+// }
 
 double inter_arrival(const timeval &t0, const timeval &t1)
 {
-    double sec_diff = t1.tv_sec - t0.tv_sec;
-    double usec_diff = t1.tv_usec - t0.tv_usec;
-    return sec_diff + usec_diff / 1000000.0;
+    timeval deltaTime = delta(t0, t1);
+    double deltaDouble = static_cast<double>(deltaTime.tv_sec) + static_cast<double>(deltaTime.tv_usec) / 1000000.0;
+    return deltaDouble;
 }
 
-PacketTimeStamp delta(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
-{
-    PacketTimeStamp delta = {
-        .sec = t1.sec - t0.sec, 
-        .usec = t1.usec - t0.usec,
-    };
-    return delta;
-}
+// PacketTimeStamp delta(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
+// {
+//     PacketTimeStamp delta = {
+//         .sec = t1.sec - t0.sec, 
+//         .usec = t1.usec - t0.usec,
+//     };
+//     return delta;
+// }
 
-PacketTimeStamp delta(const timeval &t0, const timeval &t1)
+// PacketTimeStamp delta(const timeval &t0, const timeval &t1)
+// {
+//     PacketTimeStamp pts;
+//     pts.sec = t1.tv_sec - t0.tv_sec;
+//     pts.usec = t1.tv_usec - t0.tv_usec;
+//     return pts;
+// }
+timeval delta(const timeval &t0, const timeval &t1)
 {
-    PacketTimeStamp pts;
-    pts.sec = t1.tv_sec - t0.tv_sec;
-    pts.usec = t1.tv_usec - t0.tv_usec;
+    timeval pts;
+    long int sec_diff = t1.tv_sec - t0.tv_sec;
+    long int usec_diff = t1.tv_usec - t0.tv_usec;
+    if (usec_diff < 0) {
+        usec_diff += 1000000;
+        sec_diff -= 1;
+    }
+    pts.tv_sec = sec_diff;
+    pts.tv_usec = usec_diff;
     return pts;
 }
+
+
 
 /// @brief Compress the network protocols into a bitmap.
 /// @param n Network protocol enum.

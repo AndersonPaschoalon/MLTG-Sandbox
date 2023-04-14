@@ -1,11 +1,12 @@
 CC = g++
-CFLAGS = -c -Wall -std=gnu++17  -fdiagnostics-color=always  # -Wdeprecated-declarations
+CFLAGS = -c -Wall -std=gnu++17  -Wunused  -fdiagnostics-color=always  # -Wdeprecated-declarations
 LDFLAGS = -lsqlite3 -lpcap -pthread
-# EXTERNAL_INCLUDES = -Iexternal_library/headers
-# EXTERNAL_LDFLAGS = -Lexternal_library/bin -lmylibrary
+EXTERNAL_INCLUDES = -Ilibs/cpptools/include
+# EXTERNAL_LDFLAGS = -Llibs/cpptools/bin -lcpptools
+EXTERNAL_LDFLAGS = libs/cpptools/bin/libcpptools.a
 
 SRCDIR = src
-INCDIR = headers
+INCDIR = include
 OBJDIR = obj
 BINDIR = bin
 
@@ -18,11 +19,12 @@ all: $(EXECUTABLE)
 
 # build the executable
 $(EXECUTABLE): prebuild $(OBJECTS) 
-	$(CC) $(OBJECTS) -o  $@ $(LDFLAGS) 
+	$(CC) $(OBJECTS) -o  $@ $(LDFLAGS) $(EXTERNAL_LDFLAGS)
 
 # build the objects
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CC) $(CFLAGS) -I$(INCDIR) $< -o $@
+	$(CC) $(CFLAGS) $(EXTERNAL_INCLUDES) -I$(INCDIR) $< -o $@
+
 
 # any command to run before the build
 prebuild:
