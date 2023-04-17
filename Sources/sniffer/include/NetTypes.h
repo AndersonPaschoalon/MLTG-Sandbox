@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include "cpptools.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -52,6 +53,10 @@ timeval delta(const struct timeval & t0, const struct timeval & t1);
 // Protocols
 ///////////////////////////////////////////////////////////////////////////////
 
+
+#define PROTOCOL_ETHERNET              "ethernet"
+#define PROTOCOL_IEEE_802_11           "ieee802.11"
+
 enum class LinkProtocol
 {
     NONE,
@@ -97,11 +102,12 @@ enum class ApplicationProtocol
     TLS_SSL,
 };
 
-
+std::ostream& operator<<(std::ostream& os, const LinkProtocol& n);
 std::ostream& operator<<(std::ostream& os, const NetworkProtocol& n);
 std::ostream& operator<<(std::ostream& os, const TransportProtocol& n);
 std::ostream& operator<<(std::ostream& os, const ApplicationProtocol& n);
 
+std::string to_string(LinkProtocol protocol);
 std::string to_string(NetworkProtocol protocol);
 std::string to_string(TransportProtocol protocol);
 std::string to_string(ApplicationProtocol protocol);
@@ -131,6 +137,10 @@ flow_hash zip_ipv4(ipv4_address dst, ipv4_address src);
 /// @return 
 size_t hash_strings(std::string a, std::string b);
 
+/// @brief 
+/// @param stc 
+/// @return 
+LinkProtocol to_link_protocol(const char* stc);
 
 /// @brief Returns the Network Protocol from the bitmap protocol stack.
 /// @param stack Bitmap.
@@ -164,18 +174,18 @@ void recover_ports(flow_hash summ, port_number &dst, port_number &src);
 // METADATA
 ///////////////////////////////////////////////////////////////////////////////
 
-enum class TraceType
-{
-    LIVE,
-    FILE
-};
+//enum class TraceType
+//{
+//    LIVE,
+//    FILE
+//};
 
-enum class CaptureLibrary
-{
-    LIBPACKP,
-    DPDK,
-    LIBTINS,
-};
+//enum class CaptureLibrary
+//{
+//    LIBPCAP,
+//    DPDK,
+//    LIBTINS,
+//};
 
 
 #endif // _NET_TYPES__H_

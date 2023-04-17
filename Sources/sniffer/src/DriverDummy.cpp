@@ -2,7 +2,8 @@
 
 DriverDummy::DriverDummy()
 {
-    printf("DriverDummy\n");
+    LOGGER(DEBUG, "DriverDummy");
+    // printf("DriverDummy\n");
     this->vecPackets = new std::vector<NetworkPacket>();
     this->currentElement = -1;
     this->active = false;
@@ -53,9 +54,9 @@ std::string DriverDummy::toString()
            std::string(", deviceName:") + this->deviceName + std::string("}");
 }
 
-int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter)
+int DriverDummy::listen(const char* captureType, const char* deviceName, double captureTimeoutSec, long maxPacketCounter)
 {
-    this->setListenVars(deviceName, captureTimeoutSec, maxPacketCounter);
+    this->setListenVars(captureType, deviceName, captureTimeoutSec, maxPacketCounter);
     // PacketTimeStamp ts = {.sec=0, .usec=0};
     timeval ts = {.tv_sec=0, .tv_usec=0};
     packet_size size0 = 64;
@@ -192,9 +193,9 @@ int DriverDummy::listen(const char* deviceName, double captureTimeoutSec, long m
     return  DEVICE_SUCCESS;
 }
 
-int DriverDummy::listen(const char *deviceName)
+int DriverDummy::listen(const char* captureType, const char *deviceName)
 {
-    return this->listen(deviceName, 0, -1);
+    return this->listen(captureType, deviceName, 0, -1);
 }
 
 int DriverDummy::nextPacket(NetworkPacket &packet)

@@ -1,5 +1,18 @@
 #include "NetTypes.h"
 
+
+std::ostream& operator<<(std::ostream& os, const LinkProtocol& n)
+{
+    switch (n)
+    {
+        case LinkProtocol::NONE: os << "NONE"; break;
+        case LinkProtocol::ETHERNET: os << "Ethernet"; break;
+        case LinkProtocol::IEEE_802_11: os << "IEEE-802.11"; break;
+        default: os.setstate(std::ios_base::failbit);
+    }
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const NetworkProtocol& n)
 {
     switch (n)
@@ -53,6 +66,20 @@ std::ostream& operator<<(std::ostream& os, const ApplicationProtocol& n)
     return os;
 }
 
+std::string to_string(LinkProtocol protocol)
+{
+    switch (protocol)
+    {
+        case LinkProtocol::NONE:
+            return "NONE";
+        case LinkProtocol::ETHERNET:
+            return PROTOCOL_ETHERNET;
+        case LinkProtocol::IEEE_802_11:
+            return PROTOCOL_IEEE_802_11;            
+        default:
+            return "UNKNOWN";
+    }
+}
 
 std::string to_string(NetworkProtocol protocol)
 {
@@ -141,13 +168,6 @@ std::string hex_to_dotted_decimal(ipv4_address hexAddress)
     return ss.str();
 }
 
-// double inter_arrival(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
-// {
-//     double sec_diff = t1.sec - t0.sec;
-//     double usec_diff = t1.usec - t0.usec;
-//     return sec_diff + usec_diff / 1000000.0;
-// }
-
 double inter_arrival(const timeval &t0, const timeval &t1)
 {
     timeval deltaTime = delta(t0, t1);
@@ -155,22 +175,6 @@ double inter_arrival(const timeval &t0, const timeval &t1)
     return deltaDouble;
 }
 
-// PacketTimeStamp delta(const PacketTimeStamp &t0, const PacketTimeStamp &t1)
-// {
-//     PacketTimeStamp delta = {
-//         .sec = t1.sec - t0.sec, 
-//         .usec = t1.usec - t0.usec,
-//     };
-//     return delta;
-// }
-
-// PacketTimeStamp delta(const timeval &t0, const timeval &t1)
-// {
-//     PacketTimeStamp pts;
-//     pts.sec = t1.tv_sec - t0.tv_sec;
-//     pts.usec = t1.tv_usec - t0.tv_usec;
-//     return pts;
-// }
 timeval delta(const timeval &t0, const timeval &t1)
 {
     timeval pts;
@@ -184,8 +188,6 @@ timeval delta(const timeval &t0, const timeval &t1)
     pts.tv_usec = usec_diff;
     return pts;
 }
-
-
 
 /// @brief Compress the network protocols into a bitmap.
 /// @param n Network protocol enum.
@@ -217,6 +219,22 @@ size_t hash_strings(std::string a, std::string b)
     std::string strToHash = a + b;
     size_t hash = hasher(strToHash);
     return hash;    
+}
+
+LinkProtocol to_link_protocol(const char *str)
+{
+    std::string linkProtocolStr = StringUtils::toLower(StringUtils::trimCopy(str).c_str());
+
+    if(linkProtocolStr == PROTOCOL_ETHERNET)
+    {
+        return LinkProtocol::ETHERNET;
+    }
+    else if(linkProtocolStr == PROTOCOL_IEEE_802_11)
+    {
+        return LinkProtocol::IEEE_802_11;
+    }
+
+    return LinkProtocol::NONE;
 }
 
 void recover_ipv4(flow_hash summ, ipv4_address &dst, ipv4_address &src)

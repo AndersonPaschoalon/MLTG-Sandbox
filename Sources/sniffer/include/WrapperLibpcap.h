@@ -29,7 +29,9 @@
 #include "cpptools.h"
 #include "NetworkPacket.h"
 
-
+#define CAPTURE_LIVE                0
+#define CAPTURE_PCAP                1
+#define CAPTURE_NGPCAP              2
 #define PROMISCUOUS_MODE            1
 #define ETHERTYPE_WAKE_ON_LAN       0x0842
 #define ETHERTYPE_ATA               0x88A2
@@ -106,7 +108,7 @@ const char LOOPBACK_NULL_ENCAPSULATION[] = {0x00, 0x00, 0x00, 0x02};
 ///////////////////////////////////////////////////////////////////////////////
 
 void initialize_libpcap_wrapper();
-void start_capture(const char* interfaceName, double timeout, long maxNumberOfPackets);
+void start_capture(int captureMode, const char* interfaceName, double timeout, long maxNumberOfPackets);
 void read_pcap_file(const char* filename);
 void pcap_live_capture(const char* etherInterface);
 void signal_handler(int signum);

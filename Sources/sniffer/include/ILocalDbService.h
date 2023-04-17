@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <filesystem>
 #include "cpptools.h"
 #include "Logger.h"
 //#include "Utils.h"
@@ -13,7 +14,8 @@
 #include "QFlowPacket.h"
 
 
-#define FILE_TRACE_DATABASE          "TraceDatabase.db"
+#define DIR_DATABASE                 "db"
+#define FILE_TRACE_DATABASE          "db/TraceDatabase.db"
 #define FILE_FLOW_DB_SUFIX           "_Flow.db"
 
 
@@ -32,6 +34,10 @@ class ILocalDbService
         /// @return 
         virtual int open() = 0;
         
+        /// @brief 
+        /// @param traceName 
+        /// @return 
+        virtual bool traceExists(const char* traceName) = 0;
 
         /// @brief Receive a data of a new trace. Any new Flow or packet data to be commited will requere a Trace 
         /// data as well.
@@ -73,7 +79,7 @@ class ILocalDbService
 
         /// @brief 
         /// @param traces 
-        virtual void queryAllTraces(std::vector<QTrace>& traces) = 0;
+        virtual void selectAllTraces(std::vector<QTrace>& traces) = 0;
 
         /// @brief Close the connection with the database.
         /// @return returns 0 in case of success, and in case of failue will return an error code.

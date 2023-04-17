@@ -2,6 +2,7 @@
 #define _ETHER_DUMMY__H__ 1
 
 #include <vector>
+#include "Logger.h"
 #include "NetworkPacket.h"
 #include "ICaptureDriver.h"
 
@@ -32,8 +33,8 @@ class DriverDummy: public ICaptureDriver
         ///////////////////////////////////////////////////////////////////////
 
         // listen device
-        int listen(const char* deviceName, double captureTimeoutSec, long maxPacketCounter);
-        int listen(const char* deviceName);
+        int listen(const char* captureType, const char* deviceName, double captureTimeoutSec, long maxPacketCounter);
+        int listen(const char* captureType, const char* deviceName);
 
         // read packets
         int nextPacket(NetworkPacket& packet);

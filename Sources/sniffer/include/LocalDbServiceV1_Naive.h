@@ -5,6 +5,7 @@
 #include <sqlite3.h>
 #include <vector>
 #include <cstring>
+#include <filesystem>
 #include "ILocalDbService.h"
 
 
@@ -34,6 +35,11 @@ class LocalDbServiceV1_Naive: public ILocalDbService
         /// @brief Open the connection with the Trace database.
         /// @return 
         int open();
+
+        /// @brief Check if the trace name is available or not.
+        /// @param traceName 
+        /// @return 
+        bool traceExists(const char* traceName);
 
         /// @brief Receive a data of a new trace. Any new Flow or packet data to be commited will requere a Trace 
         /// data as well.
@@ -75,7 +81,7 @@ class LocalDbServiceV1_Naive: public ILocalDbService
 
         /// @brief 
         /// @param traces 
-        virtual void queryAllTraces(std::vector<QTrace>& traces);
+        virtual void selectAllTraces(std::vector<QTrace>& traces);
 
         /// @brief Close the connection with the database.
         /// @return returns 0 in case of success, and in case of failue will return an error code.
@@ -91,14 +97,21 @@ class LocalDbServiceV1_Naive: public ILocalDbService
 
     private:
 
-        /// @brief Pointer to the Trace database
+        // database handlers
+        static std::mutex traceDbMutex;
         sqlite3* traceDb;
         sqlite3* flowDb;
-        QTrace qTrace;
-        std::vector<QFlow*> qFlowPtrVec;
-        std::vector<QFlowPacket*> qPktPtrVec;
+
+        // flags
         bool hasCommit;
         bool alreadyClosed;
+
+        // data to commit
+        QTrace qTrace;
+        int traceId;
+        std::vector<QFlow*> qFlowPtrVec;
+        std::vector<QFlowPacket*> qPktPtrVec;
+
 
         /// @brief 
         /// @return 
@@ -112,13 +125,23 @@ class LocalDbServiceV1_Naive: public ILocalDbService
         /// @param tsSec 
         /// @param tsUsec 
         /// @return 
-        const static bool insertTraceData(sqlite3* db, const char* traceName, const char* traceSource, const char* comment, ts_sec tsSec, ts_usec tsUsec);
+        const static int insertTraceData(sqlite3* db, 
+                                          const char* traceName, 
+                                          const char* traceSource, 
+                                          const char* traceType, 
+                                          const char* comment, 
+                                          long nPackets, 
+                                          long nFlows,
+                                          ts_sec tsStartSec, 
+                                          ts_usec tsStartUsec,
+                                          ts_sec tsFinishSec, 
+                                          ts_usec tsFinishUsec);
 
         /// @brief Tells if the traceName already exist or not
         /// @param traceName 
         /// @param tDb 
         /// @return 
-        const static bool traceExists(const char* traceName, sqlite3* tDb);
+        const static bool checkIfTraceExists(const char* traceName, sqlite3* tDb);
 
         const static bool deleteTraceByName(const char* traceName, sqlite3* db);
 
@@ -131,6 +154,7 @@ class LocalDbServiceV1_Naive: public ILocalDbService
         /// @param tDb 
         /// @return 
         const static std::vector<std::vector<std::string>> getAllTraceData(sqlite3* tDb);
+
 
 };
 

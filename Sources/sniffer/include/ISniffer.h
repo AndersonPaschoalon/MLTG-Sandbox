@@ -8,7 +8,7 @@
 // #include "Utils.h"
 #include "NetTypes.h"
 #include "NetworkPacket.h"
-#include "SnifferFactory.h"
+// #include "SnifferFactory.h"
 #include "ICaptureDriver.h"
 #include "IFlowIdCalc.h"
 #include "ILocalDbService.h"
@@ -43,7 +43,8 @@ class ISniffer
         virtual std::string toString();
 
         virtual void configure(const char* traceName, 
-                               const char* captureLybrary, 
+                               const char* captureType,
+                               const char* captureDriver, 
                                const char* captureDevice,
                                const char* databaseManager,
                                const char* flowCalcAlgorithm,
@@ -56,14 +57,14 @@ class ISniffer
     protected:
 
         std::string traceName;
-        std::string captureLibrary;
+        std::string captureDriver;
+        std::string captureType;
         std::string captureDevice;
         std::string databaseManager;
         std::string flowCalcAlgorithm;
         std::string comments;
         double timeoutSec;
         long maxPacketNumber;
-        TraceType traceType;
 
 };
 

@@ -31,17 +31,20 @@ class ICaptureDriver
     public:
 
         // listen device
-        virtual int listen(const char* deviceName, double captureTimeoutSec, long maxPackets) = 0;
-        virtual int listen(const char* deviceName);
+        virtual int listen(const char* captureType, const char* deviceName, double captureTimeoutSec, long maxPackets) = 0;
+        virtual int listen(const char* captureType, const char* deviceName);
 
         // read packets
         virtual int nextPacket(NetworkPacket& packet) = 0;
+
         // o que pode parar: ultimo pacote (arquivo), timeout ou thread de interrupção.
         bool doContinue();
 
         // retrieve information
-        virtual void getDeviceInfo(std::string& deviceName, std::string& lastErrorDescription, double& captureTimeoutSec);
+        virtual void getDeviceInfo(std::string& captureType, std::string& deviceName, std::string& lastErrorDescription, double& captureTimeoutSec);
         virtual long getPacketCounter();
+        virtual timeval getFirstTimestamp();
+        virtual timeval getLastTimestamp();
 
         // finish device
         virtual int stop() = 0;
@@ -66,6 +69,9 @@ class ICaptureDriver
         // must be updated after each new packet captured
         timeval lastTs;
 
+        // Live, Pcap ngpcap, ...
+        std::string captureType = "";
+
         // device name used by the library
         std::string deviceName = "";
 
@@ -85,7 +91,7 @@ class ICaptureDriver
         void resetVars();
 
         // set vars from listen call
-        void setListenVars(const char* deviceName, double captureTimeoutSec, long maxPackets);
+        void setListenVars(const char* captureType, const char* deviceName, double captureTimeoutSec, long maxPackets);
 
         // update packetCounter
         void updatePacketCounter();

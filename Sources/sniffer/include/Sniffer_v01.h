@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "ISniffer.h"
+#include "AssetsFactory.h"
 
 
 // Naive implementation -> no parallel management of the database.

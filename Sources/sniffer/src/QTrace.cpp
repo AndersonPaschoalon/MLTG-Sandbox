@@ -1,17 +1,20 @@
 #include "QTrace.h"
 
-QTrace::QTrace(): QTrace("", "", "")
+QTrace::QTrace(): QTrace("", "", "", "")
 {
 }
 
-QTrace::QTrace(const char *traceName, const char *traceSource, const char *comment)
+QTrace::QTrace(const char *traceName, const char *traceSource, const char *traceType, const char *comment)
 {
     this->fHead = nullptr;
     this->fTail = nullptr;
     this->pHead = nullptr;
     this->pTail = nullptr;
     this->lastFlow = 0;
-    this->set(traceName, traceSource, comment);
+    this->traceProperties[QTRACE_TRACE_NAME] = traceName;
+    this->traceProperties[QTRACE_TRACE_SOURCE] = traceSource;
+    this->traceProperties[QTRACE_TRACE_TYPE] = traceType;
+    this->traceProperties[QTRACE_COMMENT] = comment;
 }
 
 QTrace::~QTrace()
@@ -21,9 +24,7 @@ QTrace::~QTrace()
 
 QTrace::QTrace(const QTrace &obj)
 {
-    this->traceName = obj.traceName;
-    this->traceSource = obj.traceSource;
-    this->comment = obj.comment;
+    this->traceProperties = obj.traceProperties;
     this->fHead = obj.fHead;
     this->fTail = obj.fTail;
     this->pHead = obj.pHead;
@@ -35,9 +36,7 @@ QTrace &QTrace::operator=(QTrace other)
 {
     if (this != &other)
     {
-        this->traceName = other.traceName;
-        this->traceSource = other.traceSource;
-        this->comment = other.comment;
+        this->traceProperties = other.traceProperties;
         this->fHead = other.fHead;
         this->fTail = other.fTail;
         this->pHead = other.pHead;
@@ -47,47 +46,59 @@ QTrace &QTrace::operator=(QTrace other)
     return *this;
 }
 
-void QTrace::set(const char*  theTraceName, const char*  theTraceSource, const char*  theComment)
-{
-    this->traceName = StringUtils::trimCopy(std::string(theTraceName));
-    this->traceSource = StringUtils::trimCopy(std::string(theTraceSource));
-    this->comment = StringUtils::trimCopy(std::string(theComment));
-}
 
 std::string QTrace::toString()
 {
-    return std::string("{ traceName:") + this->traceName + 
-           std::string(", traceSource:") + this->traceSource + 
-		   std::string(", comment:") + this->comment + std::string("}");
-}
-
-const std::string QTrace::getTraceName()
-{
-    return this->traceName;
-}
-
-const std::string QTrace::getTraceSource()
-{
-    return this->traceSource;
-}
-
-const std::string QTrace::getComment()
-{
-    return this->comment;
-}
-
-const std::string QTrace::getTags()
-{
-    return std::string();
+    return std::string("{ traceName:") + this->traceProperties[QTRACE_TRACE_NAME] + 
+           std::string(", traceSource:") + this->traceProperties[QTRACE_TRACE_SOURCE]  + 
+		   std::string(", TraceType:") + this->traceProperties[QTRACE_TRACE_TYPE]  + 
+           std::string(", comment:") + this->traceProperties[QTRACE_COMMENT]  + 
+		   std::string(", nPackets:") + this->traceProperties[QTRACE_N_PACKETS]  + 
+           std::string(", nFlows:") + this->traceProperties[QTRACE_N_FLOWS]  + 
+		   std::string(", tsStartSec:") + this->traceProperties[QTRACE_TS_START_SEC]  + 
+		   std::string(", tsStartUsec:") + this->traceProperties[QTRACE_TS_START_USEC]  + 
+           std::string(", tsFinishSec:") + this->traceProperties[QTRACE_TS_FINISH_SEC]  + 
+		   std::string(", tsFinishUsec:") + this->traceProperties[QTRACE_TS_FINISH_USEC]  +            
+           std::string("}");
 }
 
 bool QTrace::isEmpty()
 {
-    if(this->traceName == "")
+    if(this->traceProperties[QTRACE_TRACE_NAME] == "")
     {
         return true;
     }
     return false;
+}
+
+std::string QTrace::get(std::string label) const 
+{
+    auto it = this->traceProperties.find(label);
+    if (it == this->traceProperties.end()) 
+    {
+        return "";
+    }
+    return it->second;
+}
+
+long QTrace::getLong(std::string label) const 
+{
+    auto it = this->traceProperties.find(label);
+    if (it == this->traceProperties.end()) 
+    {
+        return 0;
+    }
+    return std::stol(it->second);
+}
+
+void QTrace::set(std::string label, std::string value) 
+{
+    this->traceProperties[label] = value;
+}
+
+void QTrace::set(std::string label, long value) 
+{
+    this->traceProperties[label] = std::to_string(value);
 }
 
 void QTrace::push(NetworkPacket p)

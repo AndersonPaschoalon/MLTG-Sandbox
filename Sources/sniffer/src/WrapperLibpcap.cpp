@@ -47,20 +47,33 @@ void initialize_libpcap_wrapper()
     }
 }
 
-void start_capture(const char* interfaceName, double captureTimeout, long  maxPackets)
+void start_capture(int captureMode, const char* interfaceName, double captureTimeout, long  maxPackets)
 {
     gMaxNumberOfPackets = maxPackets;
     gTimeout = captureTimeout;
 
-    if(access(interfaceName, F_OK ) != -1 ) 
+    switch (captureMode)
     {
-        // file exists, read pcap
-        read_pcap_file(interfaceName);
-    } 
-    else 
-    {
-        // file does not exist, assume it is an interface
-        pcap_live_capture(interfaceName);
+        case CAPTURE_LIVE:
+        {
+            pcap_live_capture(interfaceName);
+            break;
+        }
+        case CAPTURE_PCAP:
+        {
+            read_pcap_file(interfaceName);
+            break;
+        }
+        case CAPTURE_NGPCAP:
+        {
+            printf("TODO -> CAPTURE_NGPCAP \n");
+            break;
+        }    
+        default:
+        {
+            pcap_live_capture(interfaceName);
+            break;
+        }
     }
 }
 

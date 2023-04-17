@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
+#include "AppFactory.h"
 #include "UnityTests.h"
 #include "FlowIdCalc.h"
 #include "NetworkPacket.h"
@@ -30,10 +31,7 @@ private:
     static void test_NaiveDatabase_Sniffer_Integration();
     static void test_DriverLibpcap_Live();
     static void test_DriverLibpcap_File();
-
-
-    // helpers
-    static ISniffer* makeNewSniffer(const char* snifferImplementation);
+    static void test_TraceDbManagement();
 
 };
 

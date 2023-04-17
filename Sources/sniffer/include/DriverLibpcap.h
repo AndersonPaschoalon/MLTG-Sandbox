@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include "Logger.h"
 #include "ICaptureDriver.h"
 #include "WrapperLibpcap.h"
 
@@ -31,7 +32,7 @@ class DriverLibpcap: public ICaptureDriver
         ///////////////////////////////////////////////////////////////////////
 
         // listen device
-        virtual int listen(const char* deviceName, double captureTimeoutSec, long maxPackets);
+        virtual int listen(const char* captureType, const char* deviceName, double captureTimeoutSec, long maxPackets);
 
         // read packets
         virtual int nextPacket(NetworkPacket& packet);
@@ -39,10 +40,11 @@ class DriverLibpcap: public ICaptureDriver
         // finish device
         virtual int stop();
 
-
     private:
 
         bool active;
+
+        static const int calcMode(const char* captureTypeStr);
 
 };
 

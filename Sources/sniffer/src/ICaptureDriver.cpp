@@ -2,9 +2,9 @@
 
 bool ICaptureDriver::interruptionFlag = false;
 
-int ICaptureDriver::listen(const char* deviceName)
+int ICaptureDriver::listen(const char* captureType, const char* deviceName)
 {
-    return this->listen(deviceName, 0, -1);
+    return this->listen(captureType, deviceName, -1, -1);
 }
 
 bool ICaptureDriver::doContinue()
@@ -62,8 +62,9 @@ void ICaptureDriver::resetVars()
     this->packetCounter = 0;
 }
 
-void ICaptureDriver::setListenVars(const char *deviceName, double captureTimeoutSec, long maxPackets)
+void ICaptureDriver::setListenVars(const char* captureType, const char *deviceName, double captureTimeoutSec, long maxPackets)
 {
+    this->captureType = captureType;
     this->deviceName = deviceName;
     this->captureTimeoutSec = captureTimeoutSec;
     this->maxPackets = maxPackets;
@@ -81,16 +82,28 @@ void ICaptureDriver::registerSignal()
    signal(SIGINT, ICaptureDriver::signalCallbackHander);
 }
 
-void ICaptureDriver::getDeviceInfo(std::string &deviceName, std::string &lastErrorDescription, double& captureTimeoutSec)
+void ICaptureDriver::getDeviceInfo(std::string& captureType, std::string &deviceName, std::string &lastErrorDescription, double& captureTimeout)
 {
     deviceName.clear();
     lastErrorDescription.clear();
+    captureType.clear();
+    captureType = this->captureType;
     deviceName = this->deviceName;
     lastErrorDescription = this->lastErrorDetails;
-    captureTimeoutSec = captureTimeoutSec;
+    captureTimeout = this->captureTimeoutSec;
 }
 
 long ICaptureDriver::getPacketCounter()
 {
     return this->packetCounter;
+}
+
+timeval ICaptureDriver::getFirstTimestamp()
+{
+    return this->firstTs;
+}
+
+timeval ICaptureDriver::getLastTimestamp()
+{
+    return this->lastTs;
 }

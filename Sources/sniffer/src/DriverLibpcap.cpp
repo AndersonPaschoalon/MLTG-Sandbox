@@ -11,7 +11,7 @@ DriverLibpcap::~DriverLibpcap()
 
 DriverLibpcap::DriverLibpcap(const DriverLibpcap &obj)
 {
-    this->active = obj.active;
+    this->active = obj.active; 
 }
 
 DriverLibpcap &DriverLibpcap::operator=(DriverLibpcap other)
@@ -28,11 +28,13 @@ std::string DriverLibpcap::toString()
     return std::string();
 }
 
-int DriverLibpcap::listen(const char *deviceName, double captureTimeoutSec, long maxPackets)
+int DriverLibpcap::listen(const char* captureType, const char *deviceName, double captureTimeoutSec, long maxPackets)
 {
+    this->setListenVars(captureType, deviceName, captureTimeoutSec, maxPackets);
+    int mode = DriverLibpcap::calcMode(captureType);
     this->active = true;
     initialize_libpcap_wrapper();
-    std::thread t(start_capture, deviceName, captureTimeoutSec, maxPackets);
+    std::thread t(start_capture, mode, deviceName, captureTimeoutSec, maxPackets);
     t.detach();
     return 0;
 }
@@ -72,7 +74,7 @@ int DriverLibpcap::nextPacket(NetworkPacket &packet)
             {
                 // sleep for a while, to wait new packets to be captured
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-                printf("Waiting for the next packet...\n");
+                LOGGER(INFO, "Waiting for the next packet...");
             }
         }
         else
@@ -99,5 +101,24 @@ int DriverLibpcap::nextPacket(NetworkPacket &packet)
 int DriverLibpcap::stop()
 {
     finalize_libpcap_wrapper();
+    return 0;
+}
+
+const int DriverLibpcap::calcMode(const char *captureTypeStr)
+{
+    std::string modeStr = StringUtils::toLower(StringUtils::trimCopy(captureTypeStr).c_str());
+    if (modeStr == "live")
+    {
+        return 0;
+    }
+    else if (modeStr == "pcap")
+    {
+        return 1;
+    }
+    else if (modeStr == "ngpcap")
+    {
+        return 2;
+    }
+    LOGGER(WARN, "Invalid captureTypeStr:%s, using default live", modeStr.c_str());
     return 0;
 }
