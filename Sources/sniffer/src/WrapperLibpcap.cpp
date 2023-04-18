@@ -85,6 +85,15 @@ void read_pcap_file(const char* filename)
     printf("************************************************************\n");
     printf("** %s\n", filename);
     printf("************************************************************\n");
+
+    // check if the file exists
+    if (OSUtils::fileExists(filename) == false)
+    {
+        std::cerr << "Error, pcap file " << filename <<  " was not found." << std::endl;
+        // stop packet capture
+        gEndOfFile = 1;
+        return;
+    }
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_handle = pcap_open_offline(filename, errbuf);
     if (pcap_handle == nullptr) 
@@ -138,27 +147,6 @@ void pcap_live_capture(const char* etherInterface)
         struct pcap_pkthdr frame_header;
         const u_char *frame = pcap_next(handle, &frame_header);
         process_ethernet_frame(NULL, &frame_header, frame);
-
-        // check the number of packets to capture
-        //if (maxNumberOfPackets > 0)
-        //{
-        //    if (packetCounter > maxNumberOfPackets)
-        //    {
-        //        printf("Reached limit of packets to capture %u", packetCounter);
-        //        break;
-        //    }
-        //}
-
-        // check the timeout
-        //if(timeout > 0)
-        //{
-        //    double currentTime = inter_arrival(currentTimeStamp, firstTimeStamp);
-        //    if (currentTime > timeout)
-        //    {
-        //        printf("Reached time limit for packet capture %f", currentTime);
-        //        break;
-        //    }
-        //}
 
         // continue
         if (frame == NULL) 

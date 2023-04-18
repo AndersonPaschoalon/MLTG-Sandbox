@@ -12,7 +12,7 @@ BINDIR = bin
 
 SOURCES = $(wildcard $(SRCDIR)/*.cpp)
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SOURCES))
-EXECUTABLE = $(BINDIR)/demo-sniffer.exe
+EXECUTABLE = $(BINDIR)/sniffer.exe
 DATABASE = $(BINDIR)/*.db
 
 all: $(EXECUTABLE)

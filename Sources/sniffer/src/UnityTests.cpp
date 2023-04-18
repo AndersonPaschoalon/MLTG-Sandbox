@@ -5,9 +5,9 @@ void UnityTests::run()
 {
     bool t01 = false;
     bool t02 = false;
-    bool t03 = false;
+    bool t03 = true;
     bool t04 = false;
-    bool t05 = true;
+    bool t05 = false;
     if (t01) UnityTests::test_FlowIdCalc();
     if (t02) UnityTests::test_NaiveDatabase_Sniffer_Integration();
     if (t03) UnityTests::test_DriverLibpcap_File();
@@ -79,25 +79,24 @@ void UnityTests::test_DriverLibpcap_Live()
 
 void UnityTests::test_DriverLibpcap_File()
 {
-    // const char traceName[] = "01_SkypeIRC.cap.pcap";
-    // const char captureDevice[] = "../../../Pcap/SkypeIRC.cap.pcap";
-    //const char traceName[] = "01_bigFlows.pcap";
-    //const char captureDevice[] = "../../../Pcap/bigFlows.pcap";
+    const char traceName[] = "01_SkypeIRC.cap.pcap";
+    const char captureDevice[] = "../../../Pcap/SkypeIRC.cap.pcap";
+    // const char traceName[] = "01_bigFlows.pcap";
+    // const char captureDevice[] = "../../../Pcap/bigFlows.pcap";
     // const char traceName[] = "lanDiurnal.pcap";
     // const char captureDevice[] = "../../../../../Pcaps/Pcaps/lanDiurnal.pcap";
     // const char traceName[] = "lan-firewall-1h.pcap";
     // const char captureDevice[] = "../../../../../Pcaps/Pcaps/lan-firewall-1h.pcap";    
-    const char traceName[] = "equinix-1s.pcap";
-    const char captureDevice[] = "../../../../../Pcaps/Pcaps/equinix-1s.pcap";
-
+    // const char traceName[] = "equinix-1s.pcap";
+    // const char captureDevice[] = "../../../../../Pcaps/Pcaps/equinix-1s.pcap";
 
     const char snifferImplementation[] = "Sniffer_v01";
     const char captureDriver[] = "DriverLibpcap";
-    const char captureType[] = "file";
+    const char captureType[] = "pcap";
     const char databaseManeger[] = "LocalDbServiceV1_Naive";
     const char flowAlgorithm[] = "FlowIdCalc";
     const char comments[] = "This is the sniffer first proof of concepts.";
-    double timeoutSec = 30.0;
+    double timeoutSec = -1;
     // long maxPacketNumber = 1000000;
     long maxPacketNumber = -1;
 
@@ -112,7 +111,7 @@ void UnityTests::test_TraceDbManagement()
     const char traceName[] = "POC3";
     const char snifferImplementation[] = "Sniffer_v01";
     const char captureDriver[] = "DriverDummy";
-    const char captureType[] = "file";
+    const char captureType[] = "pcap";
     const char captureDevice[] = "";
     const char databaseManeger[] = "LocalDbServiceV1_Naive";
     const char flowAlgorithm[] = "FlowIdCalc";

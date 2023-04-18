@@ -115,10 +115,11 @@ const int DriverLibpcap::calcMode(const char *captureTypeStr)
     {
         return 1;
     }
-    else if (modeStr == "ngpcap")
+    else if (modeStr == "pcapng")
     {
         return 2;
     }
     LOGGER(WARN, "Invalid captureTypeStr:%s, using default live", modeStr.c_str());
+    LOGGER(INFO, "Available values are: live, pcap");
     return 0;
 }
