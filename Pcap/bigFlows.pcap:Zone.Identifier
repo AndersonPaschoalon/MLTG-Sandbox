@@ -1,4 +1,0 @@
-[ZoneTransfer]
-ZoneId=3
-ReferrerUrl=https://tcpreplay.appneta.com/
-HostUrl=https://s3.amazonaws.com/tcpreplay-pcap-files/bigFlows.pcap
