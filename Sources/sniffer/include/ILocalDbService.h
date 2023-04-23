@@ -79,7 +79,8 @@ class ILocalDbService
 
         /// @brief 
         /// @param traces 
-        virtual void selectAllTraces(std::vector<QTrace>& traces) = 0;
+        //virtual void selectAllTraces(std::vector<QTrace>& traces) = 0;
+        virtual void displayTraceDatabase() = 0;
 
         /// @brief Close the connection with the database.
         /// @return returns 0 in case of success, and in case of failue will return an error code.

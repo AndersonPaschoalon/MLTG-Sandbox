@@ -32,6 +32,9 @@ private:
     static void test_DriverLibpcap_Live();
     static void test_DriverLibpcap_File();
     static void test_TraceDbManagement();
+    static void test_zip_stack();
+    static void test_displayTraceDb();
+    static void test_testeDeleteFlowDatabase();
 
 };
 

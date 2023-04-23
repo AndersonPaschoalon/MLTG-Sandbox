@@ -99,7 +99,6 @@ struct ata_header
     unsigned char tag[4];
 };
 
-
 const char LOOPBACK_NULL_ENCAPSULATION[] = {0x00, 0x00, 0x00, 0x02};
 
 
@@ -152,9 +151,7 @@ void process_loopback_packet(const struct loopback_header* loop_header, const u_
 void process_wol_packet(const struct wol_header* wol_header, const u_char* wol_packet, NetworkPacket* netPkt);
 void process_ata_packet(const struct ata_header* ata_hd, const u_char* ata_packet, NetworkPacket* netPkt);
 
-///////////////////////////////////////////////////////////////////////////////
-// Application LAYER PARSES
-///////////////////////////////////////////////////////////////////////////////
+
 
 
 

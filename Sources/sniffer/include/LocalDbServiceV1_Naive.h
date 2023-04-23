@@ -81,7 +81,8 @@ class LocalDbServiceV1_Naive: public ILocalDbService
 
         /// @brief 
         /// @param traces 
-        virtual void selectAllTraces(std::vector<QTrace>& traces);
+        /// virtual void selectAllTraces(std::vector<QTrace>& traces);
+        virtual void displayTraceDatabase();
 
         /// @brief Close the connection with the database.
         /// @return returns 0 in case of success, and in case of failue will return an error code.
@@ -105,6 +106,8 @@ class LocalDbServiceV1_Naive: public ILocalDbService
         // flags
         bool hasCommit;
         bool alreadyClosed;
+        bool receivedTrace;
+        bool receivedFlowPktData;
 
         // data to commit
         QTrace qTrace;
@@ -132,10 +135,7 @@ class LocalDbServiceV1_Naive: public ILocalDbService
                                           const char* comment, 
                                           long nPackets, 
                                           long nFlows,
-                                          ts_sec tsStartSec, 
-                                          ts_usec tsStartUsec,
-                                          ts_sec tsFinishSec, 
-                                          ts_usec tsFinishUsec);
+                                          double duration);
 
         /// @brief Tells if the traceName already exist or not
         /// @param traceName 

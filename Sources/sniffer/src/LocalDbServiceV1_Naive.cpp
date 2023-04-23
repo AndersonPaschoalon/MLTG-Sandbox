@@ -7,6 +7,8 @@ LocalDbServiceV1_Naive::LocalDbServiceV1_Naive()
 {
     this->hasCommit = false;
     this->alreadyClosed = false;
+    this->receivedFlowPktData = false;
+    this->receivedTrace = false;
 }
 
 LocalDbServiceV1_Naive::~LocalDbServiceV1_Naive()
@@ -29,7 +31,9 @@ LocalDbServiceV1_Naive::LocalDbServiceV1_Naive(const LocalDbServiceV1_Naive &obj
     this->qFlowPtrVec = obj.qFlowPtrVec;
     this->qPktPtrVec = obj.qPktPtrVec;
     this->hasCommit = obj.hasCommit;
-    this->alreadyClosed = obj.alreadyClosed;    
+    this->alreadyClosed = obj.alreadyClosed;
+    this->receivedFlowPktData = obj.receivedFlowPktData;
+    this->receivedTrace = obj.receivedTrace;    
 }
 
 LocalDbServiceV1_Naive &LocalDbServiceV1_Naive::operator=(LocalDbServiceV1_Naive other)
@@ -43,6 +47,8 @@ LocalDbServiceV1_Naive &LocalDbServiceV1_Naive::operator=(LocalDbServiceV1_Naive
         this->qPktPtrVec = other.qPktPtrVec;
         this->hasCommit = other.hasCommit;
         this->alreadyClosed = other.alreadyClosed;
+        this->receivedFlowPktData = other.receivedFlowPktData;
+        this->receivedTrace = other.receivedTrace;    
     }
     return *this;
 }
@@ -72,10 +78,7 @@ int LocalDbServiceV1_Naive::open()
                         "comment TEXT, "
                         "nPackets INTEGER, "
                         "nFlows INTEGER, "
-                        "tsStartSec INTEGER, "
-                        "tsStartUsec INTEGER, "
-                        "tsFinishSec INTEGER, "
-                        "tsFinishUsec INTEGER "                          
+                        "duration REAL "                        
                         ");";
     rc = sqlite3_exec(this->traceDb, sql, nullptr, nullptr, nullptr);
     if (rc) 
@@ -123,6 +126,7 @@ int LocalDbServiceV1_Naive::receiveData(QTrace newTrace)
 
     // 3 store the trace object 
     this->qTrace = newTrace;
+    this->receivedTrace = true;
     return SUCCESS;
 }
 
@@ -143,6 +147,8 @@ void LocalDbServiceV1_Naive::receiveData(QFlow *head, QFlow *tail)
             break;
         }
     }
+
+    this->receivedFlowPktData = true;
 }
 
 void LocalDbServiceV1_Naive::receiveData(QFlowPacket *head, QFlowPacket *tail)
@@ -162,6 +168,8 @@ void LocalDbServiceV1_Naive::receiveData(QFlowPacket *head, QFlowPacket *tail)
             break;
         }
     }
+
+    this->receivedFlowPktData = true;    
 }
 
 int LocalDbServiceV1_Naive::deleteFlowDatabase(const char *traceName)
@@ -186,39 +194,27 @@ int LocalDbServiceV1_Naive::deleteFlowDatabase(const char *traceName)
     return SUCCESS;
 }
 
-void LocalDbServiceV1_Naive::selectAllTraces(std::vector<QTrace>& traces)
+void LocalDbServiceV1_Naive::displayTraceDatabase()
 {
-    /**
-    traces.clear();
     std::vector<std::vector<std::string>> allData = LocalDbServiceV1_Naive::getAllTraceData(this->traceDb);
-    for(size_t i = 0; i < allData.size(); i++)
-    {
-        int traceNameIndex = 1;
-        int traceSourceIndex = 2;
-        int traceCommentIndex = 3;
-        QTrace qt;
-        qt.set(QTRACE_TRACE_NAME, allData[i][1].c_str());
-        qt.set(QTRACE_TRACE_SOURCE, allData[i][2].c_str());
-        qt.set(QTRACE_TRACE_TYPE, allData[i][3].c_str());
-        qt.set(QTRACE_COMMENT, allData[i][4].c_str());
-        qt.set(QTRACE_N_PACKETS, allData[i][5].c_str());
-        qt.set(QTRACE_N_FLOWS, allData[i][6].c_str());
-        qt.set(QTRACE_TS_START_SEC, allData[i][7].c_str());
-        qt.set(QTRACE_TS_START_USEC, allData[i][8].c_str());
-        qt.set(QTRACE_TS_FINISH_SEC, allData[i][9].c_str());
-        qt.set(QTRACE_TS_FINISH_USEC, allData[i][10].c_str());
-        traces.push_back(qt);
-    }
-    */
+    std::vector<std::string> labels = {"id",
+                                       "traceName",
+                                       "traceSource",
+                                       "traceType",
+                                       "comment",
+                                       "nPackets",
+                                       "nFlows",
+                                       "duration (sec)"};   
+    Console::printTable(labels, allData);
 }
+
 
 int LocalDbServiceV1_Naive::close()
 {
     int ret = 0;
-    if (this->alreadyClosed != true)
+    if (this->alreadyClosed != true && this->receivedTrace == true)
     {
         // commit to trace database
-        /**
         this->traceId = LocalDbServiceV1_Naive::insertTraceData(this->traceDb, 
                                                                 this->qTrace.get(QTRACE_TRACE_NAME).c_str(),
                                                                 this->qTrace.get(QTRACE_TRACE_SOURCE).c_str(),
@@ -226,34 +222,22 @@ int LocalDbServiceV1_Naive::close()
                                                                 this->qTrace.get(QTRACE_COMMENT).c_str(),
                                                                 this->qTrace.getLong(QTRACE_N_PACKETS),
                                                                 this->qTrace.getLong(QTRACE_N_FLOWS),
-                                                                this->qTrace.getLong(QTRACE_TS_START_SEC),
-                                                                this->qTrace.getLong(QTRACE_TS_START_USEC),
-                                                                this->qTrace.getLong(QTRACE_TS_FINISH_SEC),
-                                                                this->qTrace.getLong(QTRACE_TS_FINISH_USEC));
-        */
-        this->traceId = LocalDbServiceV1_Naive::insertTraceData(this->traceDb, 
-                                                                this->qTrace.get(QTRACE_TRACE_NAME).c_str(),
-                                                                this->qTrace.get(QTRACE_TRACE_SOURCE).c_str(),
-                                                                this->qTrace.get(QTRACE_TRACE_TYPE).c_str(),
-                                                                this->qTrace.get(QTRACE_COMMENT).c_str(),
-                                                                20,
-                                                                10,
-                                                                1,
-                                                                2,
-                                                                10,
-                                                                20);                                                                
+                                                                this->qTrace.getDouble(QTRACE_DURATION));                                                                
         if(this->traceId < 0)
         {
             LOGGER(ERROR, "Error {%d} commiting data to Trace Database!\n", traceId);
             return ERROR_QUERY_ERROR;
         }
 
-        // commit to flow database
-        int ret = this->commitToFlowDatabase();
-        if(ret != SQLITE_OK)
+        if(this->receivedFlowPktData == true)
         {
-            LOGGER(ERROR, "Error commiting data to fLOW Database! Code:%d\n", ret);
-            return ret;
+            // commit to flow database
+            int ret = this->commitToFlowDatabase();
+            if(ret != SQLITE_OK)
+            {
+                LOGGER(ERROR, "Error commiting data to fLOW Database! Code:%d\n", ret);
+                return ret;
+            }
         }
 
         // update class flags
@@ -417,106 +401,92 @@ const int LocalDbServiceV1_Naive::insertTraceData(sqlite3* db,
                                                    const char* comment, 
                                                    long nPackets, 
                                                    long nFlows,
-                                                   ts_sec tsStartSec, 
-                                                   ts_usec tsStartUsec,
-                                                   ts_sec tsFinishSec, 
-                                                   ts_usec tsFinishUsec)
+                                                   double duration)
 {
     // first, lock the access to the database
     std::lock_guard<std::mutex> dbLockguard(LocalDbServiceV1_Naive::traceDbMutex);
 
     /// Start a transaction
     int rc = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, NULL);
-    if (rc != SQLITE_OK) {
+    if (rc != SQLITE_OK) 
+    {
         LOGGER(ERROR, "Cannot start transaction. Reason:%s\n", sqlite3_errmsg(db));
         return -1;
     }
 
     // Prepare the SQL statement with placeholders for the values to be inserted
     const char* sql = "INSERT INTO Trace"
-                          "(traceName, traceSource, traceType, comment, nPackets, nFlows, tsStartSec, tsStartUsec, tsFinishSec, tsFinishUsec) "
-                          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
+                          "(traceName, traceSource, traceType, comment, nPackets, nFlows, duration) "
+                          "VALUES (?, ?, ?, ?, ?, ?, ?) ";
     sqlite3_stmt* stmt;
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
+    if (rc != SQLITE_OK) 
+    {
         LOGGER(ERROR, "Error preparing insert statement: %s", sqlite3_errmsg(db));
         return -2;
     }
 
     // Bind values to the placeholders in the SQL statement
     rc = sqlite3_bind_text(stmt, 1, traceName, -1, SQLITE_STATIC);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding traceName: %s", sqlite3_errmsg(db));
+    if (rc != SQLITE_OK)
+    {
+        LOGGER(ERROR, "Error binding traceName: <%s>, Error Msg: <%s>", traceName, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -3;
     }
 
     rc = sqlite3_bind_text(stmt, 2, traceSource, -1, SQLITE_STATIC);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding traceSource: %s", sqlite3_errmsg(db));
+    if (rc != SQLITE_OK) 
+    {
+        LOGGER(ERROR, "Error binding traceSource: <%s>, Error Msg: <%s>", traceSource, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -4;
     }
 
-    rc = sqlite3_bind_text(stmt, 2, traceType, -1, SQLITE_STATIC);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding traceType: %s", sqlite3_errmsg(db));
+    rc = sqlite3_bind_text(stmt, 3, traceType, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) 
+    {
+        LOGGER(ERROR, "Error binding traceType: <%s>, Error Msg: <%s>", traceType, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -5;
     }    
 
-    rc = sqlite3_bind_text(stmt, 3, comment, -1, SQLITE_STATIC);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding comment: %s", sqlite3_errmsg(db));
+    rc = sqlite3_bind_text(stmt, 4, comment, -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) 
+    {
+        LOGGER(ERROR, "Error binding comment <%s>, Error Msg: %s", comment, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -6;
     }
 
-    rc = sqlite3_bind_int(stmt, 4, nPackets);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding nPackets: %s", sqlite3_errmsg(db));
+    rc = sqlite3_bind_int(stmt, 5, nPackets);
+    if (rc != SQLITE_OK) 
+    {
+        LOGGER(ERROR, "Error binding nPackets <%lu>, Error Msg: <%s>", nPackets, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -7;
     }
 
-    rc = sqlite3_bind_int(stmt, 4, nFlows);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding nFlows: %s", sqlite3_errmsg(db));
+    rc = sqlite3_bind_int(stmt, 6, nFlows);
+    if (rc != SQLITE_OK) 
+    {
+        LOGGER(ERROR, "Error binding nFlows <%ld>, Error Msg: <%s>", nFlows, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -8;
     }
 
-    rc = sqlite3_bind_int(stmt, 4, tsStartSec);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding tsStartSec: %s", sqlite3_errmsg(db));
+    rc = sqlite3_bind_int(stmt, 7, duration);
+    if (rc != SQLITE_OK) 
+    {
+        LOGGER(ERROR, "Error binding duration: <%f>, Error Msg: <%s>", duration, sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -9;
     }
 
-    rc = sqlite3_bind_int(stmt, 5, tsStartUsec);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding tsStartUsec: %s", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        return -10;
-    }
-
-    rc = sqlite3_bind_int(stmt, 4, tsFinishSec);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding tsFinishSec: %s", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        return -11;
-    }
-
-    rc = sqlite3_bind_int(stmt, 5, tsFinishSec);
-    if (rc != SQLITE_OK) {
-        LOGGER(ERROR, "Error binding tsFinishSec: %s", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        return -12;
-    }
-
     // Execute the SQL statement
     rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE) {
+    if (rc != SQLITE_DONE) 
+    {
         LOGGER(ERROR, "Error inserting trace data: %s", sqlite3_errmsg(db));
         sqlite3_finalize(stmt);
         return -13;
@@ -527,7 +497,8 @@ const int LocalDbServiceV1_Naive::insertTraceData(sqlite3* db,
 
     // Commit the transaction
     rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
-    if (rc != SQLITE_OK) {
+    if (rc != SQLITE_OK) 
+    {
         LOGGER(ERROR, "Error committing transaction: %s", sqlite3_errmsg(db));
         return -14;
     }

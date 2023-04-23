@@ -5,14 +5,20 @@ void UnityTests::run()
 {
     bool t01 = false;
     bool t02 = false;
-    bool t03 = true;
+    bool t03 = false;
     bool t04 = false;
     bool t05 = false;
+    bool t06 = false;
+    bool t07 = false;
+    bool t08 = true;
     if (t01) UnityTests::test_FlowIdCalc();
     if (t02) UnityTests::test_NaiveDatabase_Sniffer_Integration();
     if (t03) UnityTests::test_DriverLibpcap_File();
     if (t04) UnityTests::test_DriverLibpcap_Live();
     if (t05) UnityTests::test_TraceDbManagement();
+    if (t06) UnityTests::test_zip_stack();
+    if (t07) UnityTests::test_displayTraceDb();
+    if (t08) UnityTests::test_testeDeleteFlowDatabase();
 
 }
 
@@ -126,3 +132,56 @@ void UnityTests::test_TraceDbManagement()
     int ret = sniffer->run();
 }
 
+
+void UnityTests::test_zip_stack()
+{
+    TransportProtocol udp = TransportProtocol::UDP;
+    protocol_stack v = zip_stack(NetworkProtocol::IPv4, TransportProtocol::UDP, ApplicationProtocol::TLS_SSL);
+    printf("<%X>\n", v);
+    ApplicationProtocol app = to_application_protocol(v);
+    TransportProtocol t = to_transport_protocol(v);
+    NetworkProtocol n = to_network_protocol(v);
+
+    v = zip_stack(NetworkProtocol::WOL, TransportProtocol::TCP, ApplicationProtocol::QUIC);
+    printf("<%X>\n", v);
+    app = to_application_protocol(v);
+    t = to_transport_protocol(v);
+    n = to_network_protocol(v);
+
+    printf("<%X>\n", v);
+
+}
+
+void UnityTests::test_displayTraceDb()
+{
+    printf("- test_displayTraceDb\n");
+    const char databaseManeger[] = TRACE_DB_V1_NAIVE; 
+
+    ILocalDbService* db = AssetsFactory::makeTraceDatabaseManager(TRACE_DB_V1_NAIVE);
+    db->open();
+    db->displayTraceDatabase();
+    db->close();
+
+    delete db;    
+}
+
+void UnityTests::test_testeDeleteFlowDatabase()
+{
+    printf("> BEFORE\n");
+    UnityTests::test_displayTraceDb();
+
+    printf("- test_testeDeleteFlowDatabase\n");
+    const char databaseManeger[] = TRACE_DB_V1_NAIVE;
+    int ret = 0;
+
+    ILocalDbService* db = AssetsFactory::makeTraceDatabaseManager(databaseManeger);
+    db->open();
+    ret = db->deleteFlowDatabase("TestSkype");
+    db->close();
+    
+    delete db;
+
+    printf("\n< AFTER\n");
+    UnityTests::test_displayTraceDb();
+     
+}

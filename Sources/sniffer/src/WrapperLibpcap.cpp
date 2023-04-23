@@ -431,6 +431,7 @@ void process_tcp_segment(const struct tcphdr* tcp_hdr, const u_char* tcp_segment
     printf("syn_flag:%d, ", tcp_hdr->syn);
     printf("fin_flag:%d\n", tcp_hdr->fin);    
     #endif
+    const u_char* tcp_playload = (const u_char*) (tcp_segment + sizeof(struct tcphdr));
 }
 
 
@@ -443,10 +444,11 @@ void process_udp_segment(const struct udphdr* udp_hdr, const u_char* udp_segment
     printf("dest_port:%u, ", ntohs(udp_hdr->uh_dport));
     printf("length:%u\n", ntohs(udp_hdr->uh_ulen));
     #endif
+    const u_char* udp_playload = (const u_char*) (udp_segment + sizeof(struct udphdr));
 }
 
 
-void process_icmp_segment(const struct icmphdr* icmp_hdr, const u_char* icmp_segment, NetworkPacket* netPkt)
+void process_icmp_segment(const struct icmphdr *icmp_hdr, const u_char *icmp_segment, NetworkPacket *netPkt)
 {
     netPkt->setTransport(TransportProtocol::ICMP);
     #ifdef LOG_VERBOSE

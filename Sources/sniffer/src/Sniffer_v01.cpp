@@ -46,8 +46,13 @@ int Sniffer_v01::run()
         }
 
     }
-    LOGGER(INFO, "* Number of flows %ld\n", nFlows);
-    LOGGER(INFO, "* Captured Packets %ld\n", captureDriver->getPacketCounter());
+    double duration = inter_arrival(captureDriver->getFirstTimestamp(),  captureDriver->getLastTimestamp());
+    LOGGER(INFO, "* Number of flows:  %ld\n", nFlows);
+    LOGGER(INFO, "* Captured Packets: %ld\n", captureDriver->getPacketCounter());
+    LOGGER(INFO, "* Duration:         %f\n", duration);
+    trace.set(QTRACE_N_PACKETS, nFlows);
+    trace.set(QTRACE_N_FLOWS, captureDriver->getPacketCounter());
+    trace.set(QTRACE_DURATION, duration);
 
 
     // receive captured data buffer pointers

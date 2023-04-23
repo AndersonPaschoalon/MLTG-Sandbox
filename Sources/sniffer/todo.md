@@ -1,6 +1,6 @@
 Sniffer
 
-(1) CLI
+DONE (1) CLI
     Formato da CLI
     --type/-y    {live, pcap, nspcap}
     --src/-s     {file-name, ether name, ..}
@@ -14,9 +14,9 @@ Sniffer
 
 (2) Implementar o DriverCsv
 
-(3) Implementar suporte a interface live
+DONE (3) Implementar suporte a interface live
 
-(4) Implementar suporte a arquivo pcap
+DONE (4) Implementar suporte a arquivo pcap
 
 (5) Implementar suporte a arquivo nspcap
 

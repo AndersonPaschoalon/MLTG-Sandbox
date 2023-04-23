@@ -9,16 +9,14 @@
 #include "QFlow.h"
 #include "QFlowPacket.h"
 
+// Properties
 #define QTRACE_TRACE_NAME          "traceName"
 #define QTRACE_TRACE_SOURCE        "traceSource"
 #define QTRACE_TRACE_TYPE          "TraceType"
 #define QTRACE_COMMENT             "comment"
 #define QTRACE_N_PACKETS           "nPackets"
 #define QTRACE_N_FLOWS             "nFlows"
-#define QTRACE_TS_START_SEC        "tsStartSec"
-#define QTRACE_TS_START_USEC       "tsStartUsec"
-#define QTRACE_TS_FINISH_SEC       "tsFinishSec"
-#define QTRACE_TS_FINISH_USEC      "tsFinishUsec"
+#define QTRACE_DURATION            "duration"
 
 
 class QTrace
@@ -48,8 +46,10 @@ class QTrace
         bool isEmpty();
         std::string get(std::string label) const;
         long getLong(std::string label) const;
+        double getDouble(std::string label) const;
         void set(std::string label, std::string value);
         void set(std::string label, long value);
+        void set(std::string label, double value);
 
 
         //
@@ -65,18 +65,6 @@ class QTrace
     private:
 
         // trace information
-        /*
-        std::string traceName;
-        std::string traceSource;
-        std::string TraceType;
-        std::string comment;
-        long nPackets;
-        long nFlows;
-        long tsStartSec;    
-        long tsStartUsec;    
-        long tsFinishSec;    
-        long tsFinishUsec;    
-        **/
         std::unordered_map<std::string, std::string> traceProperties;
 
         QFlow* fHead;

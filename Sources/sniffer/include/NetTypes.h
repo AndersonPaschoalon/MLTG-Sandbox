@@ -40,7 +40,8 @@ typedef unsigned short     port_number;
 typedef unsigned int       ipv4_address;
 typedef size_t             flow_id;
 typedef unsigned long int  flow_hash;
-typedef unsigned short     protocol_stack; 
+// typedef unsigned short     protocol_stack; 
+typedef unsigned int       protocol_stack; 
 
 std::string hex_to_dotted_decimal(ipv4_address hexAddress);
 
@@ -92,13 +93,25 @@ enum class ApplicationProtocol
 {
     NONE,
     BGP,
+    DHCP,
     DNS,
     FTP,
+    IMAP,
     HTTP,
     HTTPS,
+    MDNS,
+    NTP,
+    POP3,
+    QUIC,
+    RTP,
+    SSDP,
+    SIP,
     SSH,
+    SNMP,
     SMTP,
+    SMTPS,
     Telnet,
+    TFTP,
     TLS_SSL,
 };
 
@@ -169,23 +182,7 @@ void recover_ipv4_str(flow_hash summ, std::string& dst, std::string& src);
 
 void recover_ports(flow_hash summ, port_number &dst, port_number &src);
 
-
-///////////////////////////////////////////////////////////////////////////////
-// METADATA
-///////////////////////////////////////////////////////////////////////////////
-
-//enum class TraceType
-//{
-//    LIVE,
-//    FILE
-//};
-
-//enum class CaptureLibrary
-//{
-//    LIBPCAP,
-//    DPDK,
-//    LIBTINS,
-//};
+ApplicationProtocol estimate_application_protocol_v01(TransportProtocol proto, uint16_t src_port, uint16_t dst_port);
 
 
 #endif // _NET_TYPES__H_

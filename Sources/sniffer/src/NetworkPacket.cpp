@@ -7,7 +7,6 @@ NetworkPacket::NetworkPacket()
     this->timeStamp.tv_sec = 0;
     this->timeStamp.tv_usec = 0;
     this->flowId = FLOW_ID_NONE;
-    this->aplicationProtocol = ApplicationProtocol::NONE;
     this->transportProtocol = TransportProtocol::NONE;
     this->portDst = PORT_NONE;
     this->portSrc = PORT_NONE;
@@ -38,7 +37,6 @@ NetworkPacket::NetworkPacket(const NetworkPacket &obj)
     this->timeStamp.tv_sec = obj.timeStamp.tv_sec;
     this->timeStamp.tv_usec = obj.timeStamp.tv_usec;
     this->flowId = obj.flowId;
-    this->aplicationProtocol = obj.aplicationProtocol;
     this->transportProtocol = obj.transportProtocol;
     this->portDst = obj.portDst;
     this->portSrc = obj.portSrc;
@@ -61,7 +59,6 @@ NetworkPacket &NetworkPacket::operator=(NetworkPacket other)
         this->timeStamp.tv_sec = other.timeStamp.tv_sec;
         this->timeStamp.tv_usec = other.timeStamp.tv_usec;
         this->flowId = other.flowId;
-        this->aplicationProtocol = other.aplicationProtocol;
         this->transportProtocol = other.transportProtocol;
         this->portDst = other.portDst;
         this->portSrc = other.portSrc;
@@ -85,7 +82,7 @@ std::string NetworkPacket::toString()
 		   std::string(", flowId:") + std::to_string(this->flowId) +
            std::string(", networkProtocol:") + to_string(this->networkProtocol) +
 		   std::string(", transportProtocol:") + to_string(this->transportProtocol) +
-           std::string(", aplicationProtocol:") + to_string(this->aplicationProtocol) +
+           std::string(", aplicationProtocol:") + to_string(this->getApplicationProtocol()) +
 		   std::string(", portDst:") + std::to_string(this->portDst) +
 		   std::string(", portSrc:") + std::to_string(this->portSrc) +
 		   std::string(", ipv4Dst:") + std::to_string(this->ipv4Dst) +
@@ -262,13 +259,10 @@ void NetworkPacket::setTransport(TransportProtocol proto)
 
 ApplicationProtocol NetworkPacket::getApplicationProtocol()
 {
-    return this->aplicationProtocol;
+
+    return estimate_application_protocol_v01(this->transportProtocol, this->portSrc, this->portDst);
 }
 
-void NetworkPacket::setApplication(ApplicationProtocol app)
-{
-    this->aplicationProtocol = app;
-}
 
 bool NetworkPacket::isStopPacket()
 {

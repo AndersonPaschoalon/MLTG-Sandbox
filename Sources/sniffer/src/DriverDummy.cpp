@@ -76,7 +76,6 @@ int DriverDummy::listen(const char* captureType, const char* deviceName, double 
     p1.setPysical(pktId, size0, ts);
     p1.setNetwork(NetworkProtocol::IPv4, addr1, addr2, 64);
     p1.setTransport(TransportProtocol::TCP, port1, port2);
-    p1.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 2
     pktId++;
@@ -85,7 +84,6 @@ int DriverDummy::listen(const char* captureType, const char* deviceName, double 
     p2.setPysical(pktId, size1, ts);
     p2.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p2.setTransport(TransportProtocol::TCP, port1, port2);
-    p2.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 3
     pktId++;
@@ -94,7 +92,6 @@ int DriverDummy::listen(const char* captureType, const char* deviceName, double 
     p3.setPysical(pktId, size2, ts);
     p3.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p3.setTransport(TransportProtocol::TCP, port2, port1);
-    p3.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 3
     pktId++;
@@ -103,7 +100,6 @@ int DriverDummy::listen(const char* captureType, const char* deviceName, double 
     p4.setPysical(pktId, size1, ts);
     p4.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p4.setTransport(TransportProtocol::TCP, port2, port1);
-    p4.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 4
     pktId++;
@@ -112,7 +108,6 @@ int DriverDummy::listen(const char* captureType, const char* deviceName, double 
     p5.setPysical(pktId, size0, ts);
     p5.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p5.setTransport(TransportProtocol::UDP, port2, port1);
-    p5.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 4
     pktId++;
@@ -121,7 +116,6 @@ int DriverDummy::listen(const char* captureType, const char* deviceName, double 
     p6.setPysical(pktId, size1, ts);
     p6.setNetwork(NetworkProtocol::IPv4, addr2, addr1, 64);
     p6.setTransport(TransportProtocol::UDP, port2, port1);
-    p6.setApplication(ApplicationProtocol::HTTP);
 
     // Flow 5
     pktId++;

@@ -16,11 +16,11 @@
 
 
 // #define RUN_UNITY_TESTS 1
-
+#define TRACE_DATABASE_MANAGER        TRACE_DB_V1_NAIVE
 
 const char VERSION[] = ""
 "SIMITAR sniffer.exe                                                           \n"
-"Version: 0.0.0.1                                                              \n"
+"Version: 0.1.0.0                                                              \n"
 "Author: Anderson Paschoalon.                                                  \n"
 "                                                                              \n"
 " Copyright (c) 2023 Anderson Paschoalon                                       \n"
@@ -251,13 +251,13 @@ int main(int argc, char* argv[])
     {
         showVersion();
     }
-    else if(unitytests)
-    {
-        runUnityTests();
-    }
     else if(show)
     {
         displayTracesInformation();
+    }
+    else if(unitytests)
+    {
+        runUnityTests();
     }
     else if(traceToDelete != "")
     {
@@ -314,20 +314,34 @@ void showVersion()
 
 void runUnityTests()
 {
+    printf("Run Unity Tests...\n");
     UnityTests::run();
 }
 
 void displayTracesInformation()
 { 
-    printf("displayTracesInformation\n");
-    // todo
+    const char databaseManeger[] = TRACE_DATABASE_MANAGER; 
+
+    ILocalDbService* db = AssetsFactory::makeTraceDatabaseManager(databaseManeger);
+    db->open();
+    db->displayTraceDatabase();
+    db->close();
+    
+    delete db;    
 }
 
 int deleteCapture(const char* captureName)
 {
-    // todo
-    printf("deleteCapture\n");
-    return 0;
+    const char databaseManeger[] = TRACE_DATABASE_MANAGER;
+    int ret = 0;
+
+    ILocalDbService* db = AssetsFactory::makeTraceDatabaseManager(databaseManeger);
+    db->open();
+    ret = db->deleteFlowDatabase(captureName);
+    db->close();
+    
+    delete db;
+    return ret;
 }
 
 
@@ -340,25 +354,14 @@ int executeCapture(const char* traceName,        // capture name
                    const double timeoutSeconds,  // timeout in seconds for live captures. Negative numbers means there is no timeout
                    long maxPacketNumber)         // max number of packets for live captures. Negative numbers means there is no limit 
 {
-    const char databaseManeger[] = TRACE_DB_V1_NAIVE; 
+    const char databaseManeger[] = TRACE_DATABASE_MANAGER; 
     const char flowAlgorithm[] = FLOW_ID_CALC;
 
     ISniffer* sniffer = AppFactory::makeSniffer(SNIFFER_IMPL_SNIFFERV01);
     sniffer->configure(traceName, captureType, captureDriver, captureDevice, databaseManeger, flowAlgorithm, comments, timeoutSeconds, maxPacketNumber);
-    int ret = sniffer->run();    
+    int ret = sniffer->run();
 
+    delete sniffer;    
     return ret;
-
-    /*
-    std::cout << "traceName = " << traceName << std::endl;
-    std::cout << "linkProtocol = " << linkProtocol << std::endl;
-    std::cout << "captureType = " << captureType << std::endl;
-    std::cout << "captureDriver = " << captureDriver << std::endl;
-    std::cout << "captureDevice = " << captureDevice << std::endl;
-    std::cout << "comments = " << comments << std::endl;
-    std::cout << "timeoutSeconds = " << timeoutSeconds << std::endl;
-    std::cout << "maxPacketNumber = " << maxPacketNumber << std::endl;
-    return 0;
-    **/
 }
 

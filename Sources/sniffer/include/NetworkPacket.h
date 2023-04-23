@@ -111,8 +111,6 @@ class NetworkPacket
 
         ApplicationProtocol getApplicationProtocol();
 
-        void setApplication(ApplicationProtocol app);
-
         //
         // Flags
         //
@@ -137,10 +135,8 @@ class NetworkPacket
         TransportProtocol transportProtocol;
         port_number portSrc;
         port_number portDst;
-        ApplicationProtocol aplicationProtocol;
         std::string comment;
         bool stopPacket;
-
 
 };
 

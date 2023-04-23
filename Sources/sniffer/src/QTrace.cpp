@@ -4,7 +4,7 @@ QTrace::QTrace(): QTrace("", "", "", "")
 {
 }
 
-QTrace::QTrace(const char *traceName, const char *traceSource, const char *traceType, const char *comment)
+QTrace::QTrace(const char *traceName, const char *traceType, const char *traceSource, const char *comment)
 {
     this->fHead = nullptr;
     this->fTail = nullptr;
@@ -55,10 +55,7 @@ std::string QTrace::toString()
            std::string(", comment:") + this->traceProperties[QTRACE_COMMENT]  + 
 		   std::string(", nPackets:") + this->traceProperties[QTRACE_N_PACKETS]  + 
            std::string(", nFlows:") + this->traceProperties[QTRACE_N_FLOWS]  + 
-		   std::string(", tsStartSec:") + this->traceProperties[QTRACE_TS_START_SEC]  + 
-		   std::string(", tsStartUsec:") + this->traceProperties[QTRACE_TS_START_USEC]  + 
-           std::string(", tsFinishSec:") + this->traceProperties[QTRACE_TS_FINISH_SEC]  + 
-		   std::string(", tsFinishUsec:") + this->traceProperties[QTRACE_TS_FINISH_USEC]  +            
+		   std::string(", duration:") + this->traceProperties[QTRACE_DURATION]  +         
            std::string("}");
 }
 
@@ -91,12 +88,27 @@ long QTrace::getLong(std::string label) const
     return std::stol(it->second);
 }
 
+double QTrace::getDouble(std::string label) const
+{
+    auto it = this->traceProperties.find(label);
+    if (it == this->traceProperties.end()) 
+    {
+        return 0.0;
+    }
+    return std::stod(it->second);
+}
+
 void QTrace::set(std::string label, std::string value) 
 {
     this->traceProperties[label] = value;
 }
 
 void QTrace::set(std::string label, long value) 
+{
+    this->traceProperties[label] = std::to_string(value);
+}
+
+void QTrace::set(std::string label, double value)
 {
     this->traceProperties[label] = std::to_string(value);
 }
