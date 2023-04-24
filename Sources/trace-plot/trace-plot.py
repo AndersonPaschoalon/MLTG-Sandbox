@@ -1,4 +1,4 @@
-from TracePlotter import TracePlotter
+from Plotter import TracePlotter
 
 
 plt1 = TracePlotter(plot_color='red', trace_id='1', flow_database_file="db/TestSkype_Flow.db")
