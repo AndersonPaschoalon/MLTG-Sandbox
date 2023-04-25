@@ -2,8 +2,94 @@ import matplotlib.pyplot as plt
 import pywt
 import sqlite3
 import numpy as np
+from Utils import Utils
+import os
 
 
+class Plotter:
+
+    @staticmethod
+    def plot_interarrival_cdf(plot_data_list, out_dir):
+        Utils.mkdir(out_dir)
+        plt.clf()
+
+        for item in plot_data_list:
+            print(f"Plotting element {item.name}...")
+            interarrival_times = item.inter_arrivals()
+
+            # sort the interarrival times
+            sorted_interarrival_times = np.sort(interarrival_times)
+
+            # calculate the empirical CDF
+            ecdf = np.arange(1, len(sorted_interarrival_times) + 1) / len(sorted_interarrival_times)
+
+            # plot the CDF
+            plt.plot(sorted_interarrival_times, ecdf, label=item.name, color=item.color)
+
+        plt.title('Empirical CDF of Interarrival Times')
+        plt.xlabel('Interarrival Time (ms)')
+        plt.ylabel('Cumulative Probability')
+        plt.legend()
+        plot_file = os.path.join(out_dir, "InterarrivalCDF.png")
+        plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_interarrival_time_distribution(plot_data_list, out_dir):
+        Utils.mkdir(out_dir)
+        plt.clf()
+
+        for item in plot_data_list:
+            data = item.inter_arrivals()
+            print(f"Plotting element {item.name}...")
+            # Calculate the histogram
+            hist, edges = np.histogram(data, bins='auto')
+            # Plot the histogram as a curve
+            plt.plot(edges[:-1], hist, color=item.color, label=item.name)
+
+        plt.legend()
+        plt.title('Interarrival Time Distribution')
+        plt.xlabel('Interarrival Time (ms)')
+        plt.ylabel('Frequency')
+        plot_file = os.path.join(out_dir, "InterarrivalTimeDistribution.png")
+        plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_iplot_bandwidth_mbps(plot_data_list, out_dir):
+        Utils.mkdir(out_dir)
+        plt.clf()
+
+        for item in plot_data_list:
+            print(f"Plotting element {item.name}...")
+            interarrival_times = item.inter_arrivals()
+            packet_sizes = item.packet_sizes()
+
+            # Calculate the start times for each packet
+            start_times = np.cumsum(interarrival_times)
+
+            # Calculate the number of seconds elapsed for each packet
+            elapsed_seconds = start_times - start_times[0]
+            elapsed_seconds = elapsed_seconds // 1000
+
+            # Calculate the total amount of data transmitted in each second
+            data_per_second = np.zeros(elapsed_seconds[-1] + 1)
+            for i in range(len(packet_sizes)):
+                data_per_second[elapsed_seconds[i]] += packet_sizes[i]
+
+            # Calculate the bandwidth in mbytes per second
+            bandwidth = data_per_second / 1e6 / np.diff(np.concatenate(([0], elapsed_seconds)))
+
+            plt.plot(np.arange(len(bandwidth)), bandwidth, label=item.name, color=item.color)
+
+
+        plt.legend()
+        title = 'Bandwidth over Time'
+        plt.title(title)
+        plt.xlabel('Time (seconds)')
+        plt.ylabel('Bandwidth (MBytes per second)')
+        plot_file = os.path.join(out_dir, "BandwidthMbps.png")
+        plt.savefig(plot_file)
+
+"""
 class Plotter:
 
     @staticmethod
@@ -65,4 +151,4 @@ class Plotter:
         ax.set_title('Wavelet Multiresolution Energy Analysis of Packet Counts')
         ax.legend(loc='upper right')
         plt.show()
-
+"""
