@@ -9,4 +9,10 @@ data2 = PlotData(flow_database="random", name="data-02", color="red")
 plot_list = [data1, data2]
 Plotter.plot_interarrival_cdf(plot_data_list=plot_list, out_dir=out_dir)
 Plotter.plot_interarrival_time_distribution(plot_data_list=plot_list, out_dir=out_dir)
-Plotter.plot_iplot_bandwidth_mbps(plot_data_list=plot_list, out_dir=out_dir)
+# Plotter.plot_iplot_bandwidth_mbps(plot_data_list=plot_list, out_dir=out_dir)
+Plotter.plot_iplot_bandwidth_mbps(plot_data_list=[data1], out_dir=out_dir)
+
+Plotter.plot_wavelet(data1.packet_sizes(), data1.arrivals())
+
+
+

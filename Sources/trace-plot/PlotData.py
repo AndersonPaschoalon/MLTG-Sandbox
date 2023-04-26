@@ -1,3 +1,4 @@
+import numpy as np
 from Database import PacketTable
 from Database import RandomData
 from Utils import Utils
@@ -17,13 +18,16 @@ class PlotData:
     def load(self, cols):
         return self.packet_table.fetch(column=cols)
 
+    def arrivals(self):
+        return np.array(self.packet_table.fetch(column="ts"))
+
     def inter_arrivals(self):
         ts = self.packet_table.fetch(column="ts")
         inter_arrivals = Utils.diff(ts)
-        return inter_arrivals
+        return np.array(inter_arrivals)
 
     def packet_sizes(self):
-        return self.packet_table.fetch(column="pktSize")
+        return np.array(self.packet_table.fetch(column="pktSize"))
 
 
 

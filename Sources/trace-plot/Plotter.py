@@ -4,6 +4,8 @@ import sqlite3
 import numpy as np
 from Utils import Utils
 import os
+import math
+from scipy import signal
 
 
 class Plotter:
@@ -27,7 +29,7 @@ class Plotter:
             plt.plot(sorted_interarrival_times, ecdf, label=item.name, color=item.color)
 
         plt.title('Empirical CDF of Interarrival Times')
-        plt.xlabel('Interarrival Time (ms)')
+        plt.xlabel('Interarrival Time (seconds)')
         plt.ylabel('Cumulative Probability')
         plt.legend()
         plot_file = os.path.join(out_dir, "InterarrivalCDF.png")
@@ -48,7 +50,7 @@ class Plotter:
 
         plt.legend()
         plt.title('Interarrival Time Distribution')
-        plt.xlabel('Interarrival Time (ms)')
+        plt.xlabel('Interarrival Time (seconds)')
         plt.ylabel('Frequency')
         plot_file = os.path.join(out_dir, "InterarrivalTimeDistribution.png")
         plt.savefig(plot_file)
@@ -68,18 +70,19 @@ class Plotter:
 
             # Calculate the number of seconds elapsed for each packet
             elapsed_seconds = start_times - start_times[0]
-            elapsed_seconds = elapsed_seconds // 1000
 
             # Calculate the total amount of data transmitted in each second
-            data_per_second = np.zeros(elapsed_seconds[-1] + 1)
+            last_time = elapsed_seconds[-1]
+            data_per_second = np.zeros(math.floor(last_time) + 1)
             for i in range(len(packet_sizes)):
-                data_per_second[elapsed_seconds[i]] += packet_sizes[i]
+                current_time_box = math.floor(elapsed_seconds[i])
+                data_per_second[current_time_box] += packet_sizes[i]
 
             # Calculate the bandwidth in mbytes per second
-            bandwidth = data_per_second / 1e6 / np.diff(np.concatenate(([0], elapsed_seconds)))
+            time_intervals = np.ones(len(data_per_second), dtype=int)
+            bandwidth = (data_per_second / 1e6) / time_intervals
 
             plt.plot(np.arange(len(bandwidth)), bandwidth, label=item.name, color=item.color)
-
 
         plt.legend()
         title = 'Bandwidth over Time'
@@ -88,6 +91,45 @@ class Plotter:
         plt.ylabel('Bandwidth (MBytes per second)')
         plot_file = os.path.join(out_dir, "BandwidthMbps.png")
         plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_wavelet(packet_sizes, arrival_times):
+        # Define the scales of interest
+        # scales = np.arange(1, 10)
+        scales = np.logspace(0, 15, base=2)
+        scales_int = np.array([int(scale) for scale in scales])
+
+        # Calculate the start times for each packet
+        start_times = np.cumsum(arrival_times)
+
+        # Calculate the number of seconds elapsed for each packet
+        #elapsed_seconds = start_times - start_times[0]
+        elapsed_seconds = start_times
+
+        # Calculate the total amount of data transmitted in each millisecond
+        last_time_val = elapsed_seconds[-1]
+        size_dpms = math.floor(last_time_val * 1000) + 1
+        data_per_millisecond = np.zeros(size_dpms)
+        for i in range(len(packet_sizes)):
+            current_time_box = int(elapsed_seconds[i] * 1000)
+            data_per_millisecond[current_time_box] += packet_sizes[i]
+
+        # Calculate the bandwidth in Mbps
+        sampling_frequency = 1000  # 1ms
+        time_step = 1 / sampling_frequency
+        # wavelet = signal.ricker
+        wavelet = signal.ricker(max(scales_int), 4)
+        # scales = np.logspace(0, 4, num=100, base=2)
+        cwtmatr, frequencies = pywt.cwt(data_per_millisecond, scales, wavelet, sampling_period=time_step)
+        power = (abs(cwtmatr)) ** 2
+        log2_energy = np.log2(power.sum(axis=1))
+
+        # Plot the wavelet multiresolution energy analysis
+        plt.plot(scales, log2_energy)
+        plt.xscale('log')
+        plt.xlabel('Time scales (ms)')
+        plt.ylabel('Log2 energy')
+        plt.show()
 
 """
 class Plotter:

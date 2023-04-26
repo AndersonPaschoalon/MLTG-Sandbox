@@ -52,8 +52,10 @@ class RandomData:
 
     @staticmethod
     def sample_weibull2(sample_size=100):
+        #shape = 1.5
         shape = 1.5
-        scale = 7.5
+        #scale = 7.5
+        scale = 0.075
         return RandomData.sample_weibull(sample_size, shape, scale)
 
     @staticmethod
