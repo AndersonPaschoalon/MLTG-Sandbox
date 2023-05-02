@@ -1,5 +1,5 @@
 import numpy as np
-from Database import PacketTable
+from Database import TraceDatabase
 from Database import RandomData
 from Database import RandomData2
 from Utils import Utils
@@ -17,7 +17,7 @@ class PlotData:
         elif flow_database == "random2b":
             self.packet_table = RandomData2(num_packets=120, seed=543421)
         else:
-            self.packet_table = PacketTable(database_file=flow_database, trace_name=name)
+            self.packet_table = TraceDatabase(database_file=flow_database, trace_name=name)
         self.name = name
         self.color = color
 

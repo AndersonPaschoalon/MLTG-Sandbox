@@ -1,19 +1,22 @@
 import sqlite3
 import numpy as np
+import math
 from itertools import accumulate
+from Utils import Utils
 
 
-class PacketTable:
+class TraceDatabase:
 
-    def __init__(self, database_file, trace_name):
+    def __init__(self, database_file, trace_name, config=None):
         self.database_file = database_file
         self.trace_name = trace_name
+        self.config = config
 
     def fetch(self, column, order_by="tsSec, tsUsec"):
-        calc_inter_arrivals = False
-        if column.strip() == "ts":
-            column = "tsSec, tsUsec"
-            calc_inter_arrivals = True
+        #calc_inter_arrivals = False
+        #if column.strip() == "ts":
+        #    column = "tsSec, tsUsec"
+        #    calc_inter_arrivals = True
         conn = sqlite3.connect(self.database_file)
         c = conn.cursor()
         sql_query = f"SELECT {column} FROM Packets ORDER BY {order_by}"
@@ -21,31 +24,108 @@ class PacketTable:
         c.execute(sql_query)
         rows = c.fetchall()
         conn.close()
-        if calc_inter_arrivals:
-            return self._arrival_times(rows)
+        #if calc_inter_arrivals:
+        #    return self._arrival_times(rows)
         return np.array(rows)
 
-    def _arrival_times(self, t):
+    def _calc_arrival_times(self):
+        t = self.fetch("tsSec, tsUsec")
         tsec = [row[0] for row in t]
         tusec = [row[1] for row in t]
-        inter_arrivals = np.array(tsec) + np.array(tusec) / 1000000.0
-        return inter_arrivals
+        arrivals = np.array(tsec) + np.array(tusec) / 1000000.0
+        return arrivals
+
+    def load(self, labels_array: []):
+        ret_dic = {}
+        pkt_table_labels = ["packetID", "traceID", "flowID", "tsSec", "tsUsec", "pktSize", "timeToLive"]
+        for label in labels_array:
+            if label in pkt_table_labels:
+                print(f"Loading {label} from PacketTable...")
+                values = self.fetch(label)
+                ret_dic[label] = values
+            elif label == "arrival-times":
+                values = self._calc_arrival_times()
+                ret_dic[label] = values
+            elif label == "inter-arrival-times":
+                arrivals = self._calc_arrival_times()
+                inter_arrivals = Utils.diff(arrivals)
+                ret_dic[label] = np.array(inter_arrivals)
+        return ret_dic
 
 
 class RandomData:
 
-    def __init__(self):
-        np.random.seed(42)
+    def __init__(self, database_file, trace_name, config=None):
+        self.database_file = database_file
+        self.trace_name = trace_name
+        self.config = config
+        if config is None:
+            np.random.seed(42)
+            self.n_packets = 1000
+            self.n_flows = 10
+            self.seed = 42
+        else:
+            np.random.seed(config["seed"])
+            self.n_packets = config["n_packets"]
+            self.n_flows = config["n_flows"]
+            self.seed = config["seed"]
+            if self.database_file == "3spikes":
+                np_arrival_times, np_packet_sizes = self.arrival_times_and_pkt_sizes(num_packets=self.n_packets,
+                                                                                     seed=self.seed)
+                self.np_arrival_times = np_arrival_times
+                self.np_packet_sizes = np_packet_sizes
 
-    def fetch(self, column, order_by="tsSec, tsUsec"):
-        ret_list = []
-        n_samples = 1000
-        if column == "ts":
-            inter_attivals = RandomData.sample_weibull2(n_samples)
-            ret_list = list(accumulate(inter_attivals))
-        elif column == "pktSize":
-            ret_list = RandomData.sample_uniform(n=n_samples, min_val=64, max_val=1518)
-        return ret_list
+    def load(self, labels_array):
+        ret_dic = {}
+        for label in labels_array:
+            print(f"Loading {label}...")
+            if label == "inter-arrival-times":
+                if self.database_file == "3spikes":
+                    print(f"Using data 3spikes...")
+                    ret_dic[label] = Utils.diff(self.np_arrival_times)
+                else:
+                    ret_dic[label] = RandomData.sample_weibull2(self.n_packets)
+            elif label == "arrival-times":
+                data = self.load(["inter-arrival-times"])
+                inter_arrivals = data["inter-arrival-times"]
+                arrivals = []
+                acc = 0
+                for val in inter_arrivals:
+                    acc = val + acc
+                    arrivals.append(acc)
+                ret_dic[label] = np.array(arrivals)
+            elif label == "pktSize":
+                if self.database_file == "3spikes":
+                    print(f"Using data 3spikes...")
+                    ret_dic[label] = self.np_packet_sizes
+                else:
+                    ret_dic[label] = RandomData.sample_uniform(n=self.n_packets, min_val=64, max_val=1518)
+            elif label == "packetID":
+                ret_dic[label] = np.array(list(range(1, self.n_packets)))
+            elif label == "tsSec":
+                data = self.load(["arrival-times"])
+                ts = data["arrival-times"]
+                array = []
+                for val in ts:
+                    array.append(int(math.ceil(val)))
+                ret_dic[label] = array
+            elif label == "tsUsec":
+                array = []
+                data = self.load(["arrival-times"])
+                arrivals = data["arrival-times"]
+                for arrival in arrivals:
+                    arrivals_usec = (arrival - math.ceil(arrival)) * 1e6
+                    array.append(arrivals_usec)
+                ret_dic[label] = np.array(array)
+            elif label == "timeToLive":
+                ret_dic[label] = RandomData.sample_uniform(n=self.n_packets, min_val=50, max_val=80)
+            elif label == "traceID":
+                ret_dic[label] = np.ones(self.n_packets)
+            elif label == "flowID":
+                ret_dic[label] = RandomData.sample_uniform(n=self.n_packets, min_val=1, max_val=self.n_flows)
+            else:
+                ret_dic[label] = []
+        return ret_dic
 
     @staticmethod
     def sample_weibull(n, shape, scale):
@@ -55,9 +135,7 @@ class RandomData:
 
     @staticmethod
     def sample_weibull2(sample_size=100):
-        # shape = 1.5
         shape = 1.5
-        # scale = 7.5
         scale = 0.075
         return RandomData.sample_weibull(sample_size, shape, scale)
 
@@ -65,13 +143,7 @@ class RandomData:
     def sample_uniform(n, min_val, max_val):
         return np.random.randint(min_val, max_val, size=n).tolist()
 
-
-class RandomData2:
-
-    def __init__(self, num_packets=30, seed=42):
-        self.num_packets = num_packets
-        self.seed = seed
-
+    @staticmethod
     def arrival_times_and_pkt_sizes(self, num_packets=30, seed=42):
         np.random.seed(seed)
         # Generate interarrival times with spikes
@@ -114,18 +186,10 @@ class RandomData2:
 
         return np_arrival_times, np_packet_sizes
 
-    def fetch(self, column=""):
-        np_arrival_times, np_packet_sizes = self.arrival_times_and_pkt_sizes(num_packets=self.num_packets, seed=self.seed)
-        return np_arrival_times, np_packet_sizes
-
 
 if __name__ == '__main__':
-    # pt = PacketTable(database_file="db/TestSkype_Flow.db", trace_name="TestSkype")
-    # packets = pt.fetch(column="flowID, tsSec, pktSize")
-    # print(packets)
-    # interarr = pt.fetch(column="ts")
-    # print(interarr)
-    rd2 = RandomData2()
-    np_arrival_times, np_packet_sizes = rd2.fetch()
-    print("np_arrival_times:", np_arrival_times)
-    print("np_packet_sizes:", np_packet_sizes)
+    config = {"seed": 42, "n_packets": 100, "n_flows": 10}
+    rd = RandomData(database_file="test", trace_name="test", config=config)
+    all_labels = ["inter-arrival-times", "arrival-times", "packetID", "traceID", "flowID", "tsSec", "tsUsec", "pktSize", "timeToLive"]
+    all_data = rd.load(all_labels)
+    print(all_data)
