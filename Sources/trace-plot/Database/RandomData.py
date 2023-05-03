@@ -49,9 +49,6 @@ class RandomData:
                 # weibull
                 self.np_inter_arrival_times = RandomData.sample_weibull_fix(self.n_packets)
 
-            # inter arrival times
-            self.np_inter_arrival_times = RandomData.sample_weibull_fix(self.n_packets)
-
             # arrival times
             arrivals = []
             acc = 0
@@ -158,7 +155,7 @@ class RandomData:
 
     @staticmethod
     def sample_exponential_fix(n):
-        return RandomData.sample_exponential(n, 0.3)
+        return RandomData.sample_exponential(n, 25.0)
 
     @staticmethod
     def sample_pareto_fix(n):

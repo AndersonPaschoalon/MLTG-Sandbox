@@ -1,9 +1,11 @@
 - Sources		# todos os fontes aqui
 	+- sniffer/		# c++, sniffer
 	+- trace-analyzer/	# python, plota graficos e analises relevantes de traces armazenados no formato csv
-	+- csv-sim-tg/ 		# python, simulador de gerador de trafego com output no formato csv
+	+- sim-tg/ 		# python, simulador de gerador de trafego com output no formato csv
 	+- deep-ditg 		# c++, ditg modificado para utilizar os modelos de machine learning em tensorflow
 	+- model-gen/		# python, modelos de machine learning
+        +- mininet-testbed/     # python, generate a testbed to test the aplication
+        +- test-scripts/        # bash, scripts to automate the test scenarios
 
 - build-apps.sh		# compila aplicações e cria links e pastas no diretorio apps
 
@@ -21,7 +23,7 @@
 
 	// geradores de trafego
 	+- deep-ditg/		# ditg modificado
-	+- csv-sim-tg.ln	# emulador de geração de trafego, gera output no formato csv
+	+- sim-tg.ln	        # emulador de geração de trafego, gera output no formato csv
 	+- csvtraces/		# traces gerados pelo csvsimtg.ln no formato csv
 
 - Docs			# documentação
