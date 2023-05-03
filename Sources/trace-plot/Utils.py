@@ -52,6 +52,32 @@ class Utils:
         return time_slices, bandwidth
 
     @staticmethod
+    def calc_pps(interarrival_times, time_resolution=1.0, verbose=False):
+        total_time = np.sum(interarrival_times)
+        num_slices = math.ceil(total_time / time_resolution)
+        time_slices = np.arange(time_resolution, total_time + time_resolution, time_resolution)
+        pkt_size_acc = np.zeros(num_slices)
+        curr_slice = 0
+        curr_time = 0
+        for i in range(len(interarrival_times)):
+            curr_time += interarrival_times[i]
+            if curr_time > time_slices[curr_slice]:
+                # if the current time does not belong to the current time slice
+                # search for the next time slice with packets available
+                while curr_time > time_slices[curr_slice]:
+                    curr_slice += 1
+                    if curr_slice >= num_slices:
+                        break
+            # accumulate the packet size in the current time slice array
+            pkt_size_acc[curr_slice] += 1
+        # calc the bandwidth
+        pps = pkt_size_acc / time_resolution
+        if verbose:
+            print("Time Slices:", time_slices)
+            print("Packet per Second:", pps)
+        return time_slices, pps
+
+    @staticmethod
     def wavelet_multiresolution_energy_analysis_xy_from_bw(bandwidth_data):
         num_scales = len(bandwidth_data)
 

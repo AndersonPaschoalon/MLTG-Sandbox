@@ -2,11 +2,10 @@ import matplotlib.pyplot as plt
 import pywt
 import sqlite3
 import numpy as np
-from Utils import Utils
 import os
-import math
-from scipy import signal
 import pywt
+from Utils import Utils
+
 
 class Plotter:
 
@@ -17,39 +16,41 @@ class Plotter:
 
         for item in plot_data_list:
             print(f"Plotting element {item.name}...")
-            interarrival_times = item.inter_arrivals()
-            # sort the interarrival times
-            sorted_interarrival_times = np.sort(interarrival_times)
+            data = item.load(["inter-arrival-times"])
+            inter_arrival_times = data["inter-arrival-times"]
+            # sort the inter arrival times
+            sorted_inter_arrival_times = np.sort(inter_arrival_times)
             # calculate the empirical CDF
-            ecdf = np.arange(1, len(sorted_interarrival_times) + 1) / len(sorted_interarrival_times)
+            ecdf = np.arange(1, len(sorted_inter_arrival_times) + 1) / len(sorted_inter_arrival_times)
             # plot the CDF
-            plt.plot(sorted_interarrival_times, ecdf, label=item.name, color=item.color)
+            plt.plot(sorted_inter_arrival_times, ecdf, label=item.name, color=item.color)
 
-        plt.title('Empirical CDF of Interarrival Times')
-        plt.xlabel('Interarrival Time (seconds)')
+        plt.title('Empirical CDF of Inter-Arrival Times')
+        plt.xlabel('Inter-Arrival Time (seconds)')
         plt.ylabel('Cumulative Probability')
         plt.legend()
-        plot_file = os.path.join(out_dir, f"InterarrivalCDF{nickname}.png")
+        plot_file = os.path.join(out_dir, f"InterArrivalCDF{nickname}.png")
         plt.savefig(plot_file)
 
     @staticmethod
-    def plot_interarrival_time_distribution(plot_data_list, out_dir, nickname=""):
+    def plot_inter_arrival_time_distribution(plot_data_list, out_dir, nickname=""):
         Utils.mkdir(out_dir)
         plt.clf()
 
         for item in plot_data_list:
-            data = item.inter_arrivals()
+            data = item.load(["inter-arrival-times"])
+            inter_arrival_times = data["inter-arrival-times"]
             print(f"Plotting element {item.name}...")
             # Calculate the histogram
-            hist, edges = np.histogram(data, bins='auto')
+            hist, edges = np.histogram(inter_arrival_times, bins='auto')
             # Plot the histogram as a curve
             plt.plot(edges[:-1], hist, color=item.color, label=item.name)
 
         plt.legend()
-        plt.title('Interarrival Time Distribution')
-        plt.xlabel('Interarrival Time (seconds)')
+        plt.title('Inter-Arrival Time Distribution')
+        plt.xlabel('Inter-Arrival Time (seconds)')
         plt.ylabel('Frequency')
-        plot_file = os.path.join(out_dir, f"InterarrivalTimeDistribution{nickname}.png")
+        plot_file = os.path.join(out_dir, f"InterArrivalTimeDistribution{nickname}.png")
         plt.savefig(plot_file)
 
     @staticmethod
@@ -59,9 +60,13 @@ class Plotter:
 
         for item in plot_data_list:
             print(f"Plotting element {item.name}...")
-            interarrival_times = item.inter_arrivals()
-            packet_sizes = item.packet_sizes()
-            time_slices, bandwidth = Utils.calc_bandwidth(interarrival_times,
+
+            data = item.load(["inter-arrival-times", "pktSize"])
+
+            inter_arrival_times = data["inter-arrival-times"]
+            packet_sizes = data["pktSize"]
+
+            time_slices, bandwidth = Utils.calc_bandwidth(inter_arrival_times,
                                                           packet_sizes,
                                                           time_resolution=1.0,
                                                           verbose=False)
@@ -76,6 +81,31 @@ class Plotter:
         plt.savefig(plot_file)
 
     @staticmethod
+    def plot_pps(plot_data_list, out_dir, nickname=""):
+        Utils.mkdir(out_dir)
+        plt.clf()
+
+        for item in plot_data_list:
+            print(f"Plotting element {item.name}...")
+
+            data = item.load(["inter-arrival-times"])
+
+            inter_arrival_times = data["inter-arrival-times"]
+
+            time_slices, pps = Utils.calc_pps(inter_arrival_times,
+                                              time_resolution=1.0,
+                                              verbose=False)
+            plt.plot(time_slices, pps, label=item.name, color=item.color)
+
+        plt.legend()
+        title = 'Packet Per Second'
+        plt.title(title)
+        plt.xlabel('Time (seconds)')
+        plt.ylabel('Packet Per Second')
+        plot_file = os.path.join(out_dir, f"Pps{nickname}.png")
+        plt.savefig(plot_file)
+
+    @staticmethod
     def plot_wavelet_multiresolution_energy(plot_data_list, out_dir, number_of_scales=15):
         print("Practical Introduction to Multiresolution Analysis: ",
               "https://www.mathworks.com/help/wavelet/ug/practical-introduction-to-multiresolution-analysis.html")
@@ -83,8 +113,12 @@ class Plotter:
         plt.clf()
 
         for item in plot_data_list:
+
             # load the data
-            arrival_times, packet_sizes = item.arrival_times_and_pkt_sizes()
+            data = item.load(["arrival-times", "pktSize"])
+
+            arrival_times = data["arrival-times"]
+            packet_sizes = data["pktSize"]
 
             # execute wavelet analysis
             scales, energy_values = Utils.wavelet_multiresolution_energy_analysis_xy(arrival_times=arrival_times,
@@ -101,19 +135,6 @@ class Plotter:
         plot_file = os.path.join(out_dir, "WaveletMultiresolutionEnergyAnalysis.png")
         plt.savefig(plot_file)
 
-    @staticmethod
-    def _calc_wavelet_xy(bandwidth_data):
-        num_scales = len(bandwidth_data)
 
-        energy_values = []
-        for j in range(1, num_scales + 1):
-            # Perform wavelet transform
-            coeffs = pywt.wavedec(bandwidth_data[j - 1], 'db4', level=num_scales)
-            cA = coeffs[0]
-            # Calculate energy
-            energy = np.sum(np.square(cA))
-            energy_values.append(np.log2(energy))
 
-        scales = np.arange(1, num_scales + 1)
 
-        return scales, energy_values
