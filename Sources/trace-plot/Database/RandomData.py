@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import json
+import random
 from Utils import Utils
 from scipy.stats import pareto
 
@@ -83,7 +84,8 @@ class RandomData:
         self.np_trace_id = np.ones(self.n_packets)
 
         # flow ID
-        self.np_flow_id = RandomData.sample_uniform(n=self.n_packets, min_val=1, max_val=self.n_flows)
+        # self.np_flow_id = RandomData.sample_uniform(n=self.n_packets, min_val=1, max_val=self.n_flows)
+        self.np_flow_id = RandomData.sample_flow_ids(self.n_packets)
 
     def load(self, labels_array):
         ret_dic = {}
@@ -131,7 +133,7 @@ class RandomData:
     @staticmethod
     def sample_pareto(n, mean):
         # Estimate shape parameter
-        b = mean / (mean - 1)
+        b = abs(mean / (mean - 1))
         # Generate samples from Pareto distribution
         samples = pareto.rvs(b, size=n)
         return samples
@@ -143,7 +145,7 @@ class RandomData:
     @staticmethod
     def sample_mod_normal_fix(n):
         mean = 0
-        std = 0.4
+        std = 0.1
         samples = np.abs(np.random.normal(mean, std, n))
         return samples
 
@@ -159,7 +161,16 @@ class RandomData:
 
     @staticmethod
     def sample_pareto_fix(n):
-        return RandomData.sample_pareto(n, 0.3)
+        return RandomData.sample_pareto(n, 1.01)
+
+    @staticmethod
+    def sample_flow_ids(n_values):
+        flow_ids = [1]  # Start with 1
+        for _ in range(n_values - 1):
+            prev_id = flow_ids[-1]
+            next_id = random.choice(list(range(1, prev_id + 1)) + [prev_id + 1])
+            flow_ids.append(next_id)
+        return flow_ids
 
     @staticmethod
     def _3spikes_arrival_times_and_pkt_sizes(num_packets=30, seed=42):
