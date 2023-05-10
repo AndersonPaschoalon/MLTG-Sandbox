@@ -1,13 +1,31 @@
 import matplotlib.pyplot as plt
 import pywt
 import sqlite3
+from statsmodels.graphics.tsaplots import plot_acf
+from scipy import signal
 import numpy as np
 import os
 import pywt
 from Utils import Utils
-
+from hurst import compute_Hc, random_walk
 
 class Plotter:
+
+    @staticmethod
+    def plot_all_stable(plot_data_list, out_dir, nickname="default"):
+        Plotter.plot_inter_arrival_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_inter_arrival_time_distribution(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_bytes_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_flow_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_bandwidth_mbps(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_wavelet_power_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_power_spectrum_density(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_wavelet_multiresolution_energy(plot_data_list=plot_data_list,
+                                                    out_dir=out_dir,
+                                                    nickname=nickname)
+        Plotter.plot_acf_bandwidth(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        # Plotter.plot_hurst_rs(plot_data_list=plot_data_list, out_dir=out_dir, nickname="weibull")
 
     @staticmethod
     def plot_inter_arrival_cdf(plot_data_list, out_dir, nickname=""):
@@ -127,7 +145,8 @@ class Plotter:
             # execute wavelet analysis
             scales, energy_values = Utils.wavelet_multiresolution_energy_analysis_xy(arrival_times=arrival_times,
                                                                                      packet_sizes=packet_sizes,
-                                                                                     number_of_scales=number_of_scales)
+                                                                                     number_of_scales=number_of_scales,
+                                                                                     wavelet='haar')
 
             # plot data
             plt.plot(scales, energy_values, marker='o', label=item.name, color=item.color)
@@ -139,7 +158,6 @@ class Plotter:
         plt.title('Wavelet Multiresolution Energy Analysis')
         plot_file = os.path.join(out_dir, f"WaveletMultiresolutionEnergyAnalysis_{nickname}.png")
         plt.savefig(plot_file)
-
 
     @staticmethod
     def plot_flow_cdf(plot_data_list, out_dir, nickname=""):
@@ -196,31 +214,147 @@ class Plotter:
     @staticmethod
     def plot_wavelet_power_spectrum(plot_data_list, out_dir, nickname=""):
         Utils.mkdir(out_dir)
-        plt.clf()
-        plt.figure(figsize=(10, 6))
 
-        wavelet = 'morl'
         for item in plot_data_list:
-            data = item.load(["arrival-times", "pktSize"])
 
-            arrival_times = data["arrival-times"]
+            # clean the plot
+            plt.clf()
+
+            # load the data
+            data = item.load(["inter-arrival-times", "pktSize"])
+
+            inter_arrival_times = data["inter-arrival-times"]
+            pkt_sizes = data["pktSize"]
+            instant_bw = Utils.calc_instant_bw(inter_arrival_times, pkt_sizes)
+
+            # Define the  wavelet
+            wavelet = 'morl'
+            # wavelet = 'mexh'
+
+            # Define the scales to be used in the wavelet transform
+            scales = np.arange(1, len(instant_bw) + 1)
+
+            # Perform the wavelet transform
+            coeffs, freqs = pywt.cwt(instant_bw, scales, wavelet)
+
+            # Calculate the power spectrum
+            power = (abs(coeffs)) ** 2
+
+            # Plot the power spectrum
+            plt.imshow(power, cmap='jet', extent=[0, len(instant_bw), freqs[-1], freqs[0]],
+                       aspect='auto', interpolation='nearest')
+            plt.colorbar()
+            plt.title('Wavelet Power Spectrum')
+            plt.xlabel('Time')
+            plt.ylabel('Frequency')
+
+            plot_file = os.path.join(out_dir, f"WaveletPowerSpectrum_{item.name}_{nickname}.png")
+            plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_spectrum(plot_data_list, out_dir, nickname=""):
+        Utils.mkdir(out_dir)
+        plt.clf()
+
+        # sampling rate
+        # fs = 0.5*1e-6
+        fs = 1000
+
+        for item in plot_data_list:
+            plt.clf()
+
+            data = item.load(["inter-arrival-times", "pktSize"])
+
+            inter_arrival_times = data["inter-arrival-times"]
             pkt_sizes = data["pktSize"]
 
-            coeffs, freqs = pywt.cwt(pkt_sizes, np.arange(1, len(pkt_sizes) + 1), wavelet)
-            power = (np.abs(coeffs) ** 2) / np.mean(np.abs(coeffs) ** 2)
+            # _, bandwidth = Utils.calc_bandwidth(inter_arrival_times, pkt_sizes, time_resolution=1e-3)
+            _, bandwidth = Utils.calc_bandwidth(inter_arrival_times, pkt_sizes, time_resolution=1)
 
-            time_grid, freq_grid = np.meshgrid(arrival_times, freqs)
+            # plotting the magnitude spectrum of the signal
+            plt.magnitude_spectrum(bandwidth, color=item.color)
 
-            plt.ylim(freqs[0], freqs[-1])
-            plt.gca().set_aspect('auto')
-            plt.pcolormesh(time_grid, freq_grid, power, shading='auto', cmap='jet', alpha=0.7, label=item.name)
+            plt.title("Magnitude Spectrum of the Bandwidth Signal")
+            plt.xlabel('Frequency')
+            plt.ylabel('Energy')
 
-        plt.legend()
-        # plt.grid(True)
-        plt.colorbar(label='Power')
-        plt.xlabel('Time')
-        plt.ylabel('Frequency')
-        plt.title('Wavelet Power Spectrum')
-        plot_file = os.path.join(out_dir, f"WaveletPowerSpectrum_{nickname}.png")
-        plt.savefig(plot_file)
+            plot_file = os.path.join(out_dir, f"Spectrum_{item.name}_{nickname}.png")
+            plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_power_spectrum_density(plot_data_list, out_dir, nickname=""):
+        Utils.mkdir(out_dir)
+        fs = 1000.0  # Sampling frequency (1 kHz)
+        for item in plot_data_list:
+            plt.clf()
+
+            data = item.load(["inter-arrival-times", "pktSize"])
+
+            inter_arrival_times = data["inter-arrival-times"]
+            pkt_sizes = data["pktSize"]
+
+            # _, bandwidth = Utils.calc_bandwidth(inter_arrival_times, pkt_sizes, time_resolution=1e-3)
+            _, bandwidth = Utils.calc_bandwidth(inter_arrival_times, pkt_sizes, time_resolution=1)
+
+            f, psd = signal.welch(inter_arrival_times, fs, nperseg=len(inter_arrival_times))
+
+            plt.clf()
+            plt.figure(figsize=(8, 4))
+            plt.semilogy(f, psd)
+            plt.xlabel('Frequency (Hz)')
+            plt.ylabel('PSD')
+            plt.title('Power Spectral Density')
+
+            plot_file = os.path.join(out_dir, f"PoweSpectrumDensity_{item.name}_{nickname}.png")
+            plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_acf_bandwidth(plot_data_list, out_dir, nickname=""):
+        Utils.mkdir(out_dir)
+        for item in plot_data_list:
+            plt.clf()
+
+            data = item.load(["inter-arrival-times", "pktSize"])
+            inter_arrival_times = data["inter-arrival-times"]
+            pkt_sizes = data["pktSize"]
+            _, bandwidth = Utils.calc_bandwidth(inter_arrival_times, pkt_sizes, time_resolution=1)
+
+            fig, ax = plt.subplots(figsize=(10, 5))
+            plot_acf(bandwidth, lags=len(bandwidth)-1, ax=ax)
+            ax.set_xlabel("Lag")
+            ax.set_ylabel("ACF")
+            ax.set_title("Autocorrelation Function of Bandwidth")
+
+            plot_file = os.path.join(out_dir, f"AutocorrelationFunctionofBandwidth_{nickname}_{item.name}.png")
+            plt.savefig(plot_file)
+
+    @staticmethod
+    def plot_hurst_rs(plot_data_list, out_dir, nickname=""):
+        Utils.mkdir(out_dir)
+        for item in plot_data_list:
+            plt.clf()
+
+            data = item.load(["inter-arrival-times", "pktSize"])
+            inter_arrival_times = data["inter-arrival-times"]
+            pkt_sizes = data["pktSize"]
+            _, bandwidth = Utils.calc_bandwidth(inter_arrival_times, pkt_sizes, time_resolution=1e-2)
+            H, c, array_r_s, array_n = Utils.hurst(bandwidth)
+
+            # Plot
+            f, ax = plt.subplots()
+            # ax.scatter(log_n, log_r_s, color="purple")
+            #ax.plot(log_n[0], c * log_n[0] ** H, color="deepskyblue")
+            #ax.plot(log_n, c * log_n ** H, color="deepskyblue")
+            ax.plot(array_n, c * array_n ** H, color="deepskyblue")
+            ax.scatter(array_n, array_r_s, color="purple")
+            # ax.set_xscale('log')
+            # ax.set_yscale('log')
+            ax.set_xlabel('ln(Time) interval')
+            ax.set_ylabel('ln(R/S) ratio')
+            ax.grid(True)
+            plt.title("H={:.4f}, c={:.4f}".format(H, c))
+
+            plot_file = os.path.join(out_dir, f"HurstRS_{nickname}_{item.name}.png")
+            plt.savefig(plot_file)
+
 

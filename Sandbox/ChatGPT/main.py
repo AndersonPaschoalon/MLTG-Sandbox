@@ -4,7 +4,8 @@ from statsmodels.graphics.tsaplots import plot_acf
 from scipy import signal
 import pywt
 import random
-import hurst
+# import hurst
+import Hurst
 
 
 def sample_inter_arrival_times_ms(sample, repeat=1):
@@ -279,19 +280,23 @@ if __name__ == '__main__':
     n_samples = 10000
     n_flows = 150
     # vec_samples = sample_inter_arrival_times_ms(n_samples)
-    vec_samples = sample_inter_arrival_times_ms_weibull(n_samples)
-    vec_pkt_sizes = samplepacket_sizes(n_samples)
-    vec_flows = sample_flows(n_samples, n_flows)
+    # vec_samples = sample_inter_arrival_times_ms_weibull(n_samples)
+    # vec_pkt_sizes = samplepacket_sizes(n_samples)
+    # vec_flows = sample_flows(n_samples, n_flows)
 
-    plot_interarrival_histogram(vec_samples, "weibull_samples")
-    plot_interarrival_cdf(vec_samples, "weibull_samples")
-    plot_acf_interarrival_times(vec_samples, "weibull_samples")
-    plot_psd(vec_samples, "weibull_samples")
-    #plot_bandwidth2(vec_samples, vec_pkt_sizes, "weibull_samples")
-    #plot_bandwidth(vec_samples, vec_pkt_sizes, "weibull_samples")
-    wavelet_energy_plot(vec_samples, "weibull_samples")
-    plot_flow_per_second(vec_flows, vec_samples, "weibull_samples")
-    plot_local_hurst(vec_samples, window_size=50, sample_nickname="weibull_samples")
+    # plot_interarrival_histogram(vec_samples, "weibull_samples")
+    # plot_interarrival_cdf(vec_samples, "weibull_samples")
+    # plot_acf_interarrival_times(vec_samples, "weibull_samples")
+    # plot_psd(vec_samples, "weibull_samples")
+    # plot_bandwidth2(vec_samples, vec_pkt_sizes, "weibull_samples")
+    # plot_bandwidth(vec_samples, vec_pkt_sizes, "weibull_samples")
+    # wavelet_energy_plot(vec_samples, "weibull_samples")
+    # plot_flow_per_second(vec_flows, vec_samples, "weibull_samples")
+    # plot_local_hurst(vec_samples, window_size=50, sample_nickname="weibull_samples")
+    ts = list(range(50))
+    h, c, log_R_S, log_n = Hurst.hurst(ts)
+    print(f"h:{h}, c:{c}, log_R_S:{log_R_S}, log_n:{log_n}")
+
 
 
 

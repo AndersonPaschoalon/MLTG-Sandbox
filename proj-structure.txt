@@ -1,32 +1,30 @@
-- Sources		# todos os fontes aqui
-	+- sniffer/		# c++, sniffer
-	+- trace-analyzer/	# python, plota graficos e analises relevantes de traces armazenados no formato csv
-	+- sim-tg/ 		# python, simulador de gerador de trafego com output no formato csv
-	+- deep-ditg 		# c++, ditg modificado para utilizar os modelos de machine learning em tensorflow
-	+- model-gen/		# python, modelos de machine learning
-        +- mininet-testbed/     # python, generate a testbed to test the aplication
-        +- test-scripts/        # bash, scripts to automate the test scenarios
+- Sources                    # todos os fontes aqui
+  +- deep-ditg               # c++, ditg modificado para utilizar os modelos de machine learning em tensorflow
+  +- scripts/                # bash, scripts to automate the test scenarios
+  +- sim-tg/                 # python, simulador de gerador de trafego com output no formato csv
+  +- sniffer/                # c++, sniffer
+  +- testbed/                # python, generate a testbed to test the aplication
+  +- trace-plot/             # python, plota graficos e analises relevantes de traces armazenados no formato csv
+  +- trace-models/           # python, modelos de machine learning
 
-- build-apps.sh		# compila aplicações e cria links e pastas no diretorio apps
+- build.sh                   # compila aplicações e cria links e pastas no diretorio apps
 
-- Apps			# aplicações
-	// sniffer e visualização de dados
-	+- sniffer.exe		# sniffer
-	+- db/			# bases de dados do sniffer
-	+- trace-analyzer.ln	# plota analises de traces
-	+- trace-analyzer-plots # graficos do trace-analyzer.ln
+- Apps                       # aplicações
+  # sniffer e visualização de dados
+  +- sniffer.exe             # sniffer
+  +- db/                     # bases de dados do sniffer
+  +- trace-analyzer.ln       # plota analises de traces
+  +- trace-analyzer-plots    # graficos do trace-analyzer.ln
+  # modelos de deep learning
+  +- model-gen.ln            # gerador de modelos de machine learning via tensorflow
+  +- models/                 # modelos do tensorflow
+  +- models-plots/           # graficos dos modelos e treinamento
+  # geradores de trafego
+  +- deep-ditg/              # ditg modificado
+  +- sim-tg.ln               # emulador de geração de trafego, gera output no formato csv
+  +- csvtraces/              # traces gerados pelo csvsimtg.ln no formato csv
 
-	// modelos de deep learning
-	+- model-gen.ln		# gerador de modelos de machine learning via tensorflow
-	+- models/		# modelos do tensorflow
-	+- models-plots/	# graficos dos modelos e treinamento
-
-	// geradores de trafego
-	+- deep-ditg/		# ditg modificado
-	+- sim-tg.ln	        # emulador de geração de trafego, gera output no formato csv
-	+- csvtraces/		# traces gerados pelo csvsimtg.ln no formato csv
-
-- Docs			# documentação
+- Docs   # documentação
 
 
-	
+ 

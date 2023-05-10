@@ -1,7 +1,10 @@
 import numpy as np
 import math
+import pywt
+import matplotlib.pyplot as plt
+import numpy as np
 
-
+"""
 def _calc_bandwidth(interarrival_times, packet_sizes, time_resolution=1.0, verbose=False):
     total_time = np.sum(interarrival_times)
     num_slices = math.ceil(total_time / time_resolution)
@@ -31,7 +34,6 @@ def _calc_bandwidth(interarrival_times, packet_sizes, time_resolution=1.0, verbo
         print("Time Slices:", time_slices)
         print("Bandwidth:", bandwidth)
     return time_slices, bandwidth
-
 
 
 def gen_interarrival_and_pkt_sizes():
@@ -102,3 +104,74 @@ time_slices, bandwidth = _calc_bandwidth(interarrival_times, packet_sizes, time_
 
 interarrival_times, packet_sizes = gen_interarrival_and_pkt_sizes()
 time_slices, bandwidth = _calc_bandwidth(interarrival_times, packet_sizes, time_resolution, verbose=True)
+"""
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+from hurst import compute_Hc, random_walk
+
+# Use random_walk() function or generate a random walk series manually:
+# series = random_walk(99999, cumprod=True)
+np.random.seed(42)
+random_changes = 1. + np.random.randn(99999) / 1000.
+series = np.cumprod(random_changes)  # create a random walk from random changes
+
+# Evaluate Hurst equation
+H, c, data = compute_Hc(series, kind='price', simplified=True)
+
+# Plot
+f, ax = plt.subplots()
+ax.plot(data[0], c*data[0]**H, color="deepskyblue")
+ax.scatter(data[0], data[1], color="purple")
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_xlabel('Time interval')
+ax.set_ylabel('R/S ratio')
+ax.grid(True)
+plt.title("H={:.4f}, c={:.4f}".format(H,c))
+plt.show()
+
+print("H={:.4f}, c={:.4f}".format(H,c))
+"""
+
+import numpy as np
+from pyhht.hht import hilbert, empirical_mode_decomposition as emd
+from pyhht.utils import inst_freq, to_integers
+from pyhht.visualization import plot_imfs
+
+# generate a time series
+np.random.seed(1234)
+x = np.random.randn(1000)
+
+# calculate the empirical mode decomposition
+decomposer = emd(x)
+imfs = decomposer.decompose()
+
+# calculate the instantaneous frequency of each IMF
+freqs = inst_freq(imfs)
+
+# convert the instantaneous frequency to integers
+int_freqs = to_integers(freqs)
+
+# calculate the Hurst exponent using the R/S method
+hurst_exp = np.zeros(imfs.shape[0])
+for i, imf in enumerate(imfs):
+    rs = np.cumsum(imf - np.mean(imf))
+    min_rs = np.min(rs)
+    max_rs = np.max(rs)
+    step = int(np.floor((max_rs - min_rs) / 10))
+    ranges = np.arange(min_rs, max_rs + step, step)
+    r_s = np.zeros(len(ranges))
+    for j, R in enumerate(ranges):
+        n = len(np.where(rs >= R)[0])
+        if n > 0:
+            S = np.std(rs) / np.sqrt(n)
+            r_s[j] = S
+    p = np.polyfit(np.log(ranges), np.log(r_s), 1)
+    hurst_exp[i] = p[0]
+
+# plot the results
+plot_imfs(x, imfs, freqs, int_freqs, hurst_exp)
+
+
+

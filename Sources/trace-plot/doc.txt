@@ -1,0 +1,9 @@
+Wavelet choice
+
+
+The choice of wavelet depends on the specific characteristics of the signal you want to analyze and the goals of your analysis. Each wavelet has its own set of properties that make it more suitable for certain types of signals or features. Some wavelets are better for capturing sharp features, while others are better for smoother features. Additionally, some wavelets have better time localization, while others have better frequency localization.
+
+For example, the Haar wavelet is a good choice for detecting abrupt changes in signals, while the Morlet wavelet is commonly used for analyzing signals with both high and low frequency components. The Mexican hat wavelet is often used for detecting oscillations, and the Daubechies wavelets are useful for analyzing signals with high regularity.
+
+In summary, the choice of wavelet should be based on the characteristics of the signal you want to analyze and the specific features you want to extract.
+
