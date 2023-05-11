@@ -4,7 +4,7 @@ import argparse
 import traceback
 from prettytable import PrettyTable
 from Utils import Utils
-from Database.RandomData import RandomData
+from Database.RandomData import RandomData, RandomDataDbNames
 from Database.TraceDatabase import TraceDatabase
 from Plotter import Plotter
 
@@ -107,7 +107,11 @@ def clean_trace_name_list(list_trace_names, database_file):
     # Check each trace name in the input list and keep only the valid ones
     clean_trace_names = []
     for trace_name in list_trace_names:
+        # -- Database data
         if trace_name in valid_trace_names:
+            clean_trace_names.append(trace_name)
+        # -- Random Data
+        elif trace_name in RandomDataDbNames:
             clean_trace_names.append(trace_name)
         else:
             print(f"Warning: Trace name '{trace_name}' not found in the database.")
@@ -120,12 +124,18 @@ def clean_trace_name_list(list_trace_names, database_file):
 def valid_flow_databases(clean_trace_names):
     valid_flow_dbs = []
     for trace_name in clean_trace_names:
-        flow_db_file = f"db/{trace_name}_Flow.db"
-
-        if os.path.isfile(flow_db_file):
-            valid_flow_dbs.append(flow_db_file)
+        # -- Random data
+        if trace_name in RandomDataDbNames:
+            print(f"Warning: Using RandomData {trace_name}")
+            valid_flow_dbs.append(trace_name)
+        # -- Database data
         else:
-            print(f"Warning: Flow database '{flow_db_file}' not found.")
+            flow_db_file = f"db/{trace_name}_Flow.db"
+
+            if os.path.isfile(flow_db_file):
+                valid_flow_dbs.append(flow_db_file)
+            else:
+                print(f"Warning: Flow database '{flow_db_file}' not found.")
     return valid_flow_dbs
 
 
@@ -141,30 +151,37 @@ def execute_analysis(list_trace_names, output_dir, nickname):
     flow_databases_objs = []
     i = 0
     for database_file in valid_flow_dbs:
+        # check if there is colors available -- just in case... should not happen
         if len(VALID_COLORS) >= i:
             print("Warning: no more colors available, the remaining traces will be ignored.")
             break
-        fdb = TraceDatabase(database_file, VALID_COLORS[i])
-        flow_databases_objs.append(fdb)
+        # -- Use Random data
+        if database_file in RandomDataDbNames:
+            fdb = RandomData(database_file, VALID_COLORS[i])
+            flow_databases_objs.append(fdb)
+        # -- Use Database data
+        else:
+            fdb = TraceDatabase(database_file, VALID_COLORS[i])
+            flow_databases_objs.append(fdb)
         i += 1
     Plotter.plot_all_stable(plot_data_list=flow_databases_objs, out_dir=output_dir, nickname=nickname)
     return 0
 
 
-def execute_test_analysis(output_dir, nickname):
-    # APENAS COLAR AQUI O CONTEUDO DO SCRIPT DE TESTES
-    print("TODO")
-    return 0
-
-
 def main():
     # Create argument parser object
-    parser = argparse.ArgumentParser(description="trace-plot.py is a script to help execute a set of analysis to " + \
-    "compare the stochastics similarities between traces captured by the sniffer, and stored in the TraceDatabase.")
-
+    parser = argparse.ArgumentParser(description="trace-plot.py is a script to help execute a set of analysis to "
+                                                 "compare the stochastics similarities between traces captured by the "
+                                                 "sniffer, and stored in the TraceDatabase.")
     parser.add_argument('-l', '--list', action='store_true', help='List the contents of the TraceDatabase.')
-    parser.add_argument('-p', '--plot', nargs='+', type=str, help='Execute the analysis  in the listed traceNames.The traces should be specified in a csv format. If, instead of a list of trace names, ou use the keywork test, it will execute the analyssis with some random data to check if everithing is working fine.')
-    parser.add_argument('-o', '--out', nargs='+', type=str, help='The name of the output folder the plots will be stored. This directory will be created inside plots directory.')
+    parser.add_argument('-p', '--plot', nargs='+', type=str, help=f"Execute the analysis  in the listed "
+                                                                  f"traceNames.The traces should be specified in a "
+                                                                  f"csv format. Using any of the follwing traces name "
+                                                                  f"will load random data instead (use for tests "
+                                                                  f"only):{str(RandomDataDbNames)}.")
+    parser.add_argument('-o', '--out', nargs='+', type=str, help='The name of the output folder the plots will be '
+                                                                 'stored. This directory will be created inside plots'
+                                                                 ' directory.')
     parser.add_argument('-v', '--version', action='store_true',  help='Show the trace-plot.py version.')
 
     # Parse arguments
@@ -197,12 +214,7 @@ def main():
         if os.path.exists(out_path):
             print(f"**ERROR** output path {out_path} already exists. Use another --out parameter, or delete manually the folder {out_path}.")
             ret_val = -2
-        elif trace_names == "test":
-            print("Executing the analysis with random data...")
-            print(f"Output directory: {out_path}")
-            ret_val = execute_test_analysis(output_dir=out_path, nickname=out_dir_name)
         else:
-
             list_trace_names = trace_names.split(",")
             print(f"Executing analysis on the following traces: {list_trace_names}")
             print(f"Output directory: {out_path}")

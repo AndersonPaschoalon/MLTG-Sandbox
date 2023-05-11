@@ -5,6 +5,14 @@ import random
 from Utils import Utils
 from scipy.stats import pareto
 
+RandomDataDbNames = [
+    "3spikes",
+    "normal",
+    "exponential",
+    "pareto",
+    "weibull",
+]
+
 
 class RandomData:
 

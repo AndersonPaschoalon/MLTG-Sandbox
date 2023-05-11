@@ -76,9 +76,8 @@ class Plotter:
     @staticmethod
     def plot_bandwidth_mbps(plot_data_list, out_dir, nickname=""):
         Utils.mkdir(out_dir)
-        plt.clf()
-
         for item in plot_data_list:
+            plt.clf()
             print(f"Plotting element {item.name}...")
 
             data = item.load(["inter-arrival-times", "pktSize"])
@@ -92,25 +91,23 @@ class Plotter:
                                                           verbose=False)
             plt.plot(time_slices, bandwidth/1e6, label=item.name, color=item.color)
 
-        plt.legend()
-        plt.grid(True)
-        title = 'Bandwidth over Time'
-        plt.title(title)
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Bandwidth (MBytes per second)')
-        plot_file = os.path.join(out_dir, f"BandwidthMbps_{nickname}.png")
-        plt.savefig(plot_file)
+            plt.legend()
+            plt.grid(True)
+            title = 'Bandwidth over Time'
+            plt.title(title)
+            plt.xlabel('Time (seconds)')
+            plt.ylabel('Bandwidth (MBytes per second)')
+            plot_file = os.path.join(out_dir, f"BandwidthMbps_{item.name}_{nickname}.png")
+            plt.savefig(plot_file)
 
     @staticmethod
     def plot_pps(plot_data_list, out_dir, nickname=""):
         Utils.mkdir(out_dir)
-        plt.clf()
-
         for item in plot_data_list:
+            plt.clf()
+
             print(f"Plotting element {item.name}...")
-
             data = item.load(["inter-arrival-times"])
-
             inter_arrival_times = data["inter-arrival-times"]
 
             time_slices, pps = Utils.calc_pps(inter_arrival_times,
@@ -118,14 +115,14 @@ class Plotter:
                                               verbose=False)
             plt.plot(time_slices, pps, label=item.name, color=item.color)
 
-        plt.legend()
-        plt.grid(True)
-        title = 'Packet Per Second'
-        plt.title(title)
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Packet Per Second')
-        plot_file = os.path.join(out_dir, f"Pps_{nickname}.png")
-        plt.savefig(plot_file)
+            plt.legend()
+            plt.grid(True)
+            title = 'Packet Per Second'
+            plt.title(title)
+            plt.xlabel('Time (seconds)')
+            plt.ylabel('Packet Per Second')
+            plot_file = os.path.join(out_dir, f"Pps_{item.name}_{nickname}.png")
+            plt.savefig(plot_file)
 
     @staticmethod
     def plot_wavelet_multiresolution_energy(plot_data_list, out_dir, number_of_scales=15, nickname=""):
@@ -167,7 +164,6 @@ class Plotter:
         for item in plot_data_list:
 
             data = item.load(["arrival-times", "flowID"])
-
             arrival_times = data["arrival-times"]
             flow_ids = data["flowID"]
 
