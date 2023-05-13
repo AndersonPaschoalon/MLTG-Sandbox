@@ -121,19 +121,23 @@ def clean_trace_name_list(list_trace_names, database_file):
     return clean_trace_names
 
 
-def valid_flow_databases(clean_trace_names):
+def valid_flow_databases_tuples(clean_trace_names):
+    """
+    Returns a tuple of valid (trace_name, flow_database_path).
+    :param clean_trace_names:
+    :return:
+    """
     valid_flow_dbs = []
     for trace_name in clean_trace_names:
         # -- Random data
         if trace_name in RandomDataDbNames:
             print(f"Warning: Using RandomData {trace_name}")
-            valid_flow_dbs.append(trace_name)
+            valid_flow_dbs.append( (trace_name, trace_name))
         # -- Database data
         else:
             flow_db_file = f"db/{trace_name}_Flow.db"
-
             if os.path.isfile(flow_db_file):
-                valid_flow_dbs.append(flow_db_file)
+                valid_flow_dbs.append((trace_name, flow_db_file))
             else:
                 print(f"Warning: Flow database '{flow_db_file}' not found.")
     return valid_flow_dbs
@@ -144,24 +148,26 @@ def execute_analysis(list_trace_names, output_dir, nickname):
     if len(clean_trace_names) == 0:
         print("**ERROR** No valid traceName was provided. Use --list to show all valid traceNames.")
         return -3
-    valid_flow_dbs = valid_flow_databases(clean_trace_names)
-    if len(clean_trace_names):
+    valid_flow_dbs_tuples = valid_flow_databases_tuples(clean_trace_names)
+    if len(valid_flow_dbs_tuples) == 0:
         print("**ERROR** no valid flow database was found.")
         return -4
     flow_databases_objs = []
     i = 0
-    for database_file in valid_flow_dbs:
+    for database_tuple in valid_flow_dbs_tuples:
         # check if there is colors available -- just in case... should not happen
-        if len(VALID_COLORS) >= i:
+        if len(VALID_COLORS) < i:
             print("Warning: no more colors available, the remaining traces will be ignored.")
             break
+        database_name = database_tuple[0]
+        database_file = database_tuple[1]
         # -- Use Random data
         if database_file in RandomDataDbNames:
-            fdb = RandomData(database_file, VALID_COLORS[i])
+            fdb = RandomData(database_file=database_file, name=database_name, color=VALID_COLORS[i])
             flow_databases_objs.append(fdb)
         # -- Use Database data
         else:
-            fdb = TraceDatabase(database_file, VALID_COLORS[i])
+            fdb = TraceDatabase(database_file=database_file, name=database_name, color=VALID_COLORS[i])
             flow_databases_objs.append(fdb)
         i += 1
     Plotter.plot_all_stable(plot_data_list=flow_databases_objs, out_dir=output_dir, nickname=nickname)
@@ -211,14 +217,13 @@ def main():
     else:
         Utils.mkdir(PLOT_MAIN_DIR)
         out_path = os.path.join(PLOT_MAIN_DIR, out_dir_name)
+
         if os.path.exists(out_path):
-            print(f"**ERROR** output path {out_path} already exists. Use another --out parameter, or delete manually the folder {out_path}.")
-            ret_val = -2
-        else:
-            list_trace_names = trace_names.split(",")
-            print(f"Executing analysis on the following traces: {list_trace_names}")
-            print(f"Output directory: {out_path}")
-            ret_val = execute_analysis(list_trace_names=list_trace_names, output_dir=out_path, nickname=out_dir_name)
+            print(f"WARNING: output path {out_path} already exists. Use another --out parameter, or delete manually the folder {out_path}.")
+        list_trace_names = trace_names.split(",")
+        print(f"Executing analysis on the following traces: {list_trace_names}")
+        print(f"Output directory: {out_path}")
+        ret_val = execute_analysis(list_trace_names=list_trace_names, output_dir=out_path, nickname=out_dir_name)
     return ret_val
 
 

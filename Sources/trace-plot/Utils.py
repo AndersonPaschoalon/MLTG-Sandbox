@@ -83,14 +83,14 @@ class Utils:
         return packet_sizes[1:] / inter_arrivals[1:]
 
     @staticmethod
-    def wavelet_multiresolution_energy_analysis_xy_from_bw(bandwidth_data, wavelet="haar"):
-        num_scales = len(bandwidth_data)
+    def wavelet_multiresolution_energy_analysis_xy_from_data(data, wavelet="haar"):
+        num_scales = len(data)
 
         energy_values = []
         for j in range(1, num_scales + 1):
             # Perform wavelet transform
             # coeffs = pywt.wavedec(bandwidth_data[j - 1], 'db4', level=num_scales)
-            coeffs = pywt.wavedec(bandwidth_data[j - 1], wavelet, level=num_scales)
+            coeffs = pywt.wavedec(data[j - 1], wavelet, level=num_scales)
             cA = coeffs[0]
             # Calculate energy
             energy = np.sum(np.square(cA))
@@ -113,7 +113,7 @@ class Utils:
             bandwidth_data.append(bandwidth)
 
         # perform wavelet multiresolution energy analysis
-        scales, energy_values = Utils.wavelet_multiresolution_energy_analysis_xy_from_bw(bandwidth_data, wavelet)
+        scales, energy_values = Utils.wavelet_multiresolution_energy_analysis_xy_from_data(bandwidth_data, wavelet)
 
         return scales, energy_values
 

@@ -18,7 +18,7 @@ class Plotter:
         Plotter.plot_bytes_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_flow_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_bandwidth_mbps(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
-        Plotter.plot_wavelet_power_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        # Plotter.plot_wavelet_power_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_power_spectrum_density(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_wavelet_multiresolution_energy(plot_data_list=plot_data_list,
@@ -93,7 +93,7 @@ class Plotter:
 
             plt.legend()
             plt.grid(True)
-            title = 'Bandwidth over Time'
+            title = f'Bandwidth over Time of {item.name}'
             plt.title(title)
             plt.xlabel('Time (seconds)')
             plt.ylabel('Bandwidth (MBytes per second)')
@@ -117,7 +117,7 @@ class Plotter:
 
             plt.legend()
             plt.grid(True)
-            title = 'Packet Per Second'
+            title = f'Packet Per Second of of {item.name}'
             plt.title(title)
             plt.xlabel('Time (seconds)')
             plt.ylabel('Packet Per Second')
@@ -152,8 +152,8 @@ class Plotter:
         plt.grid(True)
         plt.xlabel('j = log2(time_scale) + 1, time_scale (ms)')
         plt.ylabel('log2(Energy(j))')
-        plt.title('Wavelet Multiresolution Energy Analysis')
-        plot_file = os.path.join(out_dir, f"WaveletMultiresolutionEnergyAnalysis_{nickname}.png")
+        plt.title('Bandwidth Wavelet Multiresolution Energy Analysis')
+        plot_file = os.path.join(out_dir, f"BandwidthWaveletMultiresolutionEnergyAnalysis_{nickname}.png")
         plt.savefig(plot_file)
 
     @staticmethod
@@ -170,6 +170,7 @@ class Plotter:
             #  returns an array with the same size but with the greatest value so far for each position.
             #  out[i] = max(in[i], in(i-1), ..., in(0))
             cumulative_flows = np.maximum.accumulate(flow_ids)
+            cumulative_flows = cumulative_flows / np.max(cumulative_flows)
 
             plt.plot(arrival_times, cumulative_flows, label=item.name, color=item.color)
 
@@ -196,6 +197,7 @@ class Plotter:
             # accumulate the packet sizes
             #  out[i] = in[i] + in(i-1) +  ... + in(0))
             accumulated_pkt_sizes = np.maximum.accumulate(pkt_sizes)
+            accumulated_pkt_sizes = accumulated_pkt_sizes / np.max(accumulated_pkt_sizes)
 
             plt.plot(arrival_times, accumulated_pkt_sizes, label=item.name, color=item.color)
 
@@ -240,7 +242,7 @@ class Plotter:
             plt.imshow(power, cmap='jet', extent=[0, len(instant_bw), freqs[-1], freqs[0]],
                        aspect='auto', interpolation='nearest')
             plt.colorbar()
-            plt.title('Wavelet Power Spectrum')
+            plt.title(f'Wavelet Power Spectrum of of {item.name}')
             plt.xlabel('Time')
             plt.ylabel('Frequency')
 
@@ -299,7 +301,7 @@ class Plotter:
             plt.semilogy(f, psd)
             plt.xlabel('Frequency (Hz)')
             plt.ylabel('PSD')
-            plt.title('Power Spectral Density')
+            plt.title(f'Power Spectral Density of {item.name}')
 
             plot_file = os.path.join(out_dir, f"PoweSpectrumDensity_{item.name}_{nickname}.png")
             plt.savefig(plot_file)
@@ -319,7 +321,7 @@ class Plotter:
             plot_acf(bandwidth, lags=len(bandwidth)-1, ax=ax)
             ax.set_xlabel("Lag")
             ax.set_ylabel("ACF")
-            ax.set_title("Autocorrelation Function of Bandwidth")
+            ax.set_title(f"Autocorrelation Function of Bandwidth of {item.name}")
 
             plot_file = os.path.join(out_dir, f"AutocorrelationFunctionofBandwidth_{nickname}_{item.name}.png")
             plt.savefig(plot_file)
@@ -348,7 +350,8 @@ class Plotter:
             ax.set_xlabel('ln(Time) interval')
             ax.set_ylabel('ln(R/S) ratio')
             ax.grid(True)
-            plt.title("H={:.4f}, c={:.4f}".format(H, c))
+            title_str = "H={:.4f}, c={:.4f}".format(H, c) + f" of {item.name}"
+            plt.title(title_str)
 
             plot_file = os.path.join(out_dir, f"HurstRS_{nickname}_{item.name}.png")
             plt.savefig(plot_file)
