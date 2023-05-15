@@ -1,4 +1,0 @@
-pip install hurst
-pip install statsmodels
-pip install PyWavelets
-pip install pyhustle

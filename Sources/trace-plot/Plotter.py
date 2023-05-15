@@ -18,7 +18,7 @@ class Plotter:
         Plotter.plot_bytes_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_flow_cdf(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_bandwidth_mbps(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
-        # Plotter.plot_wavelet_power_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
+        Plotter.plot_wavelet_power_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_spectrum(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_power_spectrum_density(plot_data_list=plot_data_list, out_dir=out_dir, nickname=nickname)
         Plotter.plot_wavelet_multiresolution_energy(plot_data_list=plot_data_list,
@@ -231,6 +231,10 @@ class Plotter:
 
             # Define the scales to be used in the wavelet transform
             scales = np.arange(1, len(instant_bw) + 1)
+
+            # convert to better scales
+            scales = scales.astype(np.float16)
+            instant_bw = instant_bw.astype(np.float16)
 
             # Perform the wavelet transform
             coeffs, freqs = pywt.cwt(instant_bw, scales, wavelet)
