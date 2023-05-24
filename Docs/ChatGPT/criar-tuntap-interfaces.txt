@@ -1,0 +1,28 @@
+
+Load the TUN/TAP kernel module:
+sudo modprobe tun
+
+Replace <interface_name> with the desired name for the interface (e.g., tun0 or tap0). Choose either tun for a TUN interface (IP packets) or tap for a TAP interface (Ethernet frames).
+sudo ip tuntap add dev <interface_name> mode <mode>
+
+sudo ip tuntap add dev tap0 mode tap
+
+sudo ip addr add 10.0.0.1/255.255.255.0 dev tap0
+
+If you can't see the interface using ifconfig, it's possible that the ifconfig command is not available on your system. In recent versions of Linux, the ip command has replaced ifconfig as the primary tool for network interface configuration.
+
+To verify the existence of your TUN/TAP interface, you can use the ip command. Here's how:
+
+    List all network interfaces:
+
+    bash
+
+    ip link show
+
+    This command will display a list of all network interfaces on your system, including the TUN/TAP interfaces.
+
+    Look for your TUN/TAP interface in the list. It will be named based on the name you provided during creation (e.g., tun0, tap0).
+
+If you can find your TUN/TAP interface in the list, it means the interface has been successfully created. You can proceed with configuring the interface as needed.
+
+sudo ip addr add 10.0.0.2/255.255.255.0 dev tap1
