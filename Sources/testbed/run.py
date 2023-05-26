@@ -3,7 +3,7 @@ from mininet.node import Host, Switch
 from mininet.cli import CLI
 from mininet.link import TCLink
 from mininet.link import OVSLink
-from SingleHopTopo import SingleHopTopo
+from Topos.SingleHopTopo import SingleHopTopo
 
 """
 This script should be responsible for building the topologies, and run the experiments.
@@ -29,6 +29,8 @@ if __name__ == '__main__':
     net, topo = SingleHopTopo.initialize()
 
     h1, h2, h3, h4 = net.hosts[0], net.hosts[1], net.hosts[2], net.hosts[3]
+    ip_address = h1.cmd('ifconfig | grep "inet " | awk \'{print $2}\'')
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>ip_address:", ip_address)
     print("*********************************")
     h1.cmd('touch h1-command')
     print("*********************************")
