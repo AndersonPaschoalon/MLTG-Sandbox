@@ -64,9 +64,9 @@ class SingleHopTopo(Topo):
             print("not implemented")
         else:
             print("Kill any instance of ovs-testcontroller")
-            Utils.run('pid_proc="`sudo lsof -i:6653 |grep "ovs-testc" |awk \'{print($2)}\'`"; [ "$pid_proc" != "" ] && sudo kill $pid_proc')
+            OSUtils.run('pid_proc="`sudo lsof -i:6653 |grep "ovs-testc" |awk \'{print($2)}\'`"; [ "$pid_proc" != "" ] && sudo kill $pid_proc')
             print("Run ovs-testcontroller")
-            Utils.run("sudo ovs-testcontroller ptcp:", new_console=True)
+            OSUtils.run("sudo ovs-testcontroller ptcp:", new_console=True)
             print("Wait ovs-testcontroller to be set up...")
             time.sleep(5)
             net.addController("c0",

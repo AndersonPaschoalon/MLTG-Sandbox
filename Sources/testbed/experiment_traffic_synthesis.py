@@ -6,35 +6,23 @@ from mininet.link import TCLink
 from mininet.link import OVSLink
 from Topos.SingleHopTopo import SingleHopTopo
 from Utils.MininetUtils import MininetUtils
+from TrafficGen.TrafficGen import TrafficGen
+from TrafficGen.IperfGen import IperfGen
+from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
 
-"""
-This script should be responsible for building the topologies, and run the experiments.
 
-All topologies and networks may can be managed with the following commands:
-To start:
-net, topo = SingleHopTopo.initialize()
-To test:
-SingleHopTopo.simple_test()
-To finalize and clean up:
-SingleHopTopo.finalize(net)
+def test_iperf_gen(pcap_file, output_dir):
+    # pcap_sample = "../../Pcap/SkypeIRC.cap.pcap"
 
-Any script can be run inside any host inside the network with the following command:
-h1 = net.hosts[0]
-...
-h<n> = net.hosts[<n-1>]
-h1.cmd(<command>)
-h<n>.cmd(<command>)
-"""
-
-if __name__ == '__main__':
-    print("oi, tudo bom?")
-    print("kkkkkkkkkkkk")
-    print("aaaaaaaaaaaaaaaaa")
-    print("oi, tudo bom?")
-    """
-    # SingleHopTopo.simple_test()
+    # create topology
     net, topo = SingleHopTopo.initialize()
     h1, h2, h3, h4 = net.hosts[0], net.hosts[1], net.hosts[2], net.hosts[3]
+
+    # define the traffic generators
+    iperf = IperfGen(pcap=pcap_file, host_client=h1, host_server=h3, client_cfg={}, server_cfg={})
+    tcpdump = TcpdumpWrapper()
+
+
     ip_address = h1.cmd('ifconfig | grep "inet " | awk \'{print $2}\'')
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>ip_address:", ip_address)
     print("*********************************")
@@ -48,4 +36,3 @@ if __name__ == '__main__':
     time.sleep(15)
 
     SingleHopTopo.finalize(net)
-    """
