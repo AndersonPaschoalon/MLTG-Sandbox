@@ -2,7 +2,7 @@
 # Custom
 #
 *.db
-!Sources/sniffer/libs/cpptools/
+
 
 #
 # C/C++
@@ -41,6 +41,7 @@ Pcap/bigFlows.pcap
 *.exe
 *.out
 *.app
+
 
 #
 # Python
@@ -285,6 +286,12 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 
+#
+# Force add
+#
+
+!Sources/sniffer/libs/cpptools/bin/libcpptools.a
+!Sources/sniffer/libs/cpptools/bin/libcpptools.so
 
 
 
