@@ -8,6 +8,7 @@ QFlow::QFlow()
     this->portDstSrc = 0;
     this->net4DstSrcSumm = 0;
     this->net6DstSrc = "";
+    this->numberOfPackets = 0;
 }
 
 QFlow::~QFlow()
@@ -26,6 +27,7 @@ std::string QFlow::toString()
     recover_ipv4_str(this->net4DstSrcSumm, ipv4DstStr, ipv4SrcStr);
     recover_ports(this->portDstSrc, portDst, portSrc);
     return std::string("{ flowId:") + std::to_string(this->flowId) + 
+           std::string("{ numberOfPackets:") + std::to_string(this->numberOfPackets) + 
            // network
            std::string(", netProto:") + to_string(n) +
            std::string(", net4Dst:") + ipv4DstStr + 
@@ -54,6 +56,11 @@ void QFlow::setFlowId(flow_id flowId)
     this->flowId = flowId;
 }
 
+void QFlow::setNumberOfPackets(size_t nPakcets)
+{
+    this->numberOfPackets = nPakcets;
+}
+
 void QFlow::setProtocols(NetworkProtocol n, TransportProtocol t, ApplicationProtocol a)
 {
     this->stack = zip_stack(n, t, a);
@@ -80,13 +87,24 @@ void QFlow::setPorts(port_number dst, port_number src)
     this->portDstSrc = zip_ports(dst, src);
 }
 
-void QFlow::getQData(flow_id& fId, protocol_stack &stk, flow_hash &port, flow_hash &net4, std::string &net6)
+void QFlow::getQData(flow_id& fId, 
+                     size_t& nPackets, 
+                     protocol_stack &stk, 
+                     flow_hash &port, 
+                     flow_hash &net4, 
+                     std::string &net6)
 {
     fId = this->flowId;
+    nPackets = this->numberOfPackets;
     stk = this->stack;
     port = this->portDstSrc;
     net4 = this->net4DstSrcSumm;
     net6 = this->net6DstSrc;
+}
+
+flow_id QFlow::getFlowId()
+{
+    return this->flowId;
 }
 
 QFlow *QFlow::next()

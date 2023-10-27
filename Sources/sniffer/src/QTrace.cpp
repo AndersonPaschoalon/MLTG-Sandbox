@@ -163,11 +163,17 @@ void QTrace::push(NetworkPacket p)
 
 void QTrace::consume(QFlow** flowHead, QFlow** flowTail, QFlowPacket** flowPacketHead,  QFlowPacket** flowPacketTail)
 {
+    // finish to fill the data structures before leaving
+    // since no more packet will be added, we may calc the number oc packets per flow.
+    this->countNumberOfPackets();
+
+    // return the pointers
     *flowHead = this->fHead;
     *flowTail = this->fTail;
     *flowPacketHead = this->pHead;
     *flowPacketTail = this->pTail;
 
+    // clean pointers
     this->fHead = nullptr;
     this->fTail = nullptr;
     this->pHead = nullptr;
@@ -239,4 +245,60 @@ const void QTrace::echo(QTrace &obj, QFlow *flowHead, QFlow *flowTail, QFlowPack
     }
 
     return void();
+}
+
+const void QTrace::countNumberOfPackets()
+{
+    // lastFlow stores the number of flows
+    size_t counterSize = (size_t)this->lastFlow + 1;
+    size_t* flowPktCounters = new size_t[counterSize];
+
+    // (1) init the counters with zero. 
+    for (size_t i = 0; i < counterSize; i++) 
+    {
+        flowPktCounters[i] = 0;
+    }
+    
+    // (2) loop over all packets to count the number of packets per flow
+    QFlowPacket *pktPtr = this->pHead;
+    while (pktPtr != nullptr) 
+    {
+        // update flow counter
+        flow_id fId = pktPtr->getFlowId();
+        if((counterSize > fId) && (fId > 0)) // just for safety
+        {
+            flowPktCounters[fId]++; 
+        }
+
+        // next packet, stop if is the last
+        pktPtr = pktPtr->next();
+        if(pktPtr == this->pTail)
+        {
+            break;;
+        }
+    }
+    pktPtr = nullptr;
+
+    // (3) loop over all flows to set the number of packets for each flow
+    QFlow *flowPtr = this->fHead;
+    while (flowPtr != nullptr)
+    {
+        flow_id fId = flowPtr->getFlowId();
+        if((counterSize > fId) && (fId > 0)) // just for safety
+        {
+            flowPtr->setNumberOfPackets(flowPktCounters[fId]);    
+        }
+
+        // next flow, stops if is the last
+        flowPtr = flowPtr->next();
+        if(flowPtr == this->fTail)
+        {
+            break;;
+        }
+    }
+    flowPtr = nullptr;
+
+    // free allocated memory
+    delete[] flowPktCounters; 
+    flowPktCounters = nullptr;
 }

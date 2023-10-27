@@ -23,6 +23,7 @@ class QFlowPacket
 
         // CLASS PAYLOAD
         void getQData(size_t& packetId, flow_id& flowId, timeval& ts, packet_size& packetSize, ttl& timeToLive);
+        flow_id getFlowId();
 
         // OPERATIONS CONTROL
 

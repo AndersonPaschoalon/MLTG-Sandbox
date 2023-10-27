@@ -280,6 +280,7 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
                                     "portDstSrc TEXT, "
                                     "net4DstSrcSumm TEXT, "
                                     "net6DstSrc TEXT, "
+                                    "numberOfPackets INTEGER, "
                                     "PRIMARY KEY (flowID, traceID) "
                                     ");",
                       nullptr, nullptr, nullptr);
@@ -318,19 +319,21 @@ int LocalDbServiceV1_Naive::commitToFlowDatabase()
     flow_hash portDstSrc;
     flow_hash net4DstSrcSumm;
     std::string net6DstSrc;
+    size_t nPackets = 0;
     for (QFlow* x: this->qFlowPtrVec)
     {
-        x->getQData(flowId, stack, portDstSrc, net4DstSrcSumm, net6DstSrc);
+        x->getQData(flowId, nPackets, stack, portDstSrc, net4DstSrcSumm, net6DstSrc);
         // Construct the SQL INSERT statement for the current row
         std::string sql =   "INSERT INTO Flows"
-                                  "(flowID, traceID, stack, portDstSrc, net4DstSrcSumm, net6DstSrc)" 
+                                  "(flowID, traceID, stack, portDstSrc, net4DstSrcSumm, net6DstSrc, numberOfPackets)" 
                             "VALUES" 
                                 "(" + std::to_string(flowId) + ", " 
                                     + std::to_string(this->traceId) + ", " 
                                     + '"' + StringUtils::toHexString(stack) + '"' + ", " 
                                     + '"' + StringUtils::toHexString(portDstSrc) + '"' + ", " 
                                     + '"' + StringUtils::toHexString(net4DstSrcSumm) + '"' + ", "                                    
-                                    + '"' + net6DstSrc + '"' 
+                                    + '"' + net6DstSrc + '"' + ", "  
+                                    + std::to_string(nPackets) + 
                                     + " )";
 
         // Execute the INSERT statement

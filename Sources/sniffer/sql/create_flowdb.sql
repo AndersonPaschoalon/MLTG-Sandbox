@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS Flows (
     portDstSrc TEXT, 
     net4DstSrcSumm TEXT, 
     net6DstSrc TEXT, 
+    numberOfPackets INTEGER, 
     PRIMARY KEY (flowID, traceID) 
 );
 

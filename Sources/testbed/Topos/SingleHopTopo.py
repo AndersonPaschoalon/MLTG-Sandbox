@@ -33,19 +33,19 @@ class SingleHopTopo(Topo):
         Topo.__init__( self )
 
         # Add hosts and switches
-        host1 = self.addHost('h1', protocols='OpenFlow13')
-        host2 = self.addHost('h2', protocols='OpenFlow13')
-        host3 = self.addHost('h3')
-        host4 = self.addHost('h4')
-        switch1 = self.addSwitch('s1')
-        switch2 = self.addSwitch('s2')
+        self.host1 = self.addHost('h1', protocols='OpenFlow13')
+        self.host2 = self.addHost('h2', protocols='OpenFlow13')
+        self.host3 = self.addHost('h3')
+        self.host4 = self.addHost('h4')
+        self.switch1 = self.addSwitch('s1')
+        self.switch2 = self.addSwitch('s2')
         # Add links
-        self.addLink(host1, switch1)
-        self.addLink(host2, switch1)
-        self.addLink(host3, switch2)
-        self.addLink(host4, switch2)
+        self.addLink(self.host1, self.switch1)
+        self.addLink(self.host2, self.switch1)
+        self.addLink(self.host3, self.switch2)
+        self.addLink(self.host4, self.switch2)
 
-        self.addLink(switch1, switch2, delay='20ms', loss=0.01)
+        self.addLink(self.switch1, self.switch2, delay='20ms', loss=0.01)
 
     @staticmethod
     def initialize(controller="ovs-testcontroller"):

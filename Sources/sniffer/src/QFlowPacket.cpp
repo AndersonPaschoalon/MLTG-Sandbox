@@ -48,6 +48,11 @@ void QFlowPacket::getQData(size_t &packetId, flow_id &fId, timeval &ts, packet_s
     time2Live = this->timeToLive;
 }
 
+flow_id QFlowPacket::getFlowId()
+{
+    return this->flowId;
+}
+
 void QFlowPacket::setNext(QFlowPacket *nextNode)
 {
     this->nextPacket = nextNode;

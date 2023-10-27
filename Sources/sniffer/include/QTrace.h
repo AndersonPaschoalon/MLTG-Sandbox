@@ -56,13 +56,42 @@ class QTrace
         // Trace Management
         //
 
+        /// @brief Add one more packet to the query-able trace QTrace. It will parse the NetworkPacket
+        /// information into the right data structure to query into the database.
+        /// @param p Network packet to be added.
         void push(NetworkPacket p);
+
+        /// @brief Returns the pointers of the query-able datastructures. The pointers of the trace
+        /// will be set to null, therefore they must be consumed after the call of this method. 
+        /// @param flowHead 
+        /// @param flowTail 
+        /// @param flowPacketHead 
+        /// @param flowPacketTail 
         void consume(QFlow** flowHead, QFlow** flowTail, QFlowPacket** flowPacketHead,  QFlowPacket** flowPacketTail);
 
+        /// @brief Helper function to free the pointers returned by consume(). It must be called after
+        /// consume() is called, before leaving the scope.
+        /// @param flowHead 
+        /// @param flowTail 
+        /// @param flowPacketHead 
+        /// @param flowPacketTail 
+        /// @return 
         const static void free(QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
+
+        /// @brief Prints in the standard output the data returned by consume().
+        /// @param obj 
+        /// @param flowHead 
+        /// @param flowTail 
+        /// @param flowPacketHead 
+        /// @param flowPacketTail 
+        /// @return 
         const static void echo (QTrace& obj, QFlow* flowHead, QFlow* flowTail, QFlowPacket* flowPacketHead,  QFlowPacket* flowPacketTail);
+        
+
 
     private:
+
+        const void countNumberOfPackets();
 
         // trace information
         std::unordered_map<std::string, std::string> traceProperties;
@@ -73,8 +102,6 @@ class QTrace
         QFlowPacket* pTail;
         flow_id lastFlow;
 
-
-        // void setTags(const char* csvTags);
 
 };
 
