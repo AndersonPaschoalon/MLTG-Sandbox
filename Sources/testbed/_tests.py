@@ -13,12 +13,23 @@ from TrafficGen.IperfGen import IperfGen
 from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
 
 
+def single_hop_topo():
+    SingleHopTopo.simple_test()
+    net, topo = SingleHopTopo.initialize()
+    print("*********************************************************")
+    print("** Starting Mininet CLI ...")
+    print("*********************************************************")
+    CLI(net)
+    SingleHopTopo.finalize(net)
+
 def test_iperf_gen():
     # Parameters
     pcap_sample = "../../Pcap/SkypeIRC.cap.pcap"
     out_dir = "test"
     experiment_name = "Abacate"
+    display_cli = True
     OSUtils.__debug_mode__ = True
+
 
     # Prepare eviroment
     experiment_dir = os.path.join(out_dir, experiment_name)
@@ -36,8 +47,9 @@ def test_iperf_gen():
     h3_cfg = {
         "if":"h3-eth0",
     }
-    # CLI(net)
     OSUtils.breakpoint("@ _tests.py")
+    if display_cli:
+        CLI(net)
 
     # define iperf traffic generator
     iperf = IperfGen(pcap=pcap_sample, host_client=h1, host_server=h3,
@@ -45,20 +57,28 @@ def test_iperf_gen():
     tcpdump = TcpdumpWrapper(verbose=True)
     traffic_generators = [iperf]
     for tg in traffic_generators:
+        # init vars
+        out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
+
         # start server
         print(f"Starting {tg.name()} server...")
         tg.server_listen()
+
         # start capture
         print(f"Starting capture on host1...")
-        out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
         tcpdump.start(mn_host=h1, interface="h1-eth0", file=out_file)
+
         # start traffic generation
         print(f"Starting {tg.name()} traffic generation...")
         time_to_wait = tg.client_start()
+
         # wait to finish
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>", time_to_wait)
-        time.sleep(50)
+        print(f"Waiting {time_to_wait}s")
+        # time.sleep(time_to_wait)
+        time.sleep(15)
+
         # stop capture
+        time.sleep(2)
         tg.client_stop()
         tcpdump.stop()
         tg.server_stop()
@@ -69,8 +89,8 @@ def test_iperf_gen():
 
 
 if __name__ == '__main__':
-    test01 = True
-    test02 = False
+    test01 = False
+    test02 = True
     test03 = False
     test04 = False
     test05 = False
@@ -78,6 +98,8 @@ if __name__ == '__main__':
     test07 = False
     test08 = False
 
-    if test01: test_iperf_gen()
+    if test01: single_hop_topo()
+    if test02: test_iperf_gen()
+
 
 

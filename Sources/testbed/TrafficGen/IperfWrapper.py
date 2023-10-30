@@ -1,3 +1,4 @@
+"""
 import os
 from scapy.all import *
 
@@ -56,3 +57,4 @@ if __name__ == '__main__':
     pcap_sample = "../../../Pcap/SkypeIRC.cap.pcap"
     #print("pcap_summarizer:", pcap_summarizer(pcap_sample))
     print(pcap_to_iperf_cmd(pcap_sample, "10.0.0.4", "10.0.0.1"))
+"""

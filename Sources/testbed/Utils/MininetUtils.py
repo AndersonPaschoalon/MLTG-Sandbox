@@ -14,19 +14,6 @@ class MininetUtils:
         ip_addr = host.cmd(command).strip()
         return ip_addr
 
-    #@staticmethod
-    #def cmd_async(mn_host, command="ls", print_command=True):
-    #    if print_command:
-    #        print(command)
-    #    def execute_command():
-    #        mn_host.cmd(command)
-    #    the_thread = Thread(target=execute_command)
-    #    the_thread.start()
-    #    return the_thread
-
-    #@staticmethod
-    #def cmd_join(the_thread):
-    #    the_thread.join()
 
 
 
