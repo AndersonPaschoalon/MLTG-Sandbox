@@ -10,6 +10,10 @@
 		<tcpdump_stop_delay>10</tcpdump_stop_delay>
 		<verbose>true</verbose>
 		<log_file>test01.log</log_file>
+		<network_loss>0.01</network_loss>
+		<network_delay>20ms</network_delay>
+		<run_capture>true</run_capture>
+		<run_jitter>true</run_jitter>
 	</experiment>
 	<experiment>
 		<name>Name02</name>
@@ -22,5 +26,9 @@
 		<tcpdump_stop_delay>2</tcpdump_stop_delay>
 		<verbose>false</verbose>
 		<log_file>test02.log</log_file>
+		<network_loss>0.01</network_loss>
+		<network_delay>20ms</network_delay>
+		<run_capture>true</run_capture>
+		<run_jitter>true</run_jitter>
 	</experiment>
 </experiment_list>

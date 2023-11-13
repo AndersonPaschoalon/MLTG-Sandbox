@@ -28,6 +28,8 @@ def test_iperf_gen():
     out_dir = "test"
     experiment_name = "Abacate"
     display_cli = True
+    cloud_loss = 0.01
+    cloud_delay = '20ms'
     OSUtils.__debug_mode__ = True
 
 
@@ -39,23 +41,25 @@ def test_iperf_gen():
         return False
 
     # create network
-    net, topo = SingleHopTopo.initialize()
+    net, topo = SingleHopTopo.initialize(cloud_loss=cloud_loss, cloud_delay=cloud_delay)
     h1, h2, h3, h4 = net.hosts[0], net.hosts[1], net.hosts[2], net.hosts[3]
     h1_cfg = {
-        "if":"h1-eth0",
+        "if": "h1-eth0",
     }
     h3_cfg = {
-        "if":"h3-eth0",
+        "if": "h3-eth0",
     }
     OSUtils.breakpoint("@ _tests.py")
     if display_cli:
         CLI(net)
 
     # define iperf traffic generator
-    iperf = IperfGen(pcap=pcap_sample, host_client=h1, host_server=h3,
+    iperf = IperfGen(pcap=pcap_sample, client=h1, server=h3,
                      client_cfg=h1_cfg, server_cfg=h3_cfg, verbose=True)
-    tcpdump = TcpdumpWrapper(verbose=True)
     traffic_generators = [iperf]
+
+    # Run capture tests
+    tcpdump = TcpdumpWrapper(verbose=True)
     for tg in traffic_generators:
         # init vars
         out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
@@ -74,14 +78,18 @@ def test_iperf_gen():
 
         # wait to finish
         print(f"Waiting {time_to_wait}s")
-        # time.sleep(time_to_wait)
-        time.sleep(15)
+        time.sleep(time_to_wait)
+        # time.sleep(15)
 
         # stop capture
         time.sleep(2)
         tg.client_stop()
         tcpdump.stop()
         tg.server_stop()
+
+    # run network quality tests
+    # TODO
+
     SingleHopTopo.finalize(net)
 
     print(f"Experiment {experiment_name} finalized successfully!")

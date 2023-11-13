@@ -1,22 +1,23 @@
 import time
 from TrafficGen.TrafficGen import TrafficGen
 from Utils.PcapUtils import PcapUtils
-
+from mininet.util import custom, waitListening, decode
 
 class IperfGen(TrafficGen):
 
-    def __init__(self, pcap, host_client, host_server, client_cfg, server_cfg, verbose):
-        super().__init__(pcap, host_client, host_server, client_cfg, server_cfg, verbose)
+    IPERF_CMD_KILL = 'killall iperf3 -v'
+    IPERF_CMD_SERVER = 'iperf3 -s '
+
+    def __init__(self, pcap, client, server, client_cfg, server_cfg, verbose):
+        super().__init__(pcap, client, server, client_cfg, server_cfg, verbose)
         self.iperf_client_cmd, self.estimate_exec_time = \
             IperfGen.iperf_cmd_client(pcap_file=self.pcap,
                                       dst_ipaddr=self.ip_server,
                                       src_ipaddr=self.ip_client)
-        self.iperf_server_cmd = IperfGen.iperf_cmd_server()
-        self.iperf_kill_cmd = IperfGen.iperf_kill_cmd()
         self.tg_name = "Iperf3"
-        self.server_proc = None
         if self.verbose:
-            print("IperfGen initialized")
+            print("[iperf] initialized")
+        self.proc_server = None
 
     # Overwrite
     def name(self):
@@ -26,15 +27,19 @@ class IperfGen(TrafficGen):
     def server_listen(self):
         super().server_listen()
         if self.verbose:
-            print(f"{self.tg_name}.Server -> <{self.iperf_server_cmd}>")
-        self.server_proc = self.host_server.popen(self.iperf_server_cmd)
+            print(f"[iperf:client] server IP address is {self.server.IP()}")
+            print(f"[iperf:server] running command <{IperfGen.IPERF_CMD_SERVER}>")
+        self.proc_server = self.server.popen(IperfGen.IPERF_CMD_SERVER)
+        if self.verbose:
+            print(f"[iperf:server] server process is running...")
 
     # Overwrite
     def server_stop(self):
         super().server_stop()
-        self.server_proc.terminate()
-        # result = self.host_client.cmd(self.iperf_kill_cmd)
-        #print(f"[Server] Kill Iperf3 output:\n{result}")
+        self.proc_server.terminate()
+        if self.verbose:
+            print(f"[iperf:server] server process is terminated")
+        print(f'[iperf:server] stdout: {decode(self.proc_server.stdout.readline())}')
 
     # Overwrite
     def client_start(self):
@@ -42,24 +47,20 @@ class IperfGen(TrafficGen):
         if ret < 0:
             return ret
         if self.verbose:
-            print(f"{self.tg_name}.Client -> <{self.iperf_client_cmd}>")
-            print(f"host_client.IP():{self.host_client.IP()}")
-        self.host_client.sendCmd(self.iperf_client_cmd)
+            print(f"[iperf:client] client IP address is {self.client.IP()}")
+            print(f"[iperf:client] running command <{self.iperf_client_cmd}>")
+        # waitListening(self.client, self.server, 5001)
+        # time.sleep(2)
+        self.proc_client = self.client.popen(self.iperf_client_cmd)
         return self.estimate_exec_time
 
     # Overwrite
     def client_stop(self):
         super().client_stop()
         if self.verbose:
-            print(f"Killing Iper3 instances on client. Sending command <{self.iperf_kill_cmd}>")
-        self.host_client.monitor()
-        self.host_server.popen(self.iperf_kill_cmd)
-        time.sleep(2)
-        # print(f"[Client] Kill Iperf3 output:\n{result}")
-
-    @staticmethod
-    def iperf_cmd_server():
-        return "iperf3 -s"
+            print(f"terminating Iper3 instances on client.")
+        self.proc_client.terminate()
+        print(f'[iperf:client] stdout: {decode(self.proc_client .stdout.readline())}')
 
     @staticmethod
     def iperf_cmd_client(pcap_file, dst_ipaddr, src_ipaddr):
@@ -86,6 +87,3 @@ class IperfGen(TrafficGen):
         client_cmd = f"iperf3 -c {dst_ipaddr} -B {src_ipaddr} {protocol} -b {tx_str} -t {time_int}"
         return client_cmd, time_int
 
-    @staticmethod
-    def iperf_kill_cmd():
-        return "killall iperf3 -v"

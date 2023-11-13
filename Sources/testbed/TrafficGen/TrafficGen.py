@@ -15,15 +15,13 @@ class TrafficGen:
         self.client_running = False
         self.client_if = client_cfg['if']
         self.server_if = server_cfg['if']
-        self.host_client = host_client
-        self.host_server = host_server
+        self.client = host_client
+        self.server = host_server
         self.verbose = verbose
         if self.verbose: print("TrafficGen.client_if:", self.client_if)
         if self.verbose: print("TrafficGen.server_if:", self.server_if)
-        self.ip_client = self.host_client.IP()
-        self.ip_server = self.host_server.IP()
-        # self.ip_client = MininetUtils.host_ip(self.host_client, interface=self.client_if).strip()
-        # self.ip_server = MininetUtils.host_ip(self.host_server, interface=self.server_if).strip()
+        self.ip_client = self.client.IP()
+        self.ip_server = self.server.IP()
         self.tg_name = "TrafficGen"
         if self.verbose: print("TrafficGen.ip_client:", self.ip_client)
         if self.verbose: print("TrafficGen.ip_server:", self.ip_server)

@@ -24,13 +24,15 @@ class SingleHopTopo(Topo):
     Link Switch1-Switch2: emulate a network, with degradation parameters
     """
 
-    def __init__(self):
+    _controller = ""
+
+    def __init__(self, cloud_loss=0.01, cloud_delay='20ms'):
         """
         Create a Single Hop Network
         """
 
         # Initialize topology
-        Topo.__init__( self )
+        Topo.__init__(self)
 
         # Add hosts and switches
         self.host1 = self.addHost('h1', protocols='OpenFlow13')
@@ -45,17 +47,18 @@ class SingleHopTopo(Topo):
         self.addLink(self.host3, self.switch2)
         self.addLink(self.host4, self.switch2)
 
-        self.addLink(self.switch1, self.switch2, delay='20ms', loss=0.01)
+        self.addLink(self.switch1, self.switch2, delay=cloud_delay, loss=cloud_loss)
 
     @staticmethod
-    def initialize(controller="ovs-testcontroller"):
+    def initialize(controller="ovs-testcontroller", cloud_loss=0.01, cloud_delay='20ms'):
         """
         Method to create the topology, initialize the network and the controller,
         and add the rulles for the executing topology.
         """
+        SingleHopTopo._controller = controller
         setLogLevel('info')
         os.system("sudo mn -c")
-        topo = SingleHopTopo()
+        topo = SingleHopTopo(cloud_loss=cloud_loss, cloud_delay=cloud_delay)
         net = Mininet(topo=topo,
                       controller=None,
                       autoStaticArp=True)
@@ -68,7 +71,7 @@ class SingleHopTopo(Topo):
             print("Run ovs-testcontroller")
             OSUtils.run("sudo ovs-testcontroller ptcp:", new_console=True)
             print("Wait ovs-testcontroller to be set up...")
-            time.sleep(5)
+            time.sleep(6)
             net.addController("c0",
                               controller=RemoteController,
                               ip=REMOTE_CONTROLLER_IP,
@@ -95,6 +98,10 @@ class SingleHopTopo(Topo):
         except AttributeError as error:
             print(f"Error execution finalize(), net was not properly defined\n{error}")
         os.system('mn -c')
+        if str(SingleHopTopo._controller).lower() == "opendaylight":
+            print("not implemented")
+        else:
+            os.system("killall ovs-testcontroller")
 
 
 if __name__ == '__main__':
