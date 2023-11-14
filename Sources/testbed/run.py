@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from Experiment import ExperimentSettings
+from Experiment import Experiment
 
 
 def main():

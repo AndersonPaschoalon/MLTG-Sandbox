@@ -11,7 +11,7 @@ from Utils.OSUtils import OSUtils
 from TrafficGen.TrafficGen import TrafficGen
 from TrafficGen.IperfGen import IperfGen
 from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
-
+from NetQA.PingMeasurer import PingMeasurer
 
 def single_hop_topo():
     SingleHopTopo.simple_test()
@@ -30,6 +30,8 @@ def test_iperf_gen():
     display_cli = True
     cloud_loss = 0.01
     cloud_delay = '20ms'
+    run_capture = True
+    run_qa = True
     OSUtils.__debug_mode__ = True
 
 
@@ -58,37 +60,65 @@ def test_iperf_gen():
                      client_cfg=h1_cfg, server_cfg=h3_cfg, verbose=True)
     traffic_generators = [iperf]
 
-    # Run capture tests
-    tcpdump = TcpdumpWrapper(verbose=True)
-    for tg in traffic_generators:
-        # init vars
-        out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
+    #
+    # Trace Capture
+    #
+    if run_capture:
+        # Run capture tests
+        tcpdump = TcpdumpWrapper(verbose=True)
+        for tg in traffic_generators:
+            # init vars
+            out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
 
-        # start server
-        print(f"Starting {tg.name()} server...")
-        tg.server_listen()
+            # start server
+            print(f"Starting {tg.name()} server...")
+            tg.server_listen()
 
-        # start capture
-        print(f"Starting capture on host1...")
-        tcpdump.start(mn_host=h1, interface="h1-eth0", file=out_file)
+            # start capture
+            print(f"Starting capture on host1...")
+            tcpdump.start(mn_host=h1, interface="h1-eth0", file=out_file)
 
-        # start traffic generation
-        print(f"Starting {tg.name()} traffic generation...")
-        time_to_wait = tg.client_start()
+            # start traffic generation
+            print(f"Starting {tg.name()} traffic generation...")
+            time_to_wait = tg.client_start()
 
-        # wait to finish
-        print(f"Waiting {time_to_wait}s")
-        time.sleep(time_to_wait)
-        # time.sleep(15)
+            # wait to finish
+            print(f"Waiting {time_to_wait}s")
+            time.sleep(time_to_wait)
+            # time.sleep(15)
 
-        # stop capture
-        time.sleep(2)
-        tg.client_stop()
-        tcpdump.stop()
-        tg.server_stop()
+            # stop capture
+            time.sleep(2)
+            tg.client_stop()
+            tcpdump.stop()
+            tg.server_stop()
+    #
+    # QA analysis
+    #
+    if run_qa:
+        # run network quality tests
+        result_file = os.path.join(out_dir, experiment_name, "qa_result.txt")
+        measurer = PingMeasurer(h4.IP(), 0.5, 60, result_file)
+        for tg in traffic_generators:
+            # start server
+            print(f"Starting {tg.name()} server...")
+            tg.server_listen()
 
-    # run network quality tests
-    # TODO
+            # start traffic generation
+            print(f"Starting {tg.name()} traffic generation...")
+            time_to_wait = tg.client_start()
+
+            # start QA
+            measurer.start(h3)
+
+            # wait to finish
+            print(f"Waiting {time_to_wait}s")
+            time.sleep(time_to_wait)
+
+            # stop capture
+            time.sleep(2)
+            tg.client_stop()
+            tg.server_stop()
 
     SingleHopTopo.finalize(net)
 
