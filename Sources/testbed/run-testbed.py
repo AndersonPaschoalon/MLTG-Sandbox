@@ -7,6 +7,7 @@ from Experiment.Experiment import Experiment
 
 
 def main():
+    simitar_home = os.environ['SIMITAR_HOME']
     parser = argparse.ArgumentParser(description="Script to run a set of experiments.")
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action="store_true", help="Display script version and exit")

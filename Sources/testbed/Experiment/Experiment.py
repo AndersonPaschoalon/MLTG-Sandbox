@@ -33,7 +33,7 @@ class Experiment:
         self.run_capture = True
         self.run_jitter = True
 
-    def run(self):
+    def run(self, home="."):
         """
         Execute the experiment loaded.
         :return:
