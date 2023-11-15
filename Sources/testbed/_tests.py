@@ -25,7 +25,7 @@ def single_hop_topo():
 def test_iperf_gen():
     # Parameters
     pcap_sample = "../../Pcap/SkypeIRC.cap.pcap"
-    out_dir = "test"
+    out_dir = "_Tests"
     experiment_name = "Abacate"
     display_cli = True
     cloud_loss = 0.01
@@ -51,13 +51,16 @@ def test_iperf_gen():
     h3_cfg = {
         "if": "h3-eth0",
     }
-    OSUtils.breakpoint("@ _tests.py")
+    # OSUtils.breakpoint("@ _tests.py")
     if display_cli:
         CLI(net)
 
     # define iperf traffic generator
+    client_log = os.path.join(experiment_dir, "iperf-client")
+    server_log = os.path.join(experiment_dir, "iperf-server")
     iperf = IperfGen(pcap=pcap_sample, client=h1, server=h3,
-                     client_cfg=h1_cfg, server_cfg=h3_cfg, verbose=True)
+                     client_cfg=h1_cfg, server_cfg=h3_cfg, verbose=True, 
+                     client_log=client_log, server_log=server_log)
     traffic_generators = [iperf]
 
     #
@@ -69,6 +72,7 @@ def test_iperf_gen():
         for tg in traffic_generators:
             # init vars
             out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
+            tcpdump_log = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
 
             # start server
             print(f"Starting {tg.name()} server...")
@@ -76,7 +80,7 @@ def test_iperf_gen():
 
             # start capture
             print(f"Starting capture on host1...")
-            tcpdump.start(mn_host=h1, interface="h1-eth0", file=out_file)
+            tcpdump.start(mn_host=h1, interface="h1-eth0", pcap_file=out_file, log_file=tcpdump_log)
 
             # start traffic generation
             print(f"Starting {tg.name()} traffic generation...")
@@ -84,21 +88,22 @@ def test_iperf_gen():
 
             # wait to finish
             print(f"Waiting {time_to_wait}s")
-            time.sleep(time_to_wait)
-            # time.sleep(15)
+            # time.sleep(time_to_wait)
+            time.sleep(15)
 
             # stop capture
             time.sleep(2)
             tg.client_stop()
             tcpdump.stop()
             tg.server_stop()
+
     #
     # QA analysis
     #
     if run_qa:
         # run network quality tests
         result_file = os.path.join(out_dir, experiment_name, "qa_result.txt")
-        measurer = PingMeasurer(h4.IP(), 0.5, 60, result_file)
+        measurer = PingMeasurer(h4.IP(), 1, 60, result_file)
         for tg in traffic_generators:
             # start server
             print(f"Starting {tg.name()} server...")
@@ -113,7 +118,8 @@ def test_iperf_gen():
 
             # wait to finish
             print(f"Waiting {time_to_wait}s")
-            time.sleep(time_to_wait)
+            # time.sleep(60)
+            time.sleep(10)
 
             # stop capture
             time.sleep(2)

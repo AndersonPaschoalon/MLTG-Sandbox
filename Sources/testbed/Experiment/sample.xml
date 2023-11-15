@@ -13,7 +13,9 @@
 		<network_loss>0.01</network_loss>
 		<network_delay>20ms</network_delay>
 		<run_capture>true</run_capture>
-		<run_jitter>true</run_jitter>
+		<run_qa>true</run_qa>
+		<qa_duration>60</qa_duration>
+		<qa_interval>1</qa_interval>
 	</experiment>
 	<experiment>
 		<name>Name02</name>
@@ -29,6 +31,6 @@
 		<network_loss>0.01</network_loss>
 		<network_delay>20ms</network_delay>
 		<run_capture>true</run_capture>
-		<run_jitter>true</run_jitter>
+		<run_qa>true</run_qa>
 	</experiment>
 </experiment_list>

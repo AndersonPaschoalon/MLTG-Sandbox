@@ -5,19 +5,20 @@ from mininet.util import custom, waitListening, decode
 
 class IperfGen(TrafficGen):
 
-    IPERF_CMD_KILL = 'killall iperf3 -v'
-    IPERF_CMD_SERVER = 'iperf3 -s '
-
-    def __init__(self, pcap, client, server, client_cfg, server_cfg, verbose):
+    def __init__(self, pcap, client, server, client_cfg, server_cfg, verbose, client_log, server_log):
         super().__init__(pcap, client, server, client_cfg, server_cfg, verbose)
+        self.client_log = f"{client_log}.log"
+        self.server_log = f"{server_log}.log"        
         self.iperf_client_cmd, self.estimate_exec_time = \
             IperfGen.iperf_cmd_client(pcap_file=self.pcap,
                                       dst_ipaddr=self.ip_server,
-                                      src_ipaddr=self.ip_client)
+                                      src_ipaddr=self.ip_client,
+                                      client_log_file=self.client_log)
         self.tg_name = "Iperf3"
         if self.verbose:
             print("[iperf] initialized")
         self.proc_server = None
+
 
     # Overwrite
     def name(self):
@@ -26,10 +27,11 @@ class IperfGen(TrafficGen):
     # Overwrite
     def server_listen(self):
         super().server_listen()
+        server_cmd = f"iperf3 -s "
         if self.verbose:
             print(f"[iperf:client] server IP address is {self.server.IP()}")
-            print(f"[iperf:server] running command <{IperfGen.IPERF_CMD_SERVER}>")
-        self.proc_server = self.server.popen(IperfGen.IPERF_CMD_SERVER)
+            print(f"[iperf:server] running command <{server_cmd}>")
+        self.proc_server = self.server.popen(server_cmd)
         if self.verbose:
             print(f"[iperf:server] server process is running...")
 
@@ -63,7 +65,7 @@ class IperfGen(TrafficGen):
         print(f'[iperf:client] stdout: {decode(self.proc_client .stdout.readline())}')
 
     @staticmethod
-    def iperf_cmd_client(pcap_file, dst_ipaddr, src_ipaddr):
+    def iperf_cmd_client(pcap_file, dst_ipaddr, src_ipaddr, client_log_file):
         tx_bytes, time_sec, n_packets_tcp, n_packets_udp, n_packets_other = \
             PcapUtils.pcap_summarizer(pcap_file)
         protocol = "" if (n_packets_tcp > n_packets_udp) else "-u"
@@ -84,6 +86,6 @@ class IperfGen(TrafficGen):
             tx_gb = int(tx_bytes/(10**9))
             tx_str = f"{tx_gb}G"
 
-        client_cmd = f"iperf3 -c {dst_ipaddr} -B {src_ipaddr} {protocol} -b {tx_str} -t {time_int}"
+        client_cmd = f"sudo iperf3 -c {dst_ipaddr} -B {src_ipaddr} {protocol} -b {tx_str} -t {time_int} "
         return client_cmd, time_int
 

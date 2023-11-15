@@ -25,7 +25,7 @@ class TrafficGen:
         self.tg_name = "TrafficGen"
         if self.verbose: print("TrafficGen.ip_client:", self.ip_client)
         if self.verbose: print("TrafficGen.ip_server:", self.ip_server)
-        OSUtils.breakpoint("@ TrafficGen after initializing the constructor")
+        # OSUtils.breakpoint("@ TrafficGen after initializing the constructor")
 
     #
     # METADATA

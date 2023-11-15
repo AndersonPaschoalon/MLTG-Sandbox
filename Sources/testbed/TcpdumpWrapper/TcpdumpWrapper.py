@@ -15,25 +15,24 @@ class TcpdumpWrapper:
         self.tcpdump = None
         self.verbose = verbose
 
-    def start(self, mn_host: Host, interface="eth0", file="default"):
+    def start(self, mn_host: Host, interface="eth0", pcap_file="default", log_file="tcpdump"):
         self.mn_host = mn_host
         if self.running:
             print("[tcpdump] tcpdump is already running.")
             return False
         if self.verbose:
             print("[tcpdump] Starting TcpdumpWrapper...")
-        command = f"tcpdump -i {interface} -w {file}.pcap"
+        command = f"tcpdump -s 0 -i {interface} -U -w {pcap_file}.pcap --print "
         print(f"[tcpdump] executing command <{command}> on host {self.mn_host.IP()}")
         self.tcpdump = self.mn_host.popen(command)
         self.running = True
         return True
 
     def stop(self):
-        # self.mn_host.cmd("killall tcpdump -v")
         if self.verbose:
-            print(f"[tcpdump] Finalizing TCPDUMP process on host <self.mn_host.IP()>")
+            print(f"[tcpdump] Finalizing TCPDUMP process on host <{self.mn_host.IP()}>")
         self.tcpdump.terminate()
-        print(f'[tcpdump] stdout: {decode(self.tcpdump .stdout.readline())}')
+        # print(f'[tcpdump] stdout: {decode(self.tcpdump .stdout.readline())}')
         self.running = False
         return True
 
