@@ -1,3 +1,23 @@
+from abc import ABC, abstractmethod
+
+
+class TrafficGen(ABC):
+    @abstractmethod
+    def server_listen(self): pass
+
+    @abstractmethod
+    def client_start(self): pass
+
+    @abstractmethod
+    def server_stop(self): pass
+
+    @abstractmethod
+    def client_stop(self): pass
+
+
+    
+
+"""
 import time
 from mininet.net import Mininet
 from mininet.node import Host, Switch
@@ -60,3 +80,4 @@ class TrafficGen:
     def client_stop(self):
         self.client_running = False
 
+"""

@@ -1,10 +1,5 @@
 # Source Files
 
-- `commons`: utilitary sources and library for consumption of all other projects
-	- `cpp`: C/C++ utilities
-	- `python`: Python utilities
-	- `libs`: common libraries
-	- `shell`: shell scripts
 
 - `deep-ditg` : code for the modified version of D-ITG wich used deep-learning for the traffic modeling.
 

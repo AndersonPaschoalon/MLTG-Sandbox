@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "./venv/bin/python.exe",
+    "python.linting.mypyEnabled": true,
+    "[python]": {
+      "editor.formatOnType": true
+    },    
+}

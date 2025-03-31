@@ -1,4 +1,4 @@
-from TrafficGen.TrafficGen import TrafficGen
+from testbed.TrafficGen.traffic_gen import TrafficGen
 from Utils.MininetUtils import MininetUtils
 
 

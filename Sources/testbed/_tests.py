@@ -8,8 +8,8 @@ from mininet.link import OVSLink
 from Topos.SingleHopTopo import SingleHopTopo
 from Utils.MininetUtils import MininetUtils
 from Utils.OSUtils import OSUtils
-from TrafficGen.TrafficGen import TrafficGen
-from TrafficGen.IperfGen import IperfGen
+from testbed.TrafficGen.traffic_gen import TrafficGen
+from testbed.TrafficGen.iperf_tg import IperfGen
 from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
 from NetQA.PingMeasurer import PingMeasurer
 

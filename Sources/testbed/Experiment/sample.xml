@@ -1,5 +1,5 @@
 <experiment_list>
-	<experiment>
+	<experiment type="simple-topo">
 		<name>Name01</name>
 		<pcap>pcap01.pcap</pcap>
 		<out_dir>abacate</out_dir>
@@ -17,7 +17,7 @@
 		<qa_duration>60</qa_duration>
 		<qa_interval>1</qa_interval>
 	</experiment>
-	<experiment>
+	<experiment type="simple-topo">
 		<name>Name02</name>
 		<pcap>pcap02.pcap</pcap>
 		<out_dir>abacate</out_dir>

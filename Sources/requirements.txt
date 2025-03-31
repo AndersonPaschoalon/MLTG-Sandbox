@@ -1,0 +1,6 @@
+mininet==2.3.0.dev6
+mypy==1.15.0
+mypy-extensions==1.0.0
+scapy==2.6.1
+tomli==2.2.1
+typing_extensions==4.13.0

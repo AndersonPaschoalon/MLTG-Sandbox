@@ -1,13 +1,13 @@
-from TrafficGen.TrafficGen import TrafficGen
+from testbed.TrafficGen.traffic_gen import TrafficGen
 from Utils.MininetUtils import MininetUtils
 
 
-class LitgenGen(TrafficGen):
+class HarpoonGen(TrafficGen):
 
     def __init__(self, pcap, host_client, host_server, client_cfg, server_cfg, verbose):
         super().__init__(pcap, host_client, host_server, client_cfg, server_cfg, verbose)
-        self.tg_name = "LiTGen"
-        if self.verbose: print("LiTGen initialized")
+        self.tg_name = "Harpoon"
+        if self.verbose: print("Harpoon initialized")
 
     def name(self):
         return self.tg_name

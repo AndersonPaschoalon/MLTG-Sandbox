@@ -1,12 +1,11 @@
 import time
-from TrafficGen.TrafficGen import TrafficGen
+from testbed.TrafficGen.traffic_gen import TrafficGen
 from Utils.PcapUtils import PcapUtils
 from mininet.util import custom, waitListening, decode
 
 class IperfGen(TrafficGen):
 
     def __init__(self, pcap, client, server, client_cfg, server_cfg, verbose, client_log, server_log):
-        super().__init__(pcap, client, server, client_cfg, server_cfg, verbose)
         self.client_log = f"{client_log}.log"
         self.server_log = f"{server_log}.log"        
         self.iperf_client_cmd, self.estimate_exec_time = \
@@ -26,7 +25,6 @@ class IperfGen(TrafficGen):
 
     # Overwrite
     def server_listen(self):
-        super().server_listen()
         server_cmd = f"iperf3 -s "
         if self.verbose:
             print(f"[iperf:client] server IP address is {self.server.IP()}")
@@ -37,7 +35,6 @@ class IperfGen(TrafficGen):
 
     # Overwrite
     def server_stop(self):
-        super().server_stop()
         self.proc_server.terminate()
         if self.verbose:
             print(f"[iperf:server] server process is terminated")
@@ -45,7 +42,6 @@ class IperfGen(TrafficGen):
 
     # Overwrite
     def client_start(self):
-        ret = super().client_start()
         if ret < 0:
             return ret
         if self.verbose:
@@ -58,7 +54,6 @@ class IperfGen(TrafficGen):
 
     # Overwrite
     def client_stop(self):
-        super().client_stop()
         if self.verbose:
             print(f"terminating Iper3 instances on client.")
         self.proc_client.terminate()

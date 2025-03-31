@@ -1,18 +1,19 @@
-import xml.etree.ElementTree as ET
 import os.path
 import time
+import xml.etree.ElementTree as ET
+
+from mininet.cli import CLI
+from mininet.link import OVSLink, TCLink
 from mininet.net import Mininet
 from mininet.node import Host, Switch
-from mininet.cli import CLI
-from mininet.link import TCLink
-from mininet.link import OVSLink
+from NetQA.PingMeasurer import PingMeasurer
+from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
 from Topos.SingleHopTopo import SingleHopTopo
 from Utils.MininetUtils import MininetUtils
 from Utils.OSUtils import OSUtils
-from TrafficGen.TrafficGen import TrafficGen
-from TrafficGen.IperfGen import IperfGen
-from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
-from NetQA.PingMeasurer import PingMeasurer
+
+from testbed.TrafficGen.iperf_tg import IperfGen
+from testbed.TrafficGen.traffic_gen import TrafficGen
 
 
 class Experiment:
@@ -134,17 +135,6 @@ class Experiment:
 
         print(f"Experiment {self.name} finalized successfully!")
         return True
-
-    @staticmethod
-    def run_all(experiment_list):
-        """
-        Run a list of experiments.
-        :param experiment_list:
-        :return:
-        """
-        ex: Experiment
-        for ex in experiment_list:
-            ex.run()
 
     @staticmethod
     def from_xml(xml_file):
