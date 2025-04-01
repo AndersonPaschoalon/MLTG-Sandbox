@@ -1,5 +1,6 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
 
 
 class Logger:
@@ -12,6 +13,8 @@ class Logger:
     _rotating_method = 1  # 0 - single file | 1 = time rotating
     _backup_count = 50
     _logger = None
+    _log_file = ""
+    _log_path = ""
 
     @staticmethod
     def initialize(log_file, level_log=logging.DEBUG, level_console=logging.WARNING):
@@ -31,6 +34,16 @@ class Logger:
         if Logger._logger:
             Logger._logger.warning(f"Logger {Logger.LOGGER_NAME} already initialized. New log file {log_file} will not be created.")
             return
+        _log_file = log_file
+        
+        # Convert to absolute path and ensure directory exists
+        log_path = Path(log_file).absolute()
+        _log_path = log_path
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Ensure the file is writable
+        log_path.touch(mode=0o666, exist_ok=True)        
+
         Logger._logger = logging.getLogger(Logger.LOGGER_NAME)
         Logger._logger.setLevel(level_log)
         # create file handler which logs even debug messages
@@ -68,6 +81,15 @@ class Logger:
         """
         assert Logger._logger is not None, "Error: get() was called before Logger was initialized. Call Logger.initialize() to use the logger."
         return Logger._logger
+
+    @staticmethod
+    def log_file() -> str:
+        return Logger._log_file
+    
+    @staticmethod
+    def log_dir() -> str:
+        return Logger._log_path
+
 
         
 

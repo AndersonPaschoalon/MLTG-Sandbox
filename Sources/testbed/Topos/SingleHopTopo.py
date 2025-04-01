@@ -1,13 +1,14 @@
 import os
 import time
-from mininet.topo import Topo
-from mininet.cli import CLI
-from mininet.net import Mininet
-from mininet.util import dumpNodeConnections
-from mininet.log import setLogLevel
-from mininet.node import Controller, OVSKernelSwitch, RemoteController
-from Utils.OSUtils import OSUtils
 
+from logger.logger import Logger
+from mininet.cli import CLI
+from mininet.log import setLogLevel
+from mininet.net import Mininet
+from mininet.node import Controller, OVSKernelSwitch, RemoteController
+from mininet.topo import Topo
+from mininet.util import dumpNodeConnections
+from Utils.OSUtils import OSUtils
 
 REMOTE_CONTROLLER_IP = "127.0.0.1"
 
@@ -25,6 +26,9 @@ class SingleHopTopo(Topo):
     """
 
     _controller = ""
+    _log_controller = "single_hop_topo.controller.log"
+    _controller_port = 6653
+
 
     def __init__(self, cloud_loss=0.01, cloud_delay='20ms'):
         """
@@ -69,9 +73,13 @@ class SingleHopTopo(Topo):
             print("Kill any instance of ovs-testcontroller")
             OSUtils.run('pid_proc="`sudo lsof -i:6653 |grep "ovs-testc" |awk \'{print($2)}\'`"; [ "$pid_proc" != "" ] && sudo kill $pid_proc')
             print("Run ovs-testcontroller")
-            OSUtils.run("sudo ovs-testcontroller ptcp:", new_console=True)
+            log_file = os.path.join(Logger.log_dir(), SingleHopTopo._log_controller)
+            OSUtils.run(f"sudo ovs-testcontroller ptcp:6653  >{log_file}2>&1 &", new_console=True)
             print("Wait ovs-testcontroller to be set up...")
             time.sleep(6)
+            # Verify controller is running
+            if not OSUtils.check_port_open(6653):
+                raise RuntimeError("Controller failed to start!")
             net.addController("c0",
                               controller=RemoteController,
                               ip=REMOTE_CONTROLLER_IP,

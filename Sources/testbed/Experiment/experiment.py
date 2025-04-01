@@ -1,8 +1,10 @@
 import os.path
 import time
 import xml.etree.ElementTree as ET
-from types import List
+from typing import List, Type
 
+from logger.logger import Logger
+from logger.logger_cron import LoggerCron
 from mininet.cli import CLI
 from mininet.link import OVSLink, TCLink
 from mininet.net import Mininet
@@ -23,9 +25,14 @@ class Experiment:
         """Initialize with a configuration object"""
         self.config: ExperimentConfig = config
 
+    def __repr__(self) -> str:
+        return (f"Experiment(config={self.config})")
+
     @staticmethod
     def from_xml(xml_file: str) -> List['Experiment']:
-        """Factory method to create experiments from XML"""
+        """
+        Factory method to create experiments from XML
+        """
         try:
             tree = ET.parse(xml_file)
             return [
@@ -36,18 +43,22 @@ class Experiment:
             raise ValueError(f"Error parsing XML: {e}") from e
 
     def run(self):
+        logger = Logger.get()
+        logger.debug(f"self.config.experiment_type:{self.config.experiment_type.lower()}")
         if self.config.experiment_type.lower() == "simple-topo":
             return self._simple_topo()
         else:
             raise ValueError(f"Invalid experiment type {self.config.experiment_type.lower()}")
 
     def _simple_topo(self):
+        logger = Logger.get()
         c = self.config
+        cron = LoggerCron(logger=logger, label=f"_simple_topo -> {c.name}")
         # Prepare eviroment
         experiment_dir = os.path.join(c.out_dir, c.name)
         OSUtils.create_directory(experiment_dir)
         if not os.path.exists(experiment_dir):
-            print(f"Pcap file {c.pcap} does not exist!")
+            logger.error(f"Pcap file {c.pcap} does not exist!")
             return False
 
         # create network
@@ -79,19 +90,19 @@ class Experiment:
                 tcpdump_log = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
 
                 # start server
-                print(f"Starting {tg.name()} server...")
+                logger.info(f"Starting {tg.name()} server...")
                 tg.server_listen()
 
                 # start capture
-                print(f"Starting capture on host1...")
+                logger.info(f"Starting capture on host1...")
                 tcpdump.start(mn_host=h1, interface="h1-eth0", pcap_file=out_file, log_file=tcpdump_log)
 
                 # start traffic generation
-                print(f"Starting {tg.name()} traffic generation...")
+                logger.info(f"Starting {tg.name()} traffic generation...")
                 time_to_wait = tg.client_start()
 
                 # wait to finish
-                print(f"Waiting {time_to_wait}s")
+                logger.info(f"Waiting {time_to_wait}s")
                 # time.sleep(time_to_wait)
                 time.sleep(15) # for tests
 
@@ -103,6 +114,6 @@ class Experiment:
 
         SingleHopTopo.finalize(net)
 
-        print(f"Experiment {c.name} finalized successfully!")
+        logger.info(f"Experiment {c.name} finalized successfully!")
         return True
 
