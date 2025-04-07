@@ -1,14 +1,15 @@
 import argparse
 import logging
 import os
-import sys
 import traceback
 
-from logger.logger import Logger
+from testbed.logger.logger import Logger
 
-from testbed.Experiment.experiment import Experiment
+Logger.initialize(
+    "./logs/run_testbed.log", level_log=logging.DEBUG, level_console=logging.INFO
+)
 
-Logger.initialize("./logs/run_testbed.log", level_log=logging.DEBUG, level_console=logging.INFO)
+from testbed.experiment.experiment import Experiment
 
 
 def print_version():
@@ -43,11 +44,16 @@ def run_experiments(experiment_list: str):
 
 
 def main():
-    
+
     parser = argparse.ArgumentParser(description="Script to run a set of experiments.")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", action="store_true", help="Display script version and exit")
-    parser.add_argument("--experiment-list", help="Specify the XML file containing experiment configurations")
+    parser.add_argument(
+        "--version", action="store_true", help="Display script version and exit"
+    )
+    parser.add_argument(
+        "--experiment-list",
+        help="Specify the XML file containing experiment configurations",
+    )
 
     args = parser.parse_args()
 

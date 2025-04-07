@@ -1,0 +1,20 @@
+<experiment_list>
+	<experiment type="simple-topo">
+		<name>Banana</name>
+		<pcap>../Pcap/SkypeIRC.cap.pcap</pcap>
+		<out_dir>Results</out_dir>
+		<client_capture_if>h1-eth0</client_capture_if>
+		<server_capture_if>h3-eth0</server_capture_if>
+		<display_mininet_cli>false</display_mininet_cli>
+		<tcpdump_start_delay>2</tcpdump_start_delay>
+		<tcpdump_stop_delay>10</tcpdump_stop_delay>
+		<verbose>true</verbose>
+		<log_file>test01.log</log_file>
+		<network_loss>0.01</network_loss>
+		<network_delay>20ms</network_delay>
+		<run_capture>true</run_capture>
+		<run_qa>true</run_qa>
+		<qa_duration>60</qa_duration>
+		<qa_interval>1</qa_interval>
+	</experiment>
+</experiment_list>

@@ -19,7 +19,20 @@
             "program": "${workspaceFolder}/testbed/run_testbed.py",
             "args": [
                 "--experiment-list", 
-                "testbed/Scripts/Xml/sample_tests.xml"
+                "testbed/scripts/xml/sample_tests.xml"
+            ],
+            "console": "integratedTerminal",
+            "sudo": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "class:SingleHopTopo",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/testbed/Topos/SingleHopTopo.py",
+            "args": [
             ],
             "console": "integratedTerminal",
             "sudo": true,

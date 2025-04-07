@@ -1,17 +1,19 @@
 import os.path
 import time
+
+from mininet.cli import CLI
+from mininet.link import OVSLink, TCLink
 from mininet.net import Mininet
 from mininet.node import Host, Switch
-from mininet.cli import CLI
-from mininet.link import TCLink
-from mininet.link import OVSLink
-from Topos.SingleHopTopo import SingleHopTopo
-from Utils.MininetUtils import MininetUtils
-from Utils.OSUtils import OSUtils
-from testbed.TrafficGen.traffic_gen import TrafficGen
-from testbed.TrafficGen.iperf_tg import IperfGen
-from TcpdumpWrapper.TcpdumpWrapper import TcpdumpWrapper
 from NetQA.PingMeasurer import PingMeasurer
+
+from testbed.tcpdump_wrapper.tcpdump_wrapper import TcpdumpWrapper
+from testbed.topos.single_hop_topo import SingleHopTopo
+from testbed.traffic_gen.iperf_gen import IperfGen
+from testbed.traffic_gen.traffic_gen import TrafficGen
+from testbed.utils.mininet_utils import MininetUtils
+from testbed.utils.os_utils import OSUtils
+
 
 def single_hop_topo():
     SingleHopTopo.simple_test()
@@ -22,6 +24,7 @@ def single_hop_topo():
     CLI(net)
     SingleHopTopo.finalize(net)
 
+
 def test_iperf_gen():
     # Parameters
     pcap_sample = "../../Pcap/SkypeIRC.cap.pcap"
@@ -29,11 +32,10 @@ def test_iperf_gen():
     experiment_name = "Abacate"
     display_cli = True
     cloud_loss = 0.01
-    cloud_delay = '20ms'
+    cloud_delay = "20ms"
     run_capture = True
     run_qa = True
     OSUtils.__debug_mode__ = True
-
 
     # Prepare eviroment
     experiment_dir = os.path.join(out_dir, experiment_name)
@@ -58,9 +60,16 @@ def test_iperf_gen():
     # define iperf traffic generator
     client_log = os.path.join(experiment_dir, "iperf-client")
     server_log = os.path.join(experiment_dir, "iperf-server")
-    iperf = IperfGen(pcap=pcap_sample, client=h1, server=h3,
-                     client_cfg=h1_cfg, server_cfg=h3_cfg, verbose=True, 
-                     client_log=client_log, server_log=server_log)
+    iperf = IperfGen(
+        pcap=pcap_sample,
+        client=h1,
+        server=h3,
+        client_cfg=h1_cfg,
+        server_cfg=h3_cfg,
+        verbose=True,
+        client_log=client_log,
+        server_log=server_log,
+    )
     traffic_generators = [iperf]
 
     #
@@ -80,7 +89,12 @@ def test_iperf_gen():
 
             # start capture
             print(f"Starting capture on host1...")
-            tcpdump.start(mn_host=h1, interface="h1-eth0", pcap_file=out_file, log_file=tcpdump_log)
+            tcpdump.start(
+                mn_host=h1,
+                interface="h1-eth0",
+                pcap_file=out_file,
+                log_file=tcpdump_log,
+            )
 
             # start traffic generation
             print(f"Starting {tg.name()} traffic generation...")
@@ -132,7 +146,7 @@ def test_iperf_gen():
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test01 = False
     test02 = True
     test03 = False
@@ -142,8 +156,7 @@ if __name__ == '__main__':
     test07 = False
     test08 = False
 
-    if test01: single_hop_topo()
-    if test02: test_iperf_gen()
-
-
-
+    if test01:
+        single_hop_topo()
+    if test02:
+        test_iperf_gen()
