@@ -53,6 +53,7 @@ class IperfGen(TrafficGen):
         logger.debug(
             f"[iperf:client] stdout: {decode(self.proc_client.stdout.readline())}"
         )
+        self.proc_client.wait()
 
     def _iperf_cmds(self):
         cmd_server = f"iperf3 -s "

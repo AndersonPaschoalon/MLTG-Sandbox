@@ -14,6 +14,7 @@ from testbed.logger.logger_cron import LoggerCron
 from testbed.tcpdump_wrapper.tcpdump_wrapper import TcpdumpWrapper
 from testbed.topos.single_hop_topo import SingleHopTopo
 from testbed.traffic_gen.iperf_gen import IperfGen
+from testbed.utils.exceptions import PCAPNotFoundError
 from testbed.utils.mininet_utils import MininetUtils
 from testbed.utils.os_utils import OSUtils
 
@@ -60,9 +61,9 @@ class Experiment:
         # Prepare eviroment
         experiment_dir = os.path.join(c.out_dir, c.name)
         OSUtils.create_directory(experiment_dir)
-        if not os.path.exists(experiment_dir):
+        if not os.path.exists(c.pcap):
             logger.error(f"Pcap file {c.pcap} does not exist!")
-            return False
+            raise PCAPNotFoundError(c.pcap)
 
         # create network
         sht = SingleHopTopo()
@@ -75,6 +76,7 @@ class Experiment:
         iperf = IperfGen(client=h1, server=h3, config=self.config)
         traffic_generators = [iperf]
 
+        ex = []
         #
         # Trace Capture
         #
@@ -83,8 +85,12 @@ class Experiment:
             tcpdump = TcpdumpWrapper()
             for tg in traffic_generators:
                 # init vars
-                out_file = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
-                tcpdump_log = os.path.join(experiment_dir, f"capture.host1.{tg.name()}")
+                out_file = os.path.join(
+                    experiment_dir, "data", f"capture.host1.{tg.name()}"
+                )
+                tcpdump_log = os.path.join(
+                    experiment_dir, "data", f"capture.host1.{tg.name()}"
+                )
                 # start server
                 logger.info(f"Starting {tg.name()} server...")
                 tg.server_listen()
@@ -104,6 +110,9 @@ class Experiment:
                 tg.client_stop()
                 tcpdump.stop()
                 tg.server_stop()
+                # record experiment info
+                ex_tg = {"pcap": out_file, "tg": tg.name()}
+                ex.append(ex_tg)
 
         logger.info(f"Experiment {c.name} finalized successfully!")
-        return True
+        return ex
