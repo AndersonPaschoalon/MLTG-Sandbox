@@ -17,7 +17,7 @@ def print_version():
     return True
 
 
-def run_experiments(experiment_list: str):
+def run_experiments(experiment_list: str, coun: int):
     logger = Logger.get()
     if experiment_list:
         if not os.path.exists(experiment_list):
@@ -38,8 +38,9 @@ def run_experiments(experiment_list: str):
     experiment: Experiment
     for experiment in experiments:
         # Execute the experiment as needed
-        logger.info(f"Running Experiment: {experiment.config.name}")
-        experiment.run()
+        logger.info(f"==================================================")
+        logger.info(f"==> Running Experiment: {experiment.config.name}, count:{coun}")
+        experiment.run(coun)
     return True
 
 
@@ -54,6 +55,13 @@ def main():
         "--experiment-list",
         help="Specify the XML file containing experiment configurations",
     )
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=0,
+        help="Specify a count value (integer, default is 0)",
+        dest="count",
+    )
 
     args = parser.parse_args()
 
@@ -62,7 +70,7 @@ def main():
         return 0
 
     if args.experiment_list:
-        ret = run_experiments(args.experiment_list)
+        ret = run_experiments(args.experiment_list, args.count)
         return 0 if ret else 1
 
     else:

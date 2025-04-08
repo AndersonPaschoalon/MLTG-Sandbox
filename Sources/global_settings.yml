@@ -1,0 +1,11 @@
+# File to be used by the Experiment orchestrator
+
+sniffer:
+  exe: "./sniffer/bin/sniffer.exe"
+  db: "./db/"
+
+testbed:
+  exe: "./testbed/"
+  script: "./testbed/scripts/xml/sample_tests.xml"
+  results: "./Results"
+

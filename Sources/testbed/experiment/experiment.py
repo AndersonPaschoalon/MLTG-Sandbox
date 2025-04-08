@@ -24,6 +24,7 @@ class Experiment:
     def __init__(self, config: ExperimentConfig):
         """Initialize with a configuration object"""
         self.config: ExperimentConfig = config
+        self.count = 0
 
     def __repr__(self) -> str:
         return f"Experiment(config={self.config})"
@@ -42,7 +43,8 @@ class Experiment:
         except Exception as e:
             raise ValueError(f"Error parsing XML: {e}") from e
 
-    def run(self):
+    def run(self, count: int = 0):
+        self.count = count
         logger = Logger.get()
         logger.debug(
             f"self.config.experiment_type:{self.config.experiment_type.lower()}"
@@ -82,25 +84,28 @@ class Experiment:
         #
         if c.run_capture:
             # Run capture tests
-            tcpdump = TcpdumpWrapper()
+            tcpdump_h1 = TcpdumpWrapper()
+            tcpdump_h3 = TcpdumpWrapper()
             for tg in traffic_generators:
                 # init vars
-                out_file = os.path.join(
-                    experiment_dir, "data", f"capture.host1.{tg.name()}"
-                )
-                tcpdump_log = os.path.join(
-                    experiment_dir, "data", f"capture.host1.{tg.name()}"
-                )
+                vars = self._simple_topo_cap_vars(experiment_dir, tg)
                 # start server
                 logger.info(f"Starting {tg.name()} server...")
                 tg.server_listen()
                 # start capture
                 logger.info(f"Starting capture on host1...")
-                tcpdump.start(
+                tcpdump_h1.start(
                     mn_host=h1,
                     interface_index=0,
-                    pcap_file=out_file,
-                    log_file=tcpdump_log,
+                    pcap_file=vars["h1"]["pcap"],
+                    log_file=vars["h1"]["log"],
+                )
+                logger.info(f"Starting capture on host3...")
+                tcpdump_h3.start(
+                    mn_host=h3,
+                    interface_index=0,
+                    pcap_file=vars["h3"]["pcap"],
+                    log_file=vars["h3"]["log"],
                 )
                 # start traffic generation
                 logger.info(f"Starting {tg.name()} traffic generation...")
@@ -108,11 +113,28 @@ class Experiment:
                 # stop capture
                 time.sleep(2)
                 tg.client_stop()
-                tcpdump.stop()
+                tcpdump_h1.stop()
+                tcpdump_h3.stop()
                 tg.server_stop()
                 # record experiment info
-                ex_tg = {"pcap": out_file, "tg": tg.name()}
+                ex_tg = {
+                    "pcap.src": vars["h1"]["pcap"],
+                    "pcap.src": vars["h3"]["pcap"],
+                    "tg": tg.name(),
+                }
                 ex.append(ex_tg)
 
         logger.info(f"Experiment {c.name} finalized successfully!")
         return ex
+
+    def _simple_topo_cap_vars(self, experiment_dir, tg):
+        pcap_dir = os.path.join(experiment_dir, "pcap")
+        # create output dir if does not exit
+        os.makedirs(pcap_dir, exist_ok=True)
+        cap_name_h1 = f"capture.host1.{self.count}.{tg.name()}"
+        cap_name_h3 = f"capture.host3.{self.count}.{tg.name()}"
+        vars = {
+            "h1": {"pcap": cap_name_h1, "log": cap_name_h1},
+            "h3": {"pcap": cap_name_h3, "log": cap_name_h3},
+        }
+        return vars

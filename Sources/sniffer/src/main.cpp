@@ -51,21 +51,21 @@ const char HELP_USAGE[] = ""
 "Sniffer to capture trace data into Sqlite databases.                         \n"
 "                                                                             \n"
 "Execute a live capture on eth0 for 30 seconds.                               \n"
-"	sniffer.exe --type live --src eth0 --lib libpcap                          \n"
-"		--name LiveCapture_eth0_30s --timeout 30                              \n"
+"    sniffer.exe --type live --src eth0 --lib libpcap                         \n"
+"        --name LiveCapture_eth0_30s --timeout 30                             \n"
 "                                                                             \n"
 "Execute a pcap capture in a pcap file called sample_http.pcap.               \n"
-"	sniffer.exe --type pcap --src sample_http.pcap --lib libpcap              \n"
-"		--name http.pcap                                                      \n"
+"    sniffer.exe --type pcap --src sample_http.pcap --lib libpcap             \n"
+"        --name http.pcap                                                     \n"
 "                                                                             \n"
 "Display the table of captured traces currently stored.                       \n"
-"	sniffer.exe --show                                                        \n"
+"    sniffer.exe --show                                                       \n"
 "                                                                             \n"
 "Display this help tutorial:                                                  \n"
-"	sniffer.exe --help	                                                      \n"
+"    sniffer.exe --help                                                       \n"
 "                                                                             \n"
 "Display the application version:                                             \n"
-"	sniffer.exe --version                                                     \n"
+"    sniffer.exe --version                                                    \n"
 "                                                                             \n"
 "Options:                                                                     \n"
 "                                                                             \n"
@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
     bool show = false;
     bool version = false;
     bool help = false;
-	bool unitytests = false;
+    bool unitytests = false;
     int retVal = 0;
 
     // Define the options
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
         {"show", no_argument, 0, 'w'},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
-		{"unitytests", no_argument, 0, 'u'},
+        {"unitytests", no_argument, 0, 'u'},
         {0, 0, 0, 0}
     };
 
@@ -212,9 +212,9 @@ int main(int argc, char* argv[])
                 traceToDelete = optarg;
                 break;
             case 'w':
-				show = true;
+                show = true;
             case 'u':
-				unitytests = true;				
+                unitytests = true;                
                 break;
             case 'v':
                 version = true;
@@ -229,7 +229,6 @@ int main(int argc, char* argv[])
     }
 
     // Print the values of the variables
-    /**
     std::cout << "type = " << type << std::endl;
     std::cout << "device = " << device << std::endl;
     std::cout << "timeout = " << timeout << std::endl;
@@ -240,8 +239,8 @@ int main(int argc, char* argv[])
     std::cout << "show = " << std::boolalpha << show << std::endl;
     std::cout << "version = " << std::boolalpha << version << std::endl;
     std::cout << "help = " << std::boolalpha << help << std::endl;
-	std::cout << "unitytests = " << std::boolalpha << unitytests << std::endl;
-    */
+    std::cout << "unitytests = " << std::boolalpha << unitytests << std::endl;
+
 
     if (help)
     {

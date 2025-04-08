@@ -1,4 +1,6 @@
-Sniffer
+###############################################################################
+# Done
+###############################################################################
 
 DONE (1) CLI
     Formato da CLI
@@ -12,20 +14,34 @@ DONE (1) CLI
     --version/-v {imprime a versão}
     --help/-h   {manpage}
 
-(2) Implementar o DriverCsv
-
 DONE (3) Implementar suporte a interface live
 
 DONE (4) Implementar suporte a arquivo pcap
+
+DONE (7) Reduzir printfs
+
+DONE (8) Ajustar nomeclatura, e adicionar parametro captureType 
+
+
+###############################################################################
+# In Progress
+###############################################################################
+
+
+
+
+###############################################################################
+# Backlog
+###############################################################################
+
+
+(2) Implementar o DriverCsv
 
 (5) Implementar suporte a arquivo nspcap
 
 (6) Implementar suporte a protocolos de link-layer como parametro de linha de comando
     --link ethernet|wifi|5g|zigbee...
 
-[ok] (7) Reduzir printfs
-
-[ok] (8) Ajustar nomeclatura, e adicionar parametro captureType 
 
 https://tshark.dev/search/
 
