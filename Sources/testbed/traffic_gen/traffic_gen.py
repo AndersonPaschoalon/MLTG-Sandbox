@@ -15,7 +15,7 @@ class TrafficGen(ABC):
         self.ip_client = self.client.IP()
         self.ip_server = self.server.IP()
         self.config = config
-        self.name_str = (type(self).__name__).strip("Gen")
+        self.name_str = str((type(self).__name__).strip("Gen")).lower()
 
     @abstractmethod
     def server_listen(self):

@@ -11,7 +11,8 @@ from mininet.node import Host, Switch
 from testbed.experiment.experiment_config import ExperimentConfig
 from testbed.logger.logger import Logger
 from testbed.logger.logger_cron import LoggerCron
-from testbed.tcpdump_wrapper.tcpdump_wrapper import TcpdumpWrapper
+from testbed.net_tools.qos_monitor import QoSMonitor
+from testbed.net_tools.tcpdump_wrapper import TcpdumpWrapper
 from testbed.topos.single_hop_topo import SingleHopTopo
 from testbed.traffic_gen.iperf_gen import IperfGen
 from testbed.utils.exceptions import PCAPNotFoundError
@@ -68,12 +69,13 @@ class Experiment:
             raise PCAPNotFoundError(c.pcap)
 
         # create network
-        sht = SingleHopTopo()
-        net = sht.initialize(cloud_loss=c.network_loss, cloud_delay=c.network_delay)
+        topo = SingleHopTopo()
+        net = topo.initialize(cloud_loss=c.network_loss, cloud_delay=c.network_delay)
         h1, h2, h3, h4 = net.hosts[0], net.hosts[1], net.hosts[2], net.hosts[3]
-        sht.simple_test()
+        s1, s2 = net.switches[0], net.switches[1]
+        topo.simple_test()
         if c.display_mininet_cli:
-            sht.cli()
+            topo.cli()
         # define iperf traffic generator
         iperf = IperfGen(client=h1, server=h3, config=self.config)
         traffic_generators = [iperf]
@@ -82,6 +84,7 @@ class Experiment:
         #
         # Trace Capture
         #
+        logger.info("Pt 01 -- Synthetic trace capture")
         if c.run_capture:
             # Run capture tests
             tcpdump_h1 = TcpdumpWrapper()
@@ -97,15 +100,15 @@ class Experiment:
                 tcpdump_h1.start(
                     mn_host=h1,
                     interface_index=0,
-                    pcap_file=vars["h1"]["pcap"],
-                    log_file=vars["h1"]["log"],
+                    pcap_file=vars["pcap"]["h1"],
+                    log_file=vars["pcap"]["h3"],
                 )
                 logger.info(f"Starting capture on host3...")
                 tcpdump_h3.start(
                     mn_host=h3,
                     interface_index=0,
-                    pcap_file=vars["h3"]["pcap"],
-                    log_file=vars["h3"]["log"],
+                    pcap_file=vars["pcap"]["h1"],
+                    log_file=vars["pcap"]["h3"],
                 )
                 # start traffic generation
                 logger.info(f"Starting {tg.name()} traffic generation...")
@@ -118,23 +121,72 @@ class Experiment:
                 tg.server_stop()
                 # record experiment info
                 ex_tg = {
-                    "pcap.src": vars["h1"]["pcap"],
-                    "pcap.src": vars["h3"]["pcap"],
+                    "pcap.src": vars["pcap"]["h1"],
+                    "pcap.src": vars["pcap"]["h3"],
                     "tg": tg.name(),
                 }
                 ex.append(ex_tg)
+
+        #
+        # QA/QoS Metrics
+        #
+        logger.info("Pt 03 -- QA/QoS metrics extraction")
+        if c.run_capture:
+            qmon = QoSMonitor(net)
+            for tg in traffic_generators:
+                # init vars
+                vars = self._simple_topo_cap_vars(experiment_dir, tg)
+                # Start measurements FIRST
+                ping_proc = qmon.start_ping_probe(h2, h4, vars["qos"]["ping"])
+                queue_proc = qmon.start_queue_monitor(s1, vars["qos"]["queue"])
+                # Then run traffic
+                logger.info(f"Starting {tg.name()} server...")
+                tg.server_listen()
+                logger.info(f"Starting {tg.name()} traffic generation...")
+                tg.client_start()
+                time.sleep(2)
+                tg.client_stop()
+                tg.server_stop()
+                # Stop measurements LAST
+                qmon.stop_all()
+                ex.append(
+                    {
+                        "qos": {
+                            "ping": vars["qos"]["ping"],
+                            "queue": vars["qos"]["queue"],
+                            "tg": tg.name(),
+                        }
+                    }
+                )
 
         logger.info(f"Experiment {c.name} finalized successfully!")
         return ex
 
     def _simple_topo_cap_vars(self, experiment_dir, tg):
+        # pcap - create output dir if does not exit
         pcap_dir = os.path.join(experiment_dir, "pcap")
-        # create output dir if does not exit
         os.makedirs(pcap_dir, exist_ok=True)
+        # build paths for pcaps
         cap_name_h1 = f"capture.host1.{self.count}.{tg.name()}"
         cap_name_h3 = f"capture.host3.{self.count}.{tg.name()}"
+        cap_path_h1 = os.path.join(pcap_dir, cap_name_h1)
+        cap_path_h3 = os.path.join(pcap_dir, cap_name_h3)
+        # qos - create output dir if does not exit
+        qos_dir = os.path.join(experiment_dir, "qos")
+        os.makedirs(qos_dir, exist_ok=True)
+        # build paths for qos
+        file_ping = f"ping.{self.count}.{tg.name()}.csv"
+        file_queue = f"queue.{self.count}.{tg.name()}.csv"
+        path_ping = os.path.join(qos_dir, file_ping)
+        path_queue = os.path.join(qos_dir, file_queue)
         vars = {
-            "h1": {"pcap": cap_name_h1, "log": cap_name_h1},
-            "h3": {"pcap": cap_name_h3, "log": cap_name_h3},
+            "pcap": {
+                "h1": cap_path_h1,
+                "h3": cap_path_h3,
+            },
+            "qos": {
+                "ping": path_ping,
+                "queue": path_queue,
+            },
         }
         return vars

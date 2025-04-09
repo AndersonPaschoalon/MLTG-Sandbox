@@ -7,7 +7,7 @@ from mininet.net import Mininet
 from mininet.node import Host, Switch
 from NetQA.PingMeasurer import PingMeasurer
 
-from testbed.tcpdump_wrapper.tcpdump_wrapper import TcpdumpWrapper
+from testbed.net_tools.tcpdump_wrapper import TcpdumpWrapper
 from testbed.topos.single_hop_topo import SingleHopTopo
 from testbed.traffic_gen.iperf_gen import IperfGen
 from testbed.traffic_gen.traffic_gen import TrafficGen

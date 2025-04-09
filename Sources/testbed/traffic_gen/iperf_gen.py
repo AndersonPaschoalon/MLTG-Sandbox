@@ -4,6 +4,7 @@ from experiment.experiment_config import ExperimentConfig
 from mininet.util import custom, decode, waitListening
 
 from testbed.logger.logger import Logger
+from testbed.logger.logger_cron import LoggerCron
 from testbed.traffic_gen.traffic_gen import TrafficGen
 from testbed.utils.exceptions import InvalidPCAPError
 from testbed.utils.pcap_utils import PcapUtils as putil
@@ -13,6 +14,9 @@ class IperfGen(TrafficGen):
 
     def __init__(self, client, server, config: ExperimentConfig):
         super().__init__(client, server, config)
+        logger = Logger.get()
+        logger.info(f"analizing pcap {self.pcap}...")
+        cron = LoggerCron("pcap_summarizer")
         (
             self.tx_bytes,
             self.time_sec,
