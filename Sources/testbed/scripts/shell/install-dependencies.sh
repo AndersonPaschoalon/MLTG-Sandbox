@@ -7,3 +7,4 @@ sudo apt-get install mininet
 sudo apt install xterm
 sudo apt install nfdump
 sudo apt install  tshark
+sudo apt install jq
