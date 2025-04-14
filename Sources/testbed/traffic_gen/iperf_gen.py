@@ -1,8 +1,8 @@
 import time
 
-from experiment.experiment_config import ExperimentConfig
 from mininet.util import custom, decode, waitListening
 
+from testbed.experiment.experiment_config import ExperimentConfig
 from testbed.logger.logger import Logger
 from testbed.logger.logger_cron import LoggerCron
 from testbed.traffic_gen.traffic_gen import TrafficGen
