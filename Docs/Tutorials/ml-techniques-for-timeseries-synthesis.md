@@ -1,3 +1,5 @@
+# Machine Learning technoques for timeseries synthesis
+
 There are several machine learning techniques that can be used for time-series modeling, such as recurrent neural networks (RNNs), long short-term memory (LSTM) networks, autoregressive integrated moving average (ARIMA) models, and support vector regression (SVR), among others. The best technique to use depends on the specifics of the data, the size of the dataset, the level of accuracy required, and other factors.
 
 To simulate a time-series with the same Hurst exponent, average, and standard deviation, you could use a technique known as fractional Gaussian noise (fGn). fGn is a stochastic process that has a specified Hurst exponent and a Gaussian distribution. It can be generated using a random walk, which is a simple stochastic process that can be modeled using an ARIMA model or other time-series models.
