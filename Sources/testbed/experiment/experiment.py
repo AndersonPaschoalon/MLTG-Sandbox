@@ -11,7 +11,8 @@ from mininet.node import Host, Switch
 from testbed.experiment.experiment_config import ExperimentConfig
 from testbed.logger.logger import Logger
 from testbed.logger.logger_cron import LoggerCron
-from testbed.net_tools.qos_monitor import QoSMonitor
+from testbed.net_tools.iperf3_monitor import Iperf3Monitor
+from testbed.net_tools.ping_monitor import PingMonitor
 from testbed.net_tools.tcpdump_wrapper import TcpdumpWrapper
 from testbed.topos.single_hop_topo import SingleHopTopo
 from testbed.traffic_gen.iperf_gen import IperfGen
@@ -63,7 +64,7 @@ class Experiment:
         cron = LoggerCron(logger=logger, label=f"_simple_topo -> {c.name}")
         # Prepare eviroment
         experiment_dir = os.path.join(c.out_dir, c.name)
-        OSUtils.create_directory(experiment_dir)
+        OSUtils.ensure_clean_directory(experiment_dir)
         if not os.path.exists(c.pcap):
             logger.error(f"Pcap file {c.pcap} does not exist!")
             raise PCAPNotFoundError(c.pcap)
@@ -81,6 +82,7 @@ class Experiment:
         traffic_generators = [iperf]
 
         ex = []
+
         #
         # Trace Capture
         #
@@ -122,7 +124,7 @@ class Experiment:
                 # record experiment info
                 ex_tg = {
                     "pcap.src": vars["pcap"]["h1"],
-                    "pcap.src": vars["pcap"]["h3"],
+                    "pcap.dst": vars["pcap"]["h3"],
                     "tg": tg.name(),
                 }
                 ex.append(ex_tg)
@@ -130,15 +132,12 @@ class Experiment:
         #
         # QA/QoS Metrics
         #
-        logger.info("Pt 03 -- QA/QoS metrics extraction")
-        if c.run_capture:
-            qmon = QoSMonitor(net)
+        logger.info("Pt 03 -- QA/QoS metrics RTT")
+        if c.run_qa:
             for tg in traffic_generators:
-                # init vars
-                vars = self._simple_topo_cap_vars(experiment_dir, tg)
-                # Start measurements FIRST
-                ping_proc = qmon.start_ping_probe(h2, h4, vars["qos"]["ping"])
-                queue_proc = qmon.start_queue_monitor(s1, vars["qos"]["queue"])
+                vars = self._simple_topo_qos_vars(experiment_dir, tg, "ping")
+                ping = PingMonitor(h2, h4, vars["qos"]["dir"], vars["qos"]["base"])
+                ping.start()
                 # Then run traffic
                 logger.info(f"Starting {tg.name()} server...")
                 tg.server_listen()
@@ -148,12 +147,38 @@ class Experiment:
                 tg.client_stop()
                 tg.server_stop()
                 # Stop measurements LAST
-                qmon.stop_all()
+                ping.stop()
+                ping._parse_ping_output_to_csv()
                 ex.append(
                     {
                         "qos": {
-                            "ping": vars["qos"]["ping"],
-                            "queue": vars["qos"]["queue"],
+                            "tool": "ping",
+                            "tg": tg.name(),
+                        }
+                    }
+                )
+
+        logger.info("Pt 04 -- QA/QoS metrics JITTER/BW/LOSS")
+        if c.run_qa:
+            for tg in traffic_generators:
+                vars = self._simple_topo_qos_vars(experiment_dir, tg, "iperf3")
+                perf = Iperf3Monitor(h2, h4, vars["qos"]["dir"], vars["qos"]["base"])
+                perf.start()
+                # Then run traffic
+                logger.info(f"Starting {tg.name()} server...")
+                tg.server_listen()
+                logger.info(f"Starting {tg.name()} traffic generation...")
+                tg.client_start()
+                time.sleep(2)
+                tg.client_stop()
+                tg.server_stop()
+                # Stop measurements LAST
+                perf.stop()
+                perf._parse_files_as_csv()
+                ex.append(
+                    {
+                        "qos": {
+                            "tool": "iperf3",
                             "tg": tg.name(),
                         }
                     }
@@ -174,19 +199,22 @@ class Experiment:
         # qos - create output dir if does not exit
         qos_dir = os.path.join(experiment_dir, "qos")
         os.makedirs(qos_dir, exist_ok=True)
-        # build paths for qos
-        file_ping = f"ping.{self.count}.{tg.name()}.csv"
-        file_queue = f"queue.{self.count}.{tg.name()}.csv"
-        path_ping = os.path.join(qos_dir, file_ping)
-        path_queue = os.path.join(qos_dir, file_queue)
         vars = {
             "pcap": {
                 "h1": cap_path_h1,
                 "h3": cap_path_h3,
             },
+        }
+        return vars
+
+    def _simple_topo_qos_vars(self, experiment_dir, tg, qos_tool: str):
+        out_dir = os.path.join(experiment_dir, "qos")
+        os.makedirs(out_dir, exist_ok=True)
+        base_name = f"{qos_tool}_qos_of_{tg.name()}"
+        vars = {
             "qos": {
-                "ping": path_ping,
-                "queue": path_queue,
-            },
+                "dir": out_dir,
+                "base": base_name,
+            }
         }
         return vars
