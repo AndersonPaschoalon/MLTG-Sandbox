@@ -21,21 +21,6 @@ class OSUtils:
         with socket.socket() as s:
             return s.connect_ex(("localhost", port)) == 0
 
-    """
-    @staticmethod
-    def run(command="ls", new_console=False, print_command=True):
-        if print_command:
-            print(command)
-        def execute_command():
-            if new_console:
-                subprocess.run(["gnome-terminal", "--", "bash", "-c", command])
-            else:
-                subprocess.run(command, shell=True)
-
-        thread = threading.Thread(target=execute_command)
-        thread.start()
-    """
-
     @staticmethod
     def run(command="ls", new_console=False, print_command=True, use_xterm=True):
         """

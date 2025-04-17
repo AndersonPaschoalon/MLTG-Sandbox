@@ -3,10 +3,10 @@ import logging
 import os
 import traceback
 
-from testbed.logger.logger import Logger
+from commons.logger.logger import Logger
 
 Logger.initialize(
-    "./logs/run_testbed.log", level_log=logging.DEBUG, level_console=logging.INFO
+    "./Logs/run_testbed.log", level_log=logging.DEBUG, level_console=logging.INFO
 )
 
 from testbed.experiment.experiment import Experiment

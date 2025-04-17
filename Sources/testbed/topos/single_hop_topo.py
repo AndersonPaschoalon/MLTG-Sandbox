@@ -8,7 +8,7 @@ from mininet.node import Controller, OVSKernelSwitch, RemoteController
 from mininet.topo import Topo
 from mininet.util import dumpNodeConnections
 
-from testbed.utils.os_utils import OSUtils
+from commons.os.os_utils import OSUtils as osutils
 
 
 class SingleHopTopo(Topo):
@@ -62,7 +62,7 @@ class SingleHopTopo(Topo):
         ans = input("Kill pior instances of SDN controllers? (y/n) > ").lower()
         if ans == "y":
             print("Kill any instance of ovs-testcontroller")
-            OSUtils.run(
+            osutils.run(
                 'pid_proc="`sudo lsof -i:6653 |grep "ovs-testc" |awk \'{print($2)}\'`"; [ "$pid_proc" != "" ] && sudo kill $pid_proc'
             )
 
@@ -80,7 +80,7 @@ class SingleHopTopo(Topo):
         active_port = None
 
         for port in controller_ports:
-            if OSUtils.check_port_open(port):
+            if osutils.check_port_open(port):
                 active_port = port
                 break
 

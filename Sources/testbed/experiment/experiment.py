@@ -8,9 +8,10 @@ from mininet.link import OVSLink, TCLink
 from mininet.net import Mininet
 from mininet.node import Host, Switch
 
+from commons.logger.logger import Logger
+from commons.logger.logger_cron import LoggerCron
+from commons.os.os_utils import OSUtils as osutils
 from testbed.experiment.experiment_config import ExperimentConfig
-from testbed.logger.logger import Logger
-from testbed.logger.logger_cron import LoggerCron
 from testbed.net_tools.iperf3_monitor import Iperf3Monitor
 from testbed.net_tools.ping_monitor import PingMonitor
 from testbed.net_tools.tcpdump_wrapper import TcpdumpWrapper
@@ -18,7 +19,6 @@ from testbed.topos.single_hop_topo import SingleHopTopo
 from testbed.traffic_gen.iperf_gen import IperfGen
 from testbed.utils.exceptions import PCAPNotFoundError
 from testbed.utils.mininet_utils import MininetUtils
-from testbed.utils.os_utils import OSUtils
 
 
 class Experiment:
@@ -64,7 +64,7 @@ class Experiment:
         cron = LoggerCron(logger=logger, label=f"_simple_topo -> {c.name}")
         # Prepare eviroment
         experiment_dir = os.path.join(c.out_dir, c.name)
-        OSUtils.ensure_clean_directory(experiment_dir)
+        osutils.ensure_clean_directory(experiment_dir)
         if not os.path.exists(c.pcap):
             logger.error(f"Pcap file {c.pcap} does not exist!")
             raise PCAPNotFoundError(c.pcap)

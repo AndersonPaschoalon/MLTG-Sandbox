@@ -1,6 +1,14 @@
+greenlet==3.2.0
 mininet==2.3.0.dev6
 mypy==1.15.0
 mypy-extensions==1.0.0
+numpy==2.2.4
+pandas==2.2.3
+python-dateutil==2.9.0.post0
+pytz==2025.2
 scapy==2.6.1
+six==1.17.0
+SQLAlchemy==2.0.40
 tomli==2.2.1
 typing_extensions==4.13.0
+tzdata==2025.2

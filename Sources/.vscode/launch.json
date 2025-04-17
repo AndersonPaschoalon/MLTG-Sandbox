@@ -5,21 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "test_mininet ",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/testbed/test_mininet.py",
-            "console": "integratedTerminal",
-            "sudo": true
-        },
-        {
             "name": "run_testbed:sample_tests",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/testbed/run_testbed.py",
             "args": [
                 "--experiment-list", 
-                "testbed/scripts/xml/sample_tests.xml"
+                "./scripts/xml/sample_tests.xml"
             ],
             "console": "integratedTerminal",
             "sudo": true,
@@ -28,7 +20,15 @@
             }
         },
         {
-            "name": "class:SingleHopTopo",
+            "name": "testbed:test_mininet",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/testbed/test_mininet.py",
+            "console": "integratedTerminal",
+            "sudo": true
+        },
+        {
+            "name": "testbed:topo:SingleHopTopo",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/testbed/Topos/SingleHopTopo.py",
@@ -40,5 +40,6 @@
                 "PYTHONPATH": "${workspaceFolder}"
             }
         }
+
     ]
 }

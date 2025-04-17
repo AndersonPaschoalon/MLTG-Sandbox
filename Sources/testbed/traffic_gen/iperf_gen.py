@@ -2,9 +2,9 @@ import time
 
 from mininet.util import custom, decode, waitListening
 
+from commons.logger.logger import Logger
+from commons.logger.logger_cron import LoggerCron
 from testbed.experiment.experiment_config import ExperimentConfig
-from testbed.logger.logger import Logger
-from testbed.logger.logger_cron import LoggerCron
 from testbed.traffic_gen.traffic_gen import TrafficGen
 from testbed.utils.exceptions import InvalidPCAPError
 from testbed.utils.pcap_utils import PcapUtils as putil
