@@ -13,4 +13,11 @@
 
  
 
+ # Dependencies
+
+ ```
+ xargs -a apt-packages.txt sudo apt install -y
+ pip install -r requirements.txt
+ ```
+
 

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from mininet.net import Mininet
 from mininet.node import Host, Switch
 
-from testbed.experiment.experiment_config import ExperimentConfig
+from commons.config.experiment_config import ExperimentConfig
 
 
 class TrafficGen(ABC):

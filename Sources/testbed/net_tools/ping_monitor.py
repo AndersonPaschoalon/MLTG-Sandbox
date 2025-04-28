@@ -13,11 +13,9 @@ class PingMonitor:
         self,
         client: Host,
         server: Host,
-        file_out_dir: str,
-        file_base_name: str,
+        log_file: str,
         ping_interval: float = 0.1,  # seconds between pings
         experiment_time: int = 60,  # total duration in seconds
-        count: int = 0,
     ):
         """
         Initialize Ping monitor between two hosts.
@@ -25,8 +23,7 @@ class PingMonitor:
         Args:
             client: Host that will execute ping commands
             server: Host whose IP will be pinged (only used to get IP)
-            file_out_dir: Directory to store output files
-            file_base_name: Base name for output files
+            log_file: logfile name (no extension)
             ping_interval: Time between ping packets (seconds)
             experiment_time: Total duration of ping test (seconds)
             count: Optional counter to avoid filename conflicts
@@ -37,16 +34,7 @@ class PingMonitor:
         self.server_ip = server.IP()  # Only need server's IP
         self.ping_interval = ping_interval
         self.experiment_time = experiment_time
-
-        # Ensure output directory exists
-        Path(file_out_dir).mkdir(parents=True, exist_ok=True)
-
-        # Generate filenames
-        suffix = f"ping.{ping_interval}sec"
-        if count != 0:
-            suffix = f"{count}.{suffix}"
-
-        self.client_log = os.path.join(file_out_dir, f"{file_base_name}.{suffix}.log")
+        self.client_log = f"{log_file}.log"
         self.client_process = None
 
     def start(self) -> int:

@@ -8,16 +8,17 @@ from mininet.link import OVSLink, TCLink
 from mininet.net import Mininet
 from mininet.node import Host, Switch
 
+from commons.config.experiment_config import ExperimentConfig
+from commons.exeptions.exceptions import PCAPNotFoundError
+from commons.formatter.datafile_name_formatter import DatafileNameFormatter
 from commons.logger.logger import Logger
 from commons.logger.logger_cron import LoggerCron
 from commons.os.os_utils import OSUtils as osutils
-from testbed.experiment.experiment_config import ExperimentConfig
 from testbed.net_tools.iperf3_monitor import Iperf3Monitor
 from testbed.net_tools.ping_monitor import PingMonitor
 from testbed.net_tools.tcpdump_wrapper import TcpdumpWrapper
 from testbed.topos.single_hop_topo import SingleHopTopo
 from testbed.traffic_gen.iperf_gen import IperfGen
-from testbed.utils.exceptions import PCAPNotFoundError
 from testbed.utils.mininet_utils import MininetUtils
 
 
@@ -26,27 +27,19 @@ class Experiment:
     def __init__(self, config: ExperimentConfig):
         """Initialize with a configuration object"""
         self.config: ExperimentConfig = config
-        self.count = 0
 
     def __repr__(self) -> str:
         return f"Experiment(config={self.config})"
 
     @staticmethod
-    def from_xml(xml_file: str) -> List["Experiment"]:
+    def from_xml(file: str) -> List["Experiment"]:
         """
         Factory method to create experiments from XML
         """
-        try:
-            tree = ET.parse(xml_file)
-            return [
-                Experiment(ExperimentConfig.from_xml_element(elem))
-                for elem in tree.findall("experiment")
-            ]
-        except Exception as e:
-            raise ValueError(f"Error parsing XML: {e}") from e
+        config_list = ExperimentConfig.load(file)
+        return [Experiment(config) for config in config_list]
 
-    def run(self, count: int = 0):
-        self.count = count
+    def run(self):
         logger = Logger.get()
         logger.debug(
             f"self.config.experiment_type:{self.config.experiment_type.lower()}"
@@ -62,9 +55,9 @@ class Experiment:
         logger = Logger.get()
         c = self.config
         cron = LoggerCron(logger=logger, label=f"_simple_topo -> {c.name}")
+        # backup existing directories
+        osutils.ensure_clean_directory(os.path.join(c.out_dir, c.name))
         # Prepare eviroment
-        experiment_dir = os.path.join(c.out_dir, c.name)
-        osutils.ensure_clean_directory(experiment_dir)
         if not os.path.exists(c.pcap):
             logger.error(f"Pcap file {c.pcap} does not exist!")
             raise PCAPNotFoundError(c.pcap)
@@ -81,11 +74,10 @@ class Experiment:
         iperf = IperfGen(client=h1, server=h3, config=self.config)
         traffic_generators = [iperf]
 
-        ex = []
-
         #
         # Trace Capture
         #
+        fmt_pcap = DatafileNameFormatter(c.out_dir, c.name, "pcap")
         logger.info("Pt 01 -- Synthetic trace capture")
         if c.run_capture:
             # Run capture tests
@@ -93,7 +85,8 @@ class Experiment:
             tcpdump_h3 = TcpdumpWrapper()
             for tg in traffic_generators:
                 # init vars
-                vars = self._simple_topo_cap_vars(experiment_dir, tg)
+                h1_cap = fmt_pcap.mkname("capture", tg.name(), "h1", "client")
+                h3_cap = fmt_pcap.mkname("capture", tg.name(), "h3", "server")
                 # start server
                 logger.info(f"Starting {tg.name()} server...")
                 tg.server_listen()
@@ -102,15 +95,13 @@ class Experiment:
                 tcpdump_h1.start(
                     mn_host=h1,
                     interface_index=0,
-                    pcap_file=vars["pcap"]["h1"],
-                    log_file=vars["pcap"]["h3"],
+                    out_file=h1_cap,
                 )
                 logger.info(f"Starting capture on host3...")
                 tcpdump_h3.start(
                     mn_host=h3,
                     interface_index=0,
-                    pcap_file=vars["pcap"]["h1"],
-                    log_file=vars["pcap"]["h3"],
+                    out_file=h3_cap,
                 )
                 # start traffic generation
                 logger.info(f"Starting {tg.name()} traffic generation...")
@@ -121,22 +112,17 @@ class Experiment:
                 tcpdump_h1.stop()
                 tcpdump_h3.stop()
                 tg.server_stop()
-                # record experiment info
-                ex_tg = {
-                    "pcap.src": vars["pcap"]["h1"],
-                    "pcap.dst": vars["pcap"]["h3"],
-                    "tg": tg.name(),
-                }
-                ex.append(ex_tg)
+                logger.debug(f"Experiment for tg:{tg.name()} DONE.")
 
         #
         # QA/QoS Metrics
         #
-        logger.info("Pt 03 -- QA/QoS metrics RTT")
+        logger.info("Pt 02 -- QA/QoS metrics RTT")
+        fmt_qos = DatafileNameFormatter(c.out_dir, c.name, "qos")
         if c.run_qa:
             for tg in traffic_generators:
-                vars = self._simple_topo_qos_vars(experiment_dir, tg, "ping")
-                ping = PingMonitor(h2, h4, vars["qos"]["dir"], vars["qos"]["base"])
+                ping_log = fmt_qos.mkname("ping", tg.name(), "h1", "client")
+                ping = PingMonitor(h2, h4, ping_log)
                 ping.start()
                 # Then run traffic
                 logger.info(f"Starting {tg.name()} server...")
@@ -149,20 +135,13 @@ class Experiment:
                 # Stop measurements LAST
                 ping.stop()
                 ping._parse_ping_output_to_csv()
-                ex.append(
-                    {
-                        "qos": {
-                            "tool": "ping",
-                            "tg": tg.name(),
-                        }
-                    }
-                )
 
-        logger.info("Pt 04 -- QA/QoS metrics JITTER/BW/LOSS")
+        logger.info("Pt 03 -- QA/QoS metrics JITTER/BW/LOSS")
         if c.run_qa:
             for tg in traffic_generators:
-                vars = self._simple_topo_qos_vars(experiment_dir, tg, "iperf3")
-                perf = Iperf3Monitor(h2, h4, vars["qos"]["dir"], vars["qos"]["base"])
+                log_client = fmt_qos.mkname("iperf3", tg.name(), "h2", "client")
+                log_server = fmt_qos.mkname("iperf3", tg.name(), "h3", "server")
+                perf = Iperf3Monitor(h2, h4, log_client, log_server)
                 perf.start()
                 # Then run traffic
                 logger.info(f"Starting {tg.name()} server...")
@@ -174,47 +153,5 @@ class Experiment:
                 tg.server_stop()
                 # Stop measurements LAST
                 perf.stop()
-                perf._parse_files_as_csv()
-                ex.append(
-                    {
-                        "qos": {
-                            "tool": "iperf3",
-                            "tg": tg.name(),
-                        }
-                    }
-                )
 
         logger.info(f"Experiment {c.name} finalized successfully!")
-        return ex
-
-    def _simple_topo_cap_vars(self, experiment_dir, tg):
-        # pcap - create output dir if does not exit
-        pcap_dir = os.path.join(experiment_dir, "pcap")
-        os.makedirs(pcap_dir, exist_ok=True)
-        # build paths for pcaps
-        cap_name_h1 = f"capture.host1.{self.count}.{tg.name()}"
-        cap_name_h3 = f"capture.host3.{self.count}.{tg.name()}"
-        cap_path_h1 = os.path.join(pcap_dir, cap_name_h1)
-        cap_path_h3 = os.path.join(pcap_dir, cap_name_h3)
-        # qos - create output dir if does not exit
-        qos_dir = os.path.join(experiment_dir, "qos")
-        os.makedirs(qos_dir, exist_ok=True)
-        vars = {
-            "pcap": {
-                "h1": cap_path_h1,
-                "h3": cap_path_h3,
-            },
-        }
-        return vars
-
-    def _simple_topo_qos_vars(self, experiment_dir, tg, qos_tool: str):
-        out_dir = os.path.join(experiment_dir, "qos")
-        os.makedirs(out_dir, exist_ok=True)
-        base_name = f"{qos_tool}_qos_of_{tg.name()}"
-        vars = {
-            "qos": {
-                "dir": out_dir,
-                "base": base_name,
-            }
-        }
-        return vars

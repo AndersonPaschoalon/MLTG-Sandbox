@@ -39,6 +39,50 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
+        },
+        {
+            "name": "trace_analyzer",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/trace_analyzer/trace_analyzer.py",
+            "args": [
+                "--plot",
+                "campus_capture.xml",
+                "campus_traffic",
+                "bw",
+                "ground-truth,iperf,litgen"
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "trace_analyzer:test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/trace_analyzer/main.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "sudo": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+
+        {
+            "name": "commons:DatafileNameFormatter",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/commons/formatter/datafile_name_formatter.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "sudo": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         }
 
     ]

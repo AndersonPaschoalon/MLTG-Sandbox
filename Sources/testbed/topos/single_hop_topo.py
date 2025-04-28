@@ -62,7 +62,7 @@ class SingleHopTopo(Topo):
         ans = input("Kill pior instances of SDN controllers? (y/n) > ").lower()
         if ans == "y":
             print("Kill any instance of ovs-testcontroller")
-            osutils.run(
+            osutils.execute_on_shell(
                 'pid_proc="`sudo lsof -i:6653 |grep "ovs-testc" |awk \'{print($2)}\'`"; [ "$pid_proc" != "" ] && sudo kill $pid_proc'
             )
 

@@ -14,8 +14,8 @@ class Iperf3Monitor:
         self,
         client: Host,
         server: Host,
-        file_out_dir: str,
-        file_base_name: str,
+        log_file_client: str,
+        log_file_server: str,
         bandwidth: str = "10M",
         time_to_report: int = 1,
         experiment_time: int = 60,
@@ -37,27 +37,14 @@ class Iperf3Monitor:
         self.experiment_time = experiment_time
         self.udp = udp
 
-        # Ensure output directory exists
-        Path(file_out_dir).mkdir(parents=True, exist_ok=True)
-
         # Generate filenames
         suffix = f"{bandwidth}.{'udp' if udp else 'tcp'}"
         if count != 0:
             suffix = f"{count}.{suffix}"
-
-        self.server_log = os.path.join(
-            file_out_dir, f"{file_base_name}.iperf3.{suffix}.server.log"
-        )
-        self.server_csv = os.path.join(
-            file_out_dir, f"{file_base_name}.iperf3.{suffix}.server.csv"
-        )
-        self.client_log = os.path.join(
-            file_out_dir, f"{file_base_name}.iperf3.{suffix}.client.log"
-        )
-        self.client_csv = os.path.join(
-            file_out_dir, f"{file_base_name}.iperf3.{suffix}.client.csv"
-        )
-
+        self.server_log = f"{log_file_server}.log"
+        self.server_csv = f"{log_file_server}.csv"
+        self.client_log = f"{log_file_client}.log"
+        self.client_csv = f"{log_file_client}.csv"
         self.server_process = None
         self.client_process = None
 

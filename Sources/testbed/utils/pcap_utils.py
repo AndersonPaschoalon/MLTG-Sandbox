@@ -5,7 +5,7 @@ from typing import Tuple
 from scapy.all import TCP, UDP, rdpcap
 from scapy.packet import Packet
 
-from testbed.utils.exceptions import InvalidPCAPError, PCAPNotFoundError
+from commons.exeptions.exceptions import InvalidPCAPError, PCAPNotFoundError
 
 
 class PcapUtils:

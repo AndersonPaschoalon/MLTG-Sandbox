@@ -18,16 +18,14 @@ class TcpdumpWrapper:
         self,
         mn_host: Host,
         interface_index: int = 0,  # Default to first interface
-        pcap_file: str = "default",
-        log_file: str = "",
+        out_file: str = "default",
     ) -> bool:
         """Start tcpdump on a host's interface.
 
         Args:
             mn_host: Mininet host object.
             interface_index: Index of the interface (default: 0).
-            pcap_file: Output PCAP filename (without .pcap).
-            log_file: If provided, saves tcpdump output to this file.
+            out_file: Output file pcap and log filename.
 
         Returns:
             bool: True if started successfully, False otherwise.
@@ -45,15 +43,13 @@ class TcpdumpWrapper:
 
             interface = interface_info["interface"]
             self.mn_host = mn_host
-            self.log_file = log_file
 
             # Build tcpdump command
-            command = f"tcpdump -s 0 -i {interface} -U -w {pcap_file}.pcap"
+            command = f"tcpdump -s 0 -i {interface} -U -w {out_file}.pcap"
             print(f"[tcpdump] Starting on {mn_host.name}: {command}")
 
             # Redirect output to log_file if provided
-            if log_file:
-                command += f" > {log_file}.log 2>&1"
+            command += f" > {out_file}.log 2>&1"
 
             # Start tcpdump in the host's namespace
             self.tcpdump = mn_host.popen(command, shell=True)
