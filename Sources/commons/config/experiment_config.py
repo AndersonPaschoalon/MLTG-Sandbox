@@ -21,6 +21,12 @@ class ExperimentConfig:
     qa_interval: int
     experiment_type: str
 
+    def experiment_dir(self):
+        return os.path.join(self.out_dir, self.name)
+    
+    def experiment_db_dir(self):
+        return os.path.join(self.experiment_dir(), "db")
+
     @staticmethod
     def get_by_name(file: str, name: str) -> "ExperimentConfig":
         list_config = ExperimentConfig.load(file)

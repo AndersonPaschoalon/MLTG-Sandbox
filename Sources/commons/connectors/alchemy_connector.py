@@ -9,12 +9,8 @@ from commons.connectors.base import Base
 class AlchemyConnector:
 
     def __init__(self, connection_string, echo=True):
-        # Set up the engine
         self.connection_string = connection_string
         self.engine = create_engine(self.connection_string, echo=echo)
-        # Create all tables (if they don't exist)
-        # Base.metadata.create_all(self.engine)
-        # Set up the session factory
         self.session_fac = sessionmaker(bind=self.engine, expire_on_commit=False)
 
     def session(self) -> Session:

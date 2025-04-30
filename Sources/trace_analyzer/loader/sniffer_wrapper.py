@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
+from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.os.os_utils import OSUtils as osutils
 
 
@@ -40,21 +41,6 @@ class SnifferWrapper:
 
         # Create output directory if it doesn't exist
         os.makedirs(self.out_dir, exist_ok=True)
-
-    @staticmethod
-    def trace_entry_name(experiment_name: str, pcap: str) -> str:
-        """
-        Generate trace entry name from experiment name and pcap filename.
-
-        Args:
-            experiment_name: Name of the experiment
-            pcap: Path to pcap file
-
-        Returns:
-            Formatted trace entry name (e.g., "Banana.lanDiurnal.pcap")
-        """
-        pcap_filename = os.path.basename(pcap)
-        return f"{experiment_name}.{pcap_filename}"
 
     def exec(self, device: str) -> Optional[str]:
         """
@@ -94,37 +80,60 @@ class SnifferWrapper:
         osutils.execute_command_at(cmd_sniffer, self.out_dir, True)
         osutils.execute_command_at(cmd_chmod, self.out_dir, True)
 
-    def list_experiments(self) -> dict:
-        """
-        List all available experiment traces grouped by experiment name.
-
-        Returns:
-            dict: {
-                "experiment_name": ["trace1.pcap", "trace2.pcap", ...],
-                ...
-            }
-
-        Example:
-            >>> sniffer.list_experiments()
-            {
-                "Banana": ["lan-gateway-10s.pcap", "capture.iperf.h1.client.0.pcap"],
-                "Orange": ["test.pcap", "iperf-test.pcap"]
-            }
-        """
-        # Using execute_command instead of run_command
+    def list_loaded_traces(self) -> list:
         cmd = f"{self.sniffer_path} --show | awk '{{print $2}}'"
-        # cmd = [f"{self.sniffer_path}", " --show | awk '{print $2}'"]
         stdout, _, _ = osutils.execute_command(cmd, cwd=self.out_dir)
-
-        experiments = {}
-
+        experiments = []
         for line in stdout.splitlines():
             line = line.strip()
             if not line or line == "traceName" or line.startswith("----"):
                 continue
-
-            if "." in line:
-                exp_name, trace_name = line.split(".", 1)  # Split on first dot only
-                experiments.setdefault(exp_name, []).append(trace_name)
-
+            experiments.append(line)
         return experiments
+
+    def list_traces_by_experiment(self, experiment_name):
+        ll = self.list_loaded_traces()
+        lex = []
+        l: str
+        for l in ll:
+            if l.startswith(experiment_name):
+                lex.append(l)
+        return lex
+
+    def tracedb_connection_string(self):
+        trace_db_file = os.path.join("db", "TraceDatabase.db")
+        return SnifferWrapper._make_connection_string(
+            os.path.join(self.out_dir, trace_db_file)
+        )
+
+    def flowdb_connection_string(self, trace_name: str):
+        trace_name_db = trace_name.rstrip(".pcap")
+        flow_db_file = f"{trace_name_db}_Flow.db"
+        return SnifferWrapper._make_connection_string(
+            os.path.join(self.out_dir, flow_db_file)
+        )
+
+    def tracedb_connector(self):
+        return AlchemyConnector(self.tracedb_connection_string())
+
+    def flowdb_connector(self, trace_name: str):
+        return AlchemyConnector(self.flowdb_connection_string(trace_name))
+
+    @staticmethod
+    def _make_connection_string(db_file: str):
+        return f"sqlite:///{db_file}"
+
+    @staticmethod
+    def trace_entry_name(experiment_name: str, pcap: str) -> str:
+        """
+        Generate trace entry name from experiment name and pcap filename.
+
+        Args:
+            experiment_name: Name of the experiment
+            pcap: Path to pcap file
+
+        Returns:
+            Formatted trace entry name (e.g., "Banana.lanDiurnal.pcap")
+        """
+        pcap_filename = os.path.basename(pcap)
+        return f"{experiment_name}.{pcap_filename}"

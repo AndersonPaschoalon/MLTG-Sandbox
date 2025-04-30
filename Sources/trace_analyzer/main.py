@@ -2,8 +2,10 @@ import argparse
 import os
 import sys
 
+import commons.pylang.pylang as pl
 from commons.config.experiment_config import ExperimentConfig
 from commons.formatter.datafile_name_formatter import DatafileNameFormatter
+from trace_analyzer.analyzer.bandwidth import calc_bw_pps_fps
 from trace_analyzer.loader.sniffer_wrapper import SnifferWrapper
 
 VERSION = "v0.1"
@@ -58,19 +60,27 @@ Supported Tools:
 """
 
 
-def load_experiment(experiment_xml_file, experiment_name):
+def _load_experiment_config(experiment_xml_file, experiment_name="*"):
     print(
         f"Importing experiment from: {experiment_xml_file} with name: {experiment_name}"
     )
     if not os.path.exists(experiment_xml_file):
         raise FileNotFoundError(f"{experiment_xml_file}")
-    config = ExperimentConfig.get_by_name(experiment_xml_file, experiment_name)
+    if experiment_name == "*":
+        list_configs = ExperimentConfig.load(experiment_xml_file)
+        return list_configs
+    else:
+        config = ExperimentConfig.get_by_name(experiment_xml_file, experiment_name)
+        return config
+
+
+def load_experiment(experiment_xml_file, experiment_name):
+    config = _load_experiment_config(experiment_xml_file, experiment_name)
     print("#1 Loading data from Pcaps")
     pcap_fmt = DatafileNameFormatter(config.out_dir, config.name, "pcap")
     # list all *.pcap and client catpures. no tool_under_test means all will be returned.
-    ex_out_dir = os.path.join(config.out_dir, config.name)
     file_list = pcap_fmt.list_names("capture", "pcap", "client")
-    sniffer = SnifferWrapper(ex_out_dir, config.name)
+    sniffer = SnifferWrapper(config.experiment_dir(), config.name)
     # store ground truth
     sniffer.exec(config.pcap)
     for f in file_list:
@@ -80,24 +90,33 @@ def load_experiment(experiment_xml_file, experiment_name):
 
 
 def list_experiments(experiment_xml_file):
-    if not os.path.exists(experiment_xml_file):
-        raise FileNotFoundError(f"{experiment_xml_file}")
-    list_configs = ExperimentConfig.load(experiment_xml_file)
+    list_configs = _load_experiment_config(experiment_xml_file, "*")
     lout = []
+    c: ExperimentConfig
     for c in list_configs:
-        ex_dirs = os.path.join(c.out_dir, c.name)
-        db_dir = os.path.join(ex_dirs, "db")
-        if not os.path.exists(db_dir):
-            print(f"Experiment {ex_dirs} wasn't loaded yet.")
+        if not os.path.exists(c.experiment_db_dir()):
+            print(f"Experiment {c.experiment_dir()} wasn't loaded yet.")
             continue
-        sniffer = SnifferWrapper(ex_dirs, c.name)
-        d = sniffer.list_experiments()
-        lout.append(d)
-    print(lout)
+        sniffer = SnifferWrapper(c.experiment_dir(), c.name)
+        l = sniffer.list_loaded_traces()
+        lout.append(l)
+    print("Loaded experiments.traces are:")
+    for l in lout:
+        print(f"\t{l}")
 
 
 def analyze_experiment(experiment_xml_file, experiment_name):
     print(f"Analyzing experiment: {experiment_name} from file: {experiment_xml_file}")
+    c = _load_experiment_config(experiment_xml_file, experiment_name)
+    sniffer = SnifferWrapper(c.experiment_dir(), c.name)
+    ltraces = sniffer.list_loaded_traces()
+    for t in ltraces:
+        print(f"Loading db connector for trace {t}")
+        ac = sniffer.flowdb_connector(t)
+        df = calc_bw_pps_fps(ac)
+        # todo -- fazer direito
+        out_file = f"{c.experiment_dir()}/data/bw{t}.csv"
+        pl.save_as_csv(df, out_file)
 
 
 def plot_all(xml_file, experiment_name):
