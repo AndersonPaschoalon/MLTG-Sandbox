@@ -4,6 +4,7 @@ import sys
 
 import commons.pylang.pylang as pl
 from commons.config.experiment_config import ExperimentConfig
+from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.formatter.datafile_name_formatter import DatafileNameFormatter
 from trace_analyzer.analyzer.bandwidth import calc_bw_pps_fps
 from trace_analyzer.loader.sniffer_wrapper import SnifferWrapper
@@ -102,10 +103,12 @@ def list_experiments(experiment_xml_file):
         lout.append(l)
     print("Loaded experiments.traces are:")
     for l in lout:
-        print(f"\t{l}")
+        for i in l:
+            print(f"-\t{i}")
 
 
 def analyze_experiment(experiment_xml_file, experiment_name):
+    analisis_dir = "analisis"
     print(f"Analyzing experiment: {experiment_name} from file: {experiment_xml_file}")
     c = _load_experiment_config(experiment_xml_file, experiment_name)
     sniffer = SnifferWrapper(c.experiment_dir(), c.name)
@@ -113,9 +116,10 @@ def analyze_experiment(experiment_xml_file, experiment_name):
     for t in ltraces:
         print(f"Loading db connector for trace {t}")
         ac = sniffer.flowdb_connector(t)
+        # Calculating bandwidth, packets per second and flows per second
+        print(f"Calculating bandwidth, pps and fps {t}")
         df = calc_bw_pps_fps(ac)
-        # todo -- fazer direito
-        out_file = f"{c.experiment_dir()}/data/bw{t}.csv"
+        out_file = os.path.join(c.experiment_dir(), analisis_dir, f"bw_pps_fps.{t}.csv")
         pl.save_as_csv(df, out_file)
 
 
@@ -134,13 +138,19 @@ def plot_custom(xml_file, experiment_name, plot_name, tool_list):
 
 def _test():
     t01 = False
-    t02 = True
+    t02 = False
+    t03 = True
     if t01:
         load_experiment(
             xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
         )
     if t02:
         list_experiments("scripts/xml/sample_tests.xml")
+    if t03:
+        # TODO: testar!!
+        analyze_experiment(
+            xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
+        )
 
 
 def main():
@@ -210,42 +220,3 @@ def main():
 if __name__ == "__main__":
     # main()
     _test()
-
-"""
-Now i need your help on building the command line options for the trace analyzer component. (trace_analyzer.py)
-
-# 1 Guidelines
-
-First of all, you should not care about implementing business logic. Just follow the steps:
-1. Add a command line option in the python .
-2. The for specified option, capture the parameter provided in variables
-3. pass the variables into function that implement the given operation.
-4. in the implementation just print the values of the passed variables, except on --version and --help. 
-5. -- version print the current version "v0.1" and the program name (as usually displaye in --version options)
-6. --help prints a help manual of the trace_analyzer.py application.
-
-# 2 Operations to implement
-
- (1) --import <experiment_xml_file> <experiment_name>: this  operation is responsible for importing the data from an already executed experiment, and store this information into a sqlite2 database (TraceDb) to be used later
- (2) --list: list all the exported experiments from TraceDb 
- (3) --analyze <experiment_xml_file> <experiment_name>: proceed with the analysis from --import, and calc and store all raw data to be ploted later in csv format. 
- (4) --plot-all <experiment_xml_file> <experiment_name>: plot all pre-defined available analysis and plots. 
- (5) --plot <experiment_xml_file> <experiment_name> <plot-name> <csv-tool-list>
- this command uses extracted data from --analyze implement custom plots for the provided experiment name. You should pass a the name of the plot to be implemented, and the list of tools (in csv format) to be compared. 
- Available plots are:
- 1. bw - bandwidth
- 2. pps - packet per seconds
- 3. psd - packet size distrubution
- 4. wavelet - wavelet multiresolution energy analysis
- Available toos are:
- 1. ground-truth - use groud truth to plot original trace data
- 2. iperf 
- 3. litgen
- 
-# 3 About trace_analyzer.py
-
-The purpose of trace analyzer is to provide a simple layer where we can automate the extraction of meaninfull data from raw data (pcaps, logs) collected from experiments wich were runned into the testbed component, so we can compare metrics and performance of many traffic generators against the ground truth, based on the most meaninfull metrics fround in the literature. In other words, we can stablish a common ground to tell wich traffic generator crafted the most realistic traffic comparaed to the ground-truth acording each one of the metrics. 
-
-
-
-"""

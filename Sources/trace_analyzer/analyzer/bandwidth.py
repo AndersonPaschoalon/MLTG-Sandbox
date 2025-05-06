@@ -21,10 +21,22 @@ def calc_bw_pps_fps(
         time_granularity: The time interval (in seconds) for calculating bandwidth.
 
     Returns:
-        A pandas DataFrame with columns: point count, time, bandwidth, average bandwidth,
-        bw variance, packet count, average packet count, packet count variance,
-        number of flows, number of flows average, number of flows variance.
+        A pandas DataFrame with columns:
+        - point_count: sequence number of the time point,
+        - time: time point in seconds,
+        - bandwidth: bandwidth at the time point,
+        - bandwidth_average: average bandwidth over the entire period,
+        - bandwidth_variance: variance of the bandwidth over the entire period,
+        - npackets: number of packets at the time point,
+        - npackets_average: average number of packets over the entire period,
+        - npackets_variance: variance of the number of packets over the entire period,
+        - nflows: number of flows at the time point,
+        - nflows_average: average number of flows over the entire period,
+        - nflows_variance: variance of the number of flows over the entire period.
     """
+    if time_granularity <= 0:
+        raise ValueError("Time granularity must be greater than 0")
+
     with connector.session() as session:
         if flowID > 0:
             packets = (
@@ -36,52 +48,51 @@ def calc_bw_pps_fps(
             flows_in_period = 1
         else:
             packets = session.query(Packet).order_by(Packet.tsSec, Packet.tsUsec).all()
-            unique_flow_ids = session.query(Packet.flowID).distinct().scalar()
-            flows_in_period = unique_flow_ids if unique_flow_ids is not None else 0
+            flows_in_period = session.query(Packet.flowID).distinct().count()
 
         if not packets:
             return pd.DataFrame(
                 {
-                    "point count": [],
+                    "point_count": [],
                     "time": [],
                     "bandwidth": [],
-                    "average bandwidth": [],
-                    "bw variance": [],
-                    "packet count": [],
-                    "average packet count": [],
-                    "packet count variance": [],
-                    "number of flows": [],
-                    "number of flows average": [],
-                    "number of flows variance": [],
+                    "bandwidth_average": [],
+                    "bandwidth_variance": [],
+                    "npackets": [],
+                    "npackets_average": [],
+                    "npackets_variance": [],
+                    "nflows": [],
+                    "nflows_average": [],
+                    "nflows_variance": [],
                 }
             )
 
         timestamps = [p.timestamp_seconds for p in packets]
         packet_sizes = [p.pktSize for p in packets]
+        flow_ids = [p.flowID for p in packets]
 
-        if not timestamps:
-            return pd.DataFrame(
-                {
-                    "point count": [],
-                    "time": [],
-                    "bandwidth": [],
-                    "average bandwidth": [],
-                    "bw variance": [],
-                    "packet count": [],
-                    "average packet count": [],
-                    "packet count variance": [],
-                    "number of flows": [],
-                    "number of flows average": [],
-                    "number of flows variance": [],
-                }
-            )
-
-        max_time = max(timestamps) if timestamps else 0
+        max_time = max(timestamps)
         time_points = np.arange(0, max_time + time_granularity, time_granularity)
+        num_time_points = len(time_points) - 1
+
+        # Compute nflows per interval
+        if flows_in_period > 1:
+            interval_flows = [
+                {
+                    flow_id
+                    for ts, flow_id in zip(timestamps, flow_ids)
+                    if start <= ts < end
+                }
+                for start, end in zip(time_points[:-1], time_points[1:])
+            ]
+            nflows_per_interval = [len(fset) for fset in interval_flows]
+        else:
+            nflows_per_interval = [1] * num_time_points
+
         bandwidth_data = []
         packet_counts = []
 
-        for i in range(len(time_points) - 1):
+        for i in range(num_time_points):
             start_time = time_points[i]
             end_time = time_points[i + 1]
             interval_packets = [
@@ -89,35 +100,30 @@ def calc_bw_pps_fps(
                 for ts, size in zip(timestamps, packet_sizes)
                 if start_time <= ts < end_time
             ]
-            interval_bandwidth = (
-                sum(interval_packets) * 8 / time_granularity
-                if time_granularity > 0
-                else 0
-            )  # bits per second
+            interval_bandwidth = sum(interval_packets) * 8 / time_granularity
             bandwidth_data.append(interval_bandwidth)
             packet_counts.append(len(interval_packets))
 
-        avg_bandwidth = np.mean(bandwidth_data) if bandwidth_data else 0
-        bw_variance = np.var(bandwidth_data) if len(bandwidth_data) > 1 else 0
-        avg_packet_count = np.mean(packet_counts) if packet_counts else 0
-        packet_count_variance = np.var(packet_counts) if len(packet_counts) > 1 else 0
+        avg_bandwidth = np.mean(bandwidth_data)
+        bw_variance = np.var(bandwidth_data) if num_time_points > 1 else 0
+        avg_packet_count = np.mean(packet_counts)
+        packet_count_variance = np.var(packet_counts) if num_time_points > 1 else 0
+        flow_count_variance = np.var(nflows_per_interval) if num_time_points > 1 else 0
+        midpoint_times = time_points[:-1] + time_granularity / 2
 
-        num_time_points = len(time_points) - 1
         df = pd.DataFrame(
             {
-                "point count": range(1, num_time_points + 1),
-                "time": time_points[:-1]
-                + time_granularity / 2,  # Use midpoint of the interval
+                "point_count": range(1, num_time_points + 1),
+                "time": midpoint_times,
                 "bandwidth": bandwidth_data,
-                "average bandwidth": [avg_bandwidth] * num_time_points,
-                "bw variance": [bw_variance] * num_time_points,
-                "packet count": packet_counts,
-                "average packet count": [avg_packet_count] * num_time_points,
-                "packet count variance": [packet_count_variance] * num_time_points,
-                "number of flows": [flows_in_period] * num_time_points,
-                "number of flows average": [flows_in_period] * num_time_points,
-                "number of flows variance": [0]
-                * num_time_points,  # Variance of a constant is 0
+                "bandwidth_average": [avg_bandwidth] * num_time_points,
+                "bandwidth_variance": [bw_variance] * num_time_points,
+                "npackets": packet_counts,
+                "npackets_average": [avg_packet_count] * num_time_points,
+                "npackets_variance": [packet_count_variance] * num_time_points,
+                "nflows": nflows_per_interval,
+                "nflows_average": [flows_in_period] * num_time_points,
+                "nflows_variance": [flow_count_variance] * num_time_points,
             }
         )
 

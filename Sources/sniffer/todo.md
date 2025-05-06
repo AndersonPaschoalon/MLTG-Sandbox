@@ -1,3 +1,32 @@
+
+
+
+###############################################################################
+# In Progress
+###############################################################################
+
+
+
+
+###############################################################################
+# Backlog
+###############################################################################
+
+(2) Implementar o DriverCsv
+
+(5) Implementar suporte a arquivo nspcap
+
+(6) Implementar suporte a protocolos de link-layer como parametro de linha de comando
+    --link ethernet|wifi|5g|zigbee...
+
+(7) Renomear a classe de calculo de flow_ids para NaiveTree. 
+
+(8) Implementar HashFlowCalc e TcpGreedTree
+
+(9) Criar API python para modelos ORM e wrapper para os comandos de CLI.
+
+
+
 ###############################################################################
 # Done
 ###############################################################################
@@ -21,28 +50,3 @@ DONE (4) Implementar suporte a arquivo pcap
 DONE (7) Reduzir printfs
 
 DONE (8) Ajustar nomeclatura, e adicionar parametro captureType 
-
-
-###############################################################################
-# In Progress
-###############################################################################
-
-
-
-
-###############################################################################
-# Backlog
-###############################################################################
-
-
-(2) Implementar o DriverCsv
-
-(5) Implementar suporte a arquivo nspcap
-
-(6) Implementar suporte a protocolos de link-layer como parametro de linha de comando
-    --link ethernet|wifi|5g|zigbee...
-
-
-https://tshark.dev/search/
-
-
