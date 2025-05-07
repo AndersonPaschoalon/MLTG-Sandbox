@@ -4,14 +4,16 @@ from sqlalchemy import Connection, Engine, MetaData, Table, create_engine, text
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from commons.connectors.base import Base
+from commons.pylang.repr_mixin import ReprMixin
 
 
-class AlchemyConnector:
+class AlchemyConnector(ReprMixin):
 
     def __init__(self, connection_string, echo=True):
         self.connection_string = connection_string
         self.engine = create_engine(self.connection_string, echo=echo)
         self.session_fac = sessionmaker(bind=self.engine, expire_on_commit=False)
+        print(f"Connected to: {self.connection_string}")
 
     def session(self) -> Session:
         """

@@ -10,10 +10,10 @@ from mininet.node import Host, Switch
 
 from commons.config.experiment_config import ExperimentConfig
 from commons.exeptions.exceptions import PCAPNotFoundError
-from commons.formatter.datafile_name_formatter import DatafileNameFormatter
 from commons.logger.logger import Logger
 from commons.logger.logger_cron import LoggerCron
-from commons.os.os_utils import OSUtils as osutils
+from commons.naming.raw_data_name_formatter import RawDataNameFormatter
+from commons.pylang.os_utils import OSUtils as osutils
 from testbed.net_tools.iperf3_monitor import Iperf3Monitor
 from testbed.net_tools.ping_monitor import PingMonitor
 from testbed.net_tools.tcpdump_wrapper import TcpdumpWrapper
@@ -77,7 +77,7 @@ class Experiment:
         #
         # Trace Capture
         #
-        fmt_pcap = DatafileNameFormatter(c.out_dir, c.name, "pcap")
+        fmt_pcap = RawDataNameFormatter(c.out_dir, c.name, "pcap")
         logger.info("Pt 01 -- Synthetic trace capture")
         if c.run_capture:
             # Run capture tests
@@ -118,7 +118,7 @@ class Experiment:
         # QA/QoS Metrics
         #
         logger.info("Pt 02 -- QA/QoS metrics RTT")
-        fmt_qos = DatafileNameFormatter(c.out_dir, c.name, "qos")
+        fmt_qos = RawDataNameFormatter(c.out_dir, c.name, "qos")
         if c.run_qa:
             for tg in traffic_generators:
                 ping_log = fmt_qos.mkname("ping", tg.name(), "h1", "client")

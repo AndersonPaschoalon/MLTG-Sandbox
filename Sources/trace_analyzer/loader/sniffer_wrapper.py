@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from commons.connectors.alchemy_connector import AlchemyConnector
-from commons.os.os_utils import OSUtils as osutils
+from commons.pylang.os_utils import OSUtils as osutils
 
 
 class SnifferWrapper:
@@ -107,10 +107,10 @@ class SnifferWrapper:
         )
 
     def flowdb_connection_string(self, trace_name: str):
-        trace_name_db = trace_name.rstrip(".pcap")
-        flow_db_file = f"{trace_name_db}_Flow.db"
+        # trace_name_db = trace_name.rstrip(".pcap")
+        flow_db_file = f"{trace_name}_Flow.db"
         return SnifferWrapper._make_connection_string(
-            os.path.join(self.out_dir, flow_db_file)
+            os.path.join(self.out_dir, "db", flow_db_file)
         )
 
     def tracedb_connector(self):

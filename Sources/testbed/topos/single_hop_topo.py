@@ -8,7 +8,7 @@ from mininet.node import Controller, OVSKernelSwitch, RemoteController
 from mininet.topo import Topo
 from mininet.util import dumpNodeConnections
 
-from commons.os.os_utils import OSUtils as osutils
+from commons.pylang.os_utils import OSUtils as osutils
 
 
 class SingleHopTopo(Topo):
