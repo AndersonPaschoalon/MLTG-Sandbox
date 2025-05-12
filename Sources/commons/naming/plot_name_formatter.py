@@ -1,8 +1,10 @@
 import os
 from typing import List
 
+from commons.pylang.repr_mixin import ReprMixin
 
-class PlotNameFormatter:
+
+class PlotNameFormatter(ReprMixin):
     """
     Formatter for naming and storing plot files related to experiment results.
 
@@ -36,7 +38,7 @@ class PlotNameFormatter:
         self.plot_dir = os.path.join(out_dir, experiment_name, "plot")
         os.makedirs(self.plot_dir, exist_ok=True)
 
-    def mkname(
+    def mknameext(
         self, plot_name: str, compared_elements: List[str], extension: str = "png"
     ) -> str:
         """
@@ -57,5 +59,5 @@ class PlotNameFormatter:
 
 if __name__ == "__main__":
     fmt = PlotNameFormatter("Results", "Banana")
-    path = fmt.mkname(fmt.BANDWIDTH, ["iperf", "tcpreplay"])
+    path = fmt.mknameext(fmt.BANDWIDTH, ["iperf", "tcpreplay"])
     print("Plot path:", path)

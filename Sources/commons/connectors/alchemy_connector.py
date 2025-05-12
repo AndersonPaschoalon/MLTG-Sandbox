@@ -30,6 +30,6 @@ class AlchemyConnector(ReprMixin):
     def get_engine(self) -> Engine:
         return self.engine
 
-    def __repr__(self):
-        session_status = "open" if self.session else "closed"
-        return f"<AlchemyConnector(connection_string='{self.connection_string}', session={session_status}, type={self.config.database_type})>"
+    # def __repr__(self):
+    #    session_status = "open" if self.session else "closed"
+    #    return f"<AlchemyConnector(connection_string='{self.connection_string}', session={session_status}, type={self.config.database_type})>"

@@ -1,6 +1,6 @@
 # 1. Basic Performance Metrics
-- [ ] Throughput / Bandwidth (bps, Mbps)
-- [ ] Packet Rate (pps)
+- [x] Throughput / Bandwidth (bps, Mbps)
+- [x] Packet Rate (pps)
 - [ ] Packet Loss & Loss Rate
 - [ ] Latency (Min/Max/Avg)
 - [ ] Jitter (Latency Variation)
@@ -27,6 +27,7 @@
 - [ ] Vary Load and Measure Impact: Loss vs. background traffic
 
 # 5. Protocol & Flow-Level Behavior
+- [x] Flow rate (flows per second)
 - [ ] Flow Duration & Size Distributions
 - [ ] Per-flow packet rate / burstiness
 - [ ] Port & Protocol distribution

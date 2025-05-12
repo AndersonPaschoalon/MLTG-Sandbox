@@ -6,9 +6,10 @@ from typing import Optional
 
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.pylang.os_utils import OSUtils as osutils
+from commons.pylang.repr_mixin import ReprMixin
 
 
-class SnifferWrapper:
+class SnifferWrapper(ReprMixin):
 
     def __init__(
         self,
@@ -88,10 +89,11 @@ class SnifferWrapper:
             line = line.strip()
             if not line or line == "traceName" or line.startswith("----"):
                 continue
+            # line = line.strip(f"{self.experiment_name}.")
             experiments.append(line)
         return experiments
 
-    def list_traces_by_experiment(self, experiment_name):
+    def list_traces_by_experiment(self, experiment_name) -> list:
         ll = self.list_loaded_traces()
         lex = []
         l: str
@@ -100,27 +102,27 @@ class SnifferWrapper:
                 lex.append(l)
         return lex
 
-    def tracedb_connection_string(self):
+    def tracedb_connection_string(self) -> str:
         trace_db_file = os.path.join("db", "TraceDatabase.db")
         return SnifferWrapper._make_connection_string(
             os.path.join(self.out_dir, trace_db_file)
         )
 
-    def flowdb_connection_string(self, trace_name: str):
+    def flowdb_connection_string(self, trace_name: str) -> str:
         # trace_name_db = trace_name.rstrip(".pcap")
         flow_db_file = f"{trace_name}_Flow.db"
         return SnifferWrapper._make_connection_string(
             os.path.join(self.out_dir, "db", flow_db_file)
         )
 
-    def tracedb_connector(self):
+    def tracedb_connector(self) -> AlchemyConnector:
         return AlchemyConnector(self.tracedb_connection_string())
 
-    def flowdb_connector(self, trace_name: str):
+    def flowdb_connector(self, trace_name: str) -> AlchemyConnector:
         return AlchemyConnector(self.flowdb_connection_string(trace_name))
 
     @staticmethod
-    def _make_connection_string(db_file: str):
+    def _make_connection_string(db_file: str) -> str:
         return f"sqlite:///{db_file}"
 
     @staticmethod

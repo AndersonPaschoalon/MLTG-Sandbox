@@ -2,8 +2,10 @@ import os
 import re
 from typing import List
 
+from commons.pylang.repr_mixin import ReprMixin
 
-class RawDataNameFormatter:
+
+class RawDataNameFormatter(ReprMixin):
     """
     A utility class for generating and managing standardized filenames for experiment data.
 
@@ -13,6 +15,13 @@ class RawDataNameFormatter:
     Filename format (with extension):
         {file_identifier}.{tool_under_test}.{host_name}.{host_type}.{file_metadata}.{file_extension}
     """
+
+    FILE_IDENTIFIER = "file_identifier"
+    TEST_TARGET = "test_target"
+    HOST_NAME = "host_name"
+    HOST_TYPE = "host_type"
+    FILE_METADATA = "file_metadata"
+    FILE_EXTENSION = "file_extension"
 
     def __init__(self, out_dir: str, experiment_name: str, experiment_test: str):
         """
@@ -142,14 +151,39 @@ class RawDataNameFormatter:
             if re.fullmatch(pattern, f)
         ]
 
-    def parse(self, file_name: str, field_key: str = "tool_under_test") -> str:
+    @staticmethod
+    def parse(file_name: str, field_key: str = "test_target") -> str:
         """
         Extract a specific component from a filename based on field key.
 
+        Components:
+            - experiment_name: name of the experiment run.
+            - file_identifier: identifier for the file (e.g., "capture")
+            - test_target: tool under test (Eg.: iperf) or ground-truth(pcap file name)
+            - host_name: name of the host (e.g., "h1")
+            - host_type: type of host (e.g., "client", "server")
+            - file_metadata: optional metadata (default is "0")
+            - file_extension: file extension (e.g., "pcap", "csv")
+        The filename format is:
+            {file_identifier}.{test_target}.{host_name}.{host_type}.{file_metadata}.{file_extension}
+        or
+            {experiment_name}.{file_identifier}.{test_target}.{host_name}.{host_type}.{file_metadata}.{file_extension}
+        or
+            {experiment_name}.{test_target}.{file_extension}
+        where the first format is used for raw data captured from experiments and second format
+        is used used for ground-truth data.
+
         Args:
             file_name (str): Full or relative path to the file.
-            field_key (str): One of ["file_identifier", "tool_under_test", "host_name",
-                                    "host_type", "file_metadata"]
+            field_key (str): One of [
+                "experiment_name"
+                "file_identifier",
+                "test_target",
+                "host_name",
+                "host_type",
+                "file_metadata",
+                "file_extension"
+            ].
 
         Returns:
             str: The extracted value corresponding to the field key.
@@ -157,22 +191,51 @@ class RawDataNameFormatter:
         Raises:
             ValueError: If the filename is not in the expected format or field key is invalid.
         """
+        print(f"=====>>> {file_name}")
         parts = os.path.basename(file_name).split(".")
-        if len(parts) != 6:
+        print(len(parts))
+        if len(parts) != 7 and len(parts) != 6 and len(parts) != 3:
             raise ValueError(f"Invalid filename format: {file_name}")
 
-        component_map = {
-            "file_identifier": 0,
-            "tool_under_test": 1,
-            "host_name": 2,
-            "host_type": 3,
-            "file_metadata": 4,
-        }
+        if len(parts) == 7:
+            component_map = {
+                "experiment_name": 0,
+                "file_identifier": 1,
+                "test_target": 2,
+                "host_name": 3,
+                "host_type": 4,
+                "file_metadata": 5,
+                "file_extension": 6,
+            }
+            try:
+                return parts[component_map[field_key]]
+            except KeyError:
+                raise ValueError(f"Invalid field key: {field_key}")
+        elif len == 6:
+            component_map = {
+                "file_identifier": 0,
+                "test_target": 1,
+                "host_name": 2,
+                "host_type": 3,
+                "file_metadata": 4,
+                "file_extension": 5,
+            }
 
-        try:
-            return parts[component_map[field_key]]
-        except KeyError:
-            raise ValueError(f"Invalid field key: {field_key}")
+            try:
+                return parts[component_map[field_key]]
+            except KeyError:
+                raise ValueError(f"Invalid field key: {field_key}")
+        else:  # len == 3
+            component_map = {
+                "file_identifier": 0,
+                "test_target": 1,
+                "file_extension": 2,
+            }
+
+            try:
+                return parts[component_map[field_key]]
+            except KeyError:
+                raise ValueError(f"Invalid field key: {field_key}")
 
 
 if __name__ == "__main__":

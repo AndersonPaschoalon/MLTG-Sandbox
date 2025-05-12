@@ -2,8 +2,10 @@ import os
 import re
 from typing import List
 
+from commons.pylang.repr_mixin import ReprMixin
 
-class AnalysisDataNameFormatter:
+
+class AnalysisDataNameFormatter(ReprMixin):
     """
     Formatter for generating and parsing filenames for analysis-stage data.
 
@@ -76,16 +78,17 @@ class AnalysisDataNameFormatter:
         return [
             os.path.join(self.analysis_dir, f)
             for f in os.listdir(self.analysis_dir)
-            if re.fullmatch(pattern, f)
+            # if re.fullmatch(pattern, f)
         ]
 
-    def parse(self, file_name: str, field_key: str = "performed_analysis") -> str:
+    @staticmethod
+    def parse(file_name: str, field_key: str = "performed_analysis") -> str:
         """
         Extract a component from the analysis filename.
 
         Components:
             - performed_analysis
-            - test_target
+            - test_target (tool under test or ground-truth)
 
         Args:
             file_name (str): Full or relative filename.

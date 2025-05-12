@@ -59,6 +59,7 @@ def _test():
     t01 = False
     t02 = False
     t03 = True
+    t04 = True
     if t01:
         taf.load_experiment(
             experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
@@ -68,6 +69,22 @@ def _test():
     if t03:
         taf.analyze_experiment(
             experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
+        )
+    if t04:
+        taf._plot_bw_pps_fps(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="bandwidth",
+        )
+        taf._plot_bw_pps_fps(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="packet_per_second",
+        )
+        taf._plot_bw_pps_fps(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="flow_per_second",
         )
 
 

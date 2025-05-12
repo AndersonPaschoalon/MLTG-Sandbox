@@ -103,13 +103,17 @@ def calc_bw_pps_fps(
             interval_bandwidth = sum(interval_packets) * 8 / time_granularity
             bandwidth_data.append(interval_bandwidth)
             packet_counts.append(len(interval_packets))
-
+        # bw
         avg_bandwidth = np.mean(bandwidth_data)
         bw_variance = np.var(bandwidth_data) if num_time_points > 1 else 0
+        # pps
         avg_packet_count = np.mean(packet_counts)
         packet_count_variance = np.var(packet_counts) if num_time_points > 1 else 0
-        flow_count_variance = np.var(nflows_per_interval) if num_time_points > 1 else 0
+        # time
         midpoint_times = time_points[:-1] + time_granularity / 2
+        # fps
+        avg_nflows = np.mean(nflows_per_interval)
+        flow_count_variance = np.var(nflows_per_interval) if num_time_points > 1 else 0
 
         df = pd.DataFrame(
             {
@@ -122,7 +126,7 @@ def calc_bw_pps_fps(
                 "npackets_average": [avg_packet_count] * num_time_points,
                 "npackets_variance": [packet_count_variance] * num_time_points,
                 "nflows": nflows_per_interval,
-                "nflows_average": [flows_in_period] * num_time_points,
+                "nflows_average": [avg_nflows] * num_time_points,
                 "nflows_variance": [flow_count_variance] * num_time_points,
             }
         )
