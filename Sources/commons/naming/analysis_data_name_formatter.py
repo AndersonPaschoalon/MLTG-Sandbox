@@ -24,9 +24,11 @@ class AnalysisDataNameFormatter(ReprMixin):
 
     # Analysis identifiers (add more as needed)
     BW_PPS_FPS = "bw_pps_fps"
+    INTERARRIVAL = "inter_arrival_ttl"
 
     def __init__(self, out_dir: str, experiment_name: str):
         """
+        Formatter for generating and parsing filenames for analysis-stage data.
         Initialize the formatter for a specific experiment's analysis data.
 
         Args:

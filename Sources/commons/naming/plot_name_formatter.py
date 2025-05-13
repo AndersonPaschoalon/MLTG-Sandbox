@@ -27,6 +27,7 @@ class PlotNameFormatter(ReprMixin):
 
     def __init__(self, out_dir: str, experiment_name: str):
         """
+        Formatter for naming and storing plot files related to experiment results.
         Initialize the plot formatter for a given experiment.
 
         Args:

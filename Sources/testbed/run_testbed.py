@@ -38,7 +38,7 @@ def run_experiments(experiment_list: str):
     experiment: Experiment
     for experiment in experiments:
         # Execute the experiment as needed
-        logger.info(f"==================================================")
+        logger.info("=" * 80)
         logger.info(f"==> Running Experiment: {experiment.config.name}")
         experiment.run()
     return True

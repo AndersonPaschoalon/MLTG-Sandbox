@@ -25,6 +25,7 @@ class RawDataNameFormatter(ReprMixin):
 
     def __init__(self, out_dir: str, experiment_name: str, experiment_test: str):
         """
+        A utility class for generating and managing standardized filenames for experiment data.
         Initialize the formatter with output directory and experiment identifiers.
 
         Args:

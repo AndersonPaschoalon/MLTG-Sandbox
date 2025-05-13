@@ -87,6 +87,22 @@ def _test():
             plot_type="flow_per_second",
         )
 
+        taf._plot_psh_pdf_cdf(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="packet_size",
+        )
+        taf._plot_psh_pdf_cdf(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="pdf",
+        )
+        taf._plot_psh_pdf_cdf(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="cdf",
+        )
+
 
 def main():
     parser = argparse.ArgumentParser(
