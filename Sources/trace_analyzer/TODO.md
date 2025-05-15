@@ -1,14 +1,16 @@
 # 1. Basic Performance Metrics
 - [x] Throughput / Bandwidth (bps, Mbps)
 - [x] Packet Rate (pps)
+- [x] Packet size histogram
 - [ ] Packet Loss & Loss Rate
 - [ ] Latency (Min/Max/Avg)
 - [ ] Jitter (Latency Variation)
 
 # 2. Burstiness & Temporal Analysis
-- [ ] Interarrival Mean
-- [ ] Interarrival variance
-- [ ] Interarrival CDF
+- [x] Interarrival Mean (Violin/Boxplot)
+- [x] Interarrival variance (Violin/Boxplot)
+- [x] Interarrival CDF
+- [x] Interarrival PDF
 - [ ] Burst Size Distribution (Duration and size of traffic bursts)
 - [ ] Peak-to-Average Ratio
 - [ ] Coefficient of Variation (CV) of interarrival times

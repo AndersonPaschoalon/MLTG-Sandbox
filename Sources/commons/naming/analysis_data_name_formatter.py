@@ -80,7 +80,7 @@ class AnalysisDataNameFormatter(ReprMixin):
         return [
             os.path.join(self.analysis_dir, f)
             for f in os.listdir(self.analysis_dir)
-            # if re.fullmatch(pattern, f)
+            if re.fullmatch(pattern, f)
         ]
 
     @staticmethod

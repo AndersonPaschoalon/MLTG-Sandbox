@@ -58,7 +58,7 @@ Supported Tools:
 def _test():
     t01 = False
     t02 = False
-    t03 = True
+    t03 = False
     t04 = True
     if t01:
         taf.load_experiment(
@@ -71,36 +71,70 @@ def _test():
             experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
         )
     if t04:
-        taf._plot_bw_pps_fps(
+        """
+        taf.plot_bw_pps_fps(
             experiment_xml_file="scripts/xml/sample_tests.xml",
             experiment_name="Banana",
             plot_type="bandwidth",
         )
-        taf._plot_bw_pps_fps(
+        taf.plot_bw_pps_fps(
             experiment_xml_file="scripts/xml/sample_tests.xml",
             experiment_name="Banana",
             plot_type="packet_per_second",
         )
-        taf._plot_bw_pps_fps(
+        taf.plot_bw_pps_fps(
             experiment_xml_file="scripts/xml/sample_tests.xml",
             experiment_name="Banana",
             plot_type="flow_per_second",
         )
 
-        taf._plot_psh_pdf_cdf(
+        taf.plot_pktsize_pdf_cdf_violinbox(
             experiment_xml_file="scripts/xml/sample_tests.xml",
             experiment_name="Banana",
             plot_type="packet_size",
         )
-        taf._plot_psh_pdf_cdf(
+        taf.plot_pktsize_pdf_cdf_violinbox(
             experiment_xml_file="scripts/xml/sample_tests.xml",
             experiment_name="Banana",
             plot_type="pdf",
         )
-        taf._plot_psh_pdf_cdf(
+        taf.plot_pktsize_pdf_cdf_violinbox(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="log-pdf",
+        )
+        taf.plot_pktsize_pdf_cdf_violinbox(
             experiment_xml_file="scripts/xml/sample_tests.xml",
             experiment_name="Banana",
             plot_type="cdf",
+        )
+        """
+        # ----------------------
+        """
+        taf.plot_pktsize_pdf_cdf_violinbox(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="violin-interarrival",
+        )
+        taf.plot_pktsize_pdf_cdf_violinbox(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="violin-pkt",
+        )
+        taf.plot_pktsize_pdf_cdf_violinbox(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="box-interarrival",
+        )
+        taf.plot_pktsize_pdf_cdf_violinbox(
+            experiment_xml_file="scripts/xml/sample_tests.xml",
+            experiment_name="Banana",
+            plot_type="box-pkt",
+        )
+        """
+
+        taf._plot_burst_analysis(
+            experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
         )
 
 

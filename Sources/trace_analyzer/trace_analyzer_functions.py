@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import sys
 
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
 import trace_analyzer.analyzer.bandwidth as bandwidth
@@ -116,7 +118,7 @@ def analyze_experiment(experiment_xml_file, experiment_name):
 
 
 # packet_size, pdf, cdf
-def _plot_psh_pdf_cdf(
+def plot_pktsize_pdf_cdf_violinbox(
     experiment_xml_file, experiment_name, target_list=[], plot_type="packet_size"
 ):
     def plot_this(target, target_list):
@@ -131,7 +133,8 @@ def _plot_psh_pdf_cdf(
     df_map = {}  # target -> df
     compared_elements = []
 
-    for file in data_files.list_names(ADNF.INTERARRIVAL, "csv"):
+    inter_arrival_files = data_files.list_names(ADNF.INTERARRIVAL, "csv")
+    for file in inter_arrival_files:
         target = ADNF.parse(file, "test_target")
         if plot_this(target, target_list):
             df = pd.read_csv(file)
@@ -146,54 +149,152 @@ def _plot_psh_pdf_cdf(
     # Setup plot
     plt.figure(figsize=(10, 6))
     colors = cm.get_cmap("tab10")
+    stats_records = []
 
-    for i, (target, df) in enumerate(df_map.items()):
-        df = df[df["time"] <= min_time_max]
+    if plot_type in (
+        "violin-interarrival",
+        "violin-pkt",
+        "box-interarrival",
+        "box-pkt",
+    ):
+        data_all = []
+        labels = []
 
-        if plot_type == "packet_size":
-            plt.hist(
-                df["pkt_size"],
-                bins=30,
-                alpha=0.5,
-                label=target,
-                color=colors(i),
-                edgecolor="black",
+        is_violin = "violin" in plot_type
+        is_packet = "pkt" in plot_type
+
+        for target, df in df_map.items():
+            df = df[df["time"] <= min_time_max]
+
+            if is_packet:
+                series = df["pkt_size"]
+                title = f"{'Violin' if is_violin else 'Box'} Plot of Packet Sizes"
+                xlabel = "Target"
+                ylabel = "Packet Size (bytes)"
+            else:
+                series = df["inter_arrival"]
+                title = (
+                    f"{'Violin' if is_violin else 'Box'} Plot of Inter-Arrival Times"
+                )
+                xlabel = "Target"
+                ylabel = "Inter-Arrival Time (s)"
+
+            data_all.extend(series)
+            labels.extend([target] * len(series))
+
+            # Save mean and std for this target
+            stats_records.append(
+                {"target": target, "mean": series.mean(), "std": series.std()}
             )
-            plt.xlabel("Packet Size (bytes)")
-            plt.ylabel("Frequency")
-            plt.title("Packet Size Distribution")
 
-        elif plot_type == "pdf":
-            sns.histplot(
-                df["inter_arrival"],
-                bins=50,
-                kde=True,
-                stat="density",
-                label=target,
-                color=colors(i),
-            )
-            plt.xlabel("Inter-Arrival Time (s)")
-            plt.ylabel("Density")
-            plt.title("PDF of Inter-Arrival Times")
-
-        elif plot_type == "cdf":
-            sorted_data = np.sort(df["inter_arrival"])
-            cdf = np.arange(len(sorted_data)) / float(len(sorted_data))
-            plt.plot(
-                sorted_data,
-                cdf,
-                marker=".",
-                linestyle="none",
-                label=target,
-                color=colors(i),
-            )
-            plt.xlabel("Inter-Arrival Time (s)")
-            plt.ylabel("CDF")
-            plt.title("CDF of Inter-Arrival Times")
-
+        df_plot = pd.DataFrame({"value": data_all, "target": labels})
+        if is_violin:
+            sns.violinplot(x="target", y="value", data=df_plot, inner="box", cut=0)
         else:
-            raise ValueError(f"Unknown plot_type: {plot_type}")
+            sns.boxplot(x="target", y="value", data=df_plot)
 
+        plt.yscale("log")
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+
+        # Annotate mean ± std above each plot
+        for i, target in enumerate(compared_elements):
+            s = df_plot[df_plot["target"] == target]["value"]
+            mean_val = s.mean()
+            std_val = s.std()
+            plt.text(
+                i,
+                s.max() * 1.05,
+                f"μ={mean_val:.2e}\nσ={std_val:.2e}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=1),
+            )
+    else:
+        for i, (target, df) in enumerate(df_map.items()):
+            df = df[df["time"] <= min_time_max]
+
+            if plot_type == "packet_size":
+                plt.hist(
+                    df["pkt_size"],
+                    bins=30,
+                    alpha=0.5,
+                    label=target,
+                    color=colors(i),
+                    edgecolor="black",
+                )
+                plt.xlabel("Packet Size (bytes)")
+                plt.ylabel("Frequency")
+                plt.title("Packet Size Distribution")
+
+            elif plot_type == "pdf":
+                data = df["inter_arrival"].values
+                data = data[
+                    data > 0
+                ]  # Remove zeros (log-scale issue and undefined KDE)
+
+                # Apply KDE for smooth PDF
+                kde = gaussian_kde(data)
+                x_range = np.linspace(data.min(), data.max(), 1000)
+                y_vals = kde(x_range)
+
+                plt.plot(
+                    x_range,
+                    y_vals,
+                    label=target,
+                    color=colors(i),
+                    linewidth=2,
+                )
+                plt.xscale("log")
+                plt.xlabel("Inter-Arrival Time (s)")
+                plt.ylabel("Density")
+                plt.title("PDF of Inter-Arrival Times")
+
+            elif plot_type == "log-pdf":
+                data = df["inter_arrival"].values
+                data = data[data > 0]  # drop zeros
+
+                log_data = np.log(data)  # natural‑log is fine; base doesn't matter
+                kde_log = gaussian_kde(log_data)
+
+                log_x = np.linspace(log_data.min(), log_data.max(), 1000)
+                x = np.exp(log_x)  # revert to linear space
+                y = kde_log(log_x) / x  # apply Jacobian  f_log / x  →  f_t
+
+                plt.plot(
+                    x,
+                    y,
+                    label=target,
+                    color=colors(i),
+                    linewidth=2,
+                )
+                plt.xscale("log")
+                plt.xlabel("Inter‑Arrival Time (s)")
+                plt.ylabel("Density")
+                plt.title("PDF of Inter‑Arrival Times (log‑domain normalised)")
+
+            elif plot_type == "cdf":
+                sorted_data = np.sort(df["inter_arrival"])
+                cdf = np.arange(len(sorted_data)) / float(len(sorted_data))
+                plt.plot(
+                    sorted_data,
+                    cdf,
+                    marker=".",
+                    linestyle="none",
+                    label=target,
+                    color=colors(i),
+                )
+                plt.xscale("log")
+                plt.xlabel("Inter-Arrival Time (s)")
+                plt.ylabel("CDF")
+                plt.title("CDF of Inter-Arrival Times")
+
+            else:
+                raise ValueError(f"Unknown plot_type: {plot_type}")
+
+    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
@@ -205,8 +306,14 @@ def _plot_psh_pdf_cdf(
     plt.savefig(file_name)
     plt.close()
 
+    # Save stats to CSV
+    if stats_records:
+        csv_name = pnf.mknameext(plot_type, compared_elements, "csv")
+        pd.DataFrame(stats_records).to_csv(csv_name, index=False)
+        print(f"Saved statistics to: {csv_name}")
 
-def _plot_bw_pps_fps(
+
+def plot_bw_pps_fps(
     experiment_xml_file, experiment_name, target_list=[], plot_type="bandwidth"
 ):
     def plot_this(target, target_list):
@@ -291,6 +398,259 @@ def _plot_bw_pps_fps(
     print(f"Saving plot to: {file_name}")
     plt.savefig(file_name)
     plt.close()
+
+
+def _plot_burst_analysis(
+    experiment_xml_file,
+    experiment_name,
+    target_list=[],
+    inter_arrival_threshold=0.01,  # 10ms default threshold
+):
+    def plot_this(target, target_list):
+        return not target_list or target in target_list
+
+    # Load experiment configuration
+    c = _load_experiment_config(experiment_xml_file, experiment_name)
+    data_files = ADNF(c.out_dir, c.name)
+    pnf = PNF(c.out_dir, experiment_name)
+
+    # Initialize variables
+    min_time_max = None
+    df_map = {}  # target -> df
+    compared_elements = []
+
+    # Load inter-arrival data
+    inter_arrival_files = data_files.list_names(ADNF.INTERARRIVAL, "csv")
+    for file in inter_arrival_files:
+        target = ADNF.parse(file, "test_target")
+        if plot_this(target, target_list):
+            df = pd.read_csv(file)
+            df_map[target] = df
+            compared_elements.append(target)
+            max_time = df["time"].max()
+            if min_time_max is None or max_time < min_time_max:
+                min_time_max = max_time
+
+    print(f"Truncating all dataframes to max time: {min_time_max:.2f}s")
+
+    # Initialize structures to hold burst metrics
+    burst_stats = []
+    colors = cm.get_cmap("tab10")
+
+    burst_sizes_ax = plt.figure(figsize=(8, 6)).add_subplot(111)
+    burst_durations_ax = plt.figure(figsize=(8, 6)).add_subplot(111)
+    inter_burst_ax = plt.figure(figsize=(8, 6)).add_subplot(111)
+
+    for i, (target, df) in enumerate(df_map.items()):
+        df = df[df["time"] <= min_time_max]
+        inter_arrivals = df["inter_arrival"].values
+
+        # Detect bursts
+        bursts = []
+        current_burst = [df.iloc[0]]
+        for j in range(1, len(df)):
+            if inter_arrivals[j] < inter_arrival_threshold:
+                current_burst.append(df.iloc[j])
+            else:
+                bursts.append(pd.DataFrame(current_burst))
+                current_burst = [df.iloc[j]]
+        if current_burst:
+            bursts.append(pd.DataFrame(current_burst))
+
+        # Compute burst metrics
+        burst_sizes = sanitize([len(burst) for burst in bursts])
+        burst_durations = sanitize(
+            [burst["time"].iloc[-1] - burst["time"].iloc[0] for burst in bursts]
+        )
+        inter_burst_intervals = sanitize(
+            [
+                bursts[k]["time"].iloc[0] - bursts[k - 1]["time"].iloc[-1]
+                for k in range(1, len(bursts))
+            ]
+        )
+        burst_sizes = [v for v in burst_sizes if v > 0 and np.isfinite(v)]
+        burst_durations = [v for v in burst_durations if v > 0 and np.isfinite(v)]
+        inter_burst_intervals = [
+            v for v in inter_burst_intervals if v > 0 and np.isfinite(v)
+        ]
+
+        if not burst_sizes or not burst_durations or not inter_burst_intervals:
+            print(f"[WARN] No valid burst data for target: {target}. Skipping.")
+            continue
+
+        # Store statistics
+        burst_stats.append(
+            {
+                "target": target,
+                "mean_size": np.mean(burst_sizes),
+                "std_size": np.std(burst_sizes),
+                "mean_duration": np.mean(burst_durations),
+                "std_duration": np.std(burst_durations),
+                "mean_interval": np.mean(inter_burst_intervals),
+                "std_interval": np.std(inter_burst_intervals),
+            }
+        )
+
+        # Plot burst sizes
+        sns.violinplot(y=burst_sizes, ax=burst_sizes_ax, color=colors(i), label=target)
+
+        # Plot burst durations
+        sns.violinplot(
+            y=burst_durations, ax=burst_durations_ax, color=colors(i), label=target
+        )
+
+        # Plot inter-burst intervals
+        sns.histplot(
+            inter_burst_intervals,
+            bins=50,
+            ax=inter_burst_ax,
+            color=colors(i),
+            label=target,
+            log_scale=(False, True),
+        )
+
+    # Finalize and save burst sizes plot
+    burst_sizes_ax.set_yscale("log")
+    burst_sizes_ax.set_title("Burst Sizes")
+    burst_sizes_ax.set_ylabel("Number of Packets")
+    burst_sizes_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+    burst_sizes_ax.legend()
+    plt.figure(burst_sizes_ax.figure.number)
+    burst_sizes_file = pnf.mknameext("burst_sizes", compared_elements, "png")
+    print(f"Saving burst sizes plot to: {burst_sizes_file}")
+    plt.tight_layout()
+    plt.savefig(burst_sizes_file)
+    plt.close()
+
+    # Finalize and save burst durations plot
+    burst_durations_ax.set_yscale("log")
+    burst_durations_ax.set_title("Burst Durations")
+    burst_durations_ax.set_ylabel("Duration (s)")
+    burst_durations_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+    burst_durations_ax.legend()
+    plt.figure(burst_durations_ax.figure.number)
+    burst_durations_file = pnf.mknameext("burst_durations", compared_elements, "png")
+    print(f"Saving burst durations plot to: {burst_durations_file}")
+    plt.tight_layout()
+    plt.savefig(burst_durations_file)
+    plt.close()
+
+    # Finalize and save inter-burst intervals plot
+    inter_burst_ax.set_title("Inter-Burst Intervals")
+    inter_burst_ax.set_xlabel("Interval (s)")
+    inter_burst_ax.set_ylabel("Frequency")
+    inter_burst_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+    inter_burst_ax.legend()
+    plt.figure(inter_burst_ax.figure.number)
+    inter_burst_file = pnf.mknameext("inter_burst_intervals", compared_elements, "png")
+    print(f"Saving inter-burst intervals plot to: {inter_burst_file}")
+    plt.tight_layout()
+    plt.savefig(inter_burst_file)
+    plt.close()
+
+    """
+    # Setup plot
+    fig, axes = plt.subplots(3, 1, figsize=(10, 18))
+    colors = cm.get_cmap("tab10")
+
+    for i, (target, df) in enumerate(df_map.items()):
+        df = df[df["time"] <= min_time_max]
+        inter_arrivals = df["inter_arrival"].values
+
+        # Detect bursts
+        bursts = []
+        current_burst = [df.iloc[0]]
+        for j in range(1, len(df)):
+            if inter_arrivals[j] < inter_arrival_threshold:
+                current_burst.append(df.iloc[j])
+            else:
+                bursts.append(pd.DataFrame(current_burst))
+                current_burst = [df.iloc[j]]
+        if current_burst:
+            bursts.append(pd.DataFrame(current_burst))
+
+        # Compute burst metrics
+        burst_sizes = sanitize([len(burst) for burst in bursts])
+        burst_durations = sanitize(
+            [burst["time"].iloc[-1] - burst["time"].iloc[0] for burst in bursts]
+        )
+        inter_burst_intervals = sanitize(
+            [
+                bursts[k]["time"].iloc[0] - bursts[k - 1]["time"].iloc[-1]
+                for k in range(1, len(bursts))
+            ]
+        )
+        burst_sizes = [v for v in burst_sizes if v > 0]
+        burst_durations = [v for v in burst_durations if v > 0]
+        inter_burst_intervals = [v for v in inter_burst_intervals if v > 0]
+
+        if not burst_sizes or not burst_durations or not inter_burst_intervals:
+            print(f"[WARN] No valid burst data for target: {target}. Skipping.")
+            continue
+
+        # Store statistics
+        burst_stats.append(
+            {
+                "target": target,
+                "mean_size": np.mean(burst_sizes),
+                "std_size": np.std(burst_sizes),
+                "mean_duration": np.mean(burst_durations),
+                "std_duration": np.std(burst_durations),
+                "mean_interval": np.mean(inter_burst_intervals),
+                "std_interval": np.std(inter_burst_intervals),
+            }
+        )
+
+        # Plot burst sizes
+        sns.violinplot(y=burst_sizes, ax=axes[0], color=colors(i), label=target)
+        axes[0].set_yscale("log")
+        axes[0].set_title("Burst Sizes")
+        axes[0].set_ylabel("Number of Packets")
+
+        # Plot burst durations
+        sns.violinplot(y=burst_durations, ax=axes[1], color=colors(i), label=target)
+        axes[1].set_yscale("log")
+        axes[1].set_title("Burst Durations")
+        axes[1].set_ylabel("Duration (s)")
+
+        # Plot inter-burst intervals
+        sns.histplot(
+            inter_burst_intervals,
+            bins=50,
+            ax=axes[2],
+            color=colors(i),
+            label=target,
+            log_scale=(False, True),
+        )
+        axes[2].set_title("Inter-Burst Intervals")
+        axes[2].set_xlabel("Interval (s)")
+        axes[2].set_ylabel("Frequency")
+
+    # Finalize plots
+    for ax in axes:
+        ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+        ax.legend()
+    try:
+        plt.tight_layout()
+    except OverflowError as e:
+        print(f"[ERROR] tight_layout() failed: {e}")
+
+    # Save plot
+    plot_file_name = pnf.mknameext("burst_analysis", compared_elements, "png")
+    print(f"Saving plot to: {plot_file_name}")
+    plt.savefig(plot_file_name)
+    plt.close()
+
+    # Save statistics
+    stats_df = pd.DataFrame(burst_stats)
+    csv_file_name = pnf.mknameext("burst_analysis", compared_elements, "csv")
+    print(f"Saving statistics to: {csv_file_name}")
+    stats_df.to_csv(csv_file_name, index=False)
+    """
+
+
+def sanitize(data):
+    return [x for x in data if not (math.isinf(x) or math.isnan(x))]
 
 
 def _load_experiment_config(experiment_xml_file, experiment_name="*"):
