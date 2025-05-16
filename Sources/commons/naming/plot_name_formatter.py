@@ -57,6 +57,21 @@ class PlotNameFormatter(ReprMixin):
         filename = f"{plot_name}.{element_part}.{extension}"
         return os.path.join(self.plot_dir, filename)
 
+    def mkname(self, plot_name: str, compared_elements: List[str]) -> str:
+        """
+        Generate the full path for a plot file.
+
+        Args:
+            plot_name (str): Type of metric/plot (e.g., 'bandwidth').
+            compared_elements (List[str]): Elements being compared (e.g., ['iperf', 'tcpreplay']).
+
+        Returns:
+            str: Full path to the plot file.
+        """
+        element_part = "-".join(compared_elements)
+        filename = f"{plot_name}.{element_part}"
+        return os.path.join(self.plot_dir, filename)
+
 
 if __name__ == "__main__":
     fmt = PlotNameFormatter("Results", "Banana")

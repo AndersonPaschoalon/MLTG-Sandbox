@@ -133,7 +133,11 @@ def _test():
         )
         """
 
-        taf._plot_burst_analysis(
+        # taf._plot_burst_analysis(
+        #    experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
+        # )
+
+        taf.plot_traffic_distributions(
             experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
         )
 

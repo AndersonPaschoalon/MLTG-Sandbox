@@ -12,6 +12,7 @@ from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
 import trace_analyzer.analyzer.bandwidth as bandwidth
+import trace_analyzer.plots.plots as plots
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.naming.analysis_data_name_formatter import (
@@ -548,106 +549,6 @@ def _plot_burst_analysis(
     plt.savefig(inter_burst_file)
     plt.close()
 
-    """
-    # Setup plot
-    fig, axes = plt.subplots(3, 1, figsize=(10, 18))
-    colors = cm.get_cmap("tab10")
-
-    for i, (target, df) in enumerate(df_map.items()):
-        df = df[df["time"] <= min_time_max]
-        inter_arrivals = df["inter_arrival"].values
-
-        # Detect bursts
-        bursts = []
-        current_burst = [df.iloc[0]]
-        for j in range(1, len(df)):
-            if inter_arrivals[j] < inter_arrival_threshold:
-                current_burst.append(df.iloc[j])
-            else:
-                bursts.append(pd.DataFrame(current_burst))
-                current_burst = [df.iloc[j]]
-        if current_burst:
-            bursts.append(pd.DataFrame(current_burst))
-
-        # Compute burst metrics
-        burst_sizes = sanitize([len(burst) for burst in bursts])
-        burst_durations = sanitize(
-            [burst["time"].iloc[-1] - burst["time"].iloc[0] for burst in bursts]
-        )
-        inter_burst_intervals = sanitize(
-            [
-                bursts[k]["time"].iloc[0] - bursts[k - 1]["time"].iloc[-1]
-                for k in range(1, len(bursts))
-            ]
-        )
-        burst_sizes = [v for v in burst_sizes if v > 0]
-        burst_durations = [v for v in burst_durations if v > 0]
-        inter_burst_intervals = [v for v in inter_burst_intervals if v > 0]
-
-        if not burst_sizes or not burst_durations or not inter_burst_intervals:
-            print(f"[WARN] No valid burst data for target: {target}. Skipping.")
-            continue
-
-        # Store statistics
-        burst_stats.append(
-            {
-                "target": target,
-                "mean_size": np.mean(burst_sizes),
-                "std_size": np.std(burst_sizes),
-                "mean_duration": np.mean(burst_durations),
-                "std_duration": np.std(burst_durations),
-                "mean_interval": np.mean(inter_burst_intervals),
-                "std_interval": np.std(inter_burst_intervals),
-            }
-        )
-
-        # Plot burst sizes
-        sns.violinplot(y=burst_sizes, ax=axes[0], color=colors(i), label=target)
-        axes[0].set_yscale("log")
-        axes[0].set_title("Burst Sizes")
-        axes[0].set_ylabel("Number of Packets")
-
-        # Plot burst durations
-        sns.violinplot(y=burst_durations, ax=axes[1], color=colors(i), label=target)
-        axes[1].set_yscale("log")
-        axes[1].set_title("Burst Durations")
-        axes[1].set_ylabel("Duration (s)")
-
-        # Plot inter-burst intervals
-        sns.histplot(
-            inter_burst_intervals,
-            bins=50,
-            ax=axes[2],
-            color=colors(i),
-            label=target,
-            log_scale=(False, True),
-        )
-        axes[2].set_title("Inter-Burst Intervals")
-        axes[2].set_xlabel("Interval (s)")
-        axes[2].set_ylabel("Frequency")
-
-    # Finalize plots
-    for ax in axes:
-        ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-        ax.legend()
-    try:
-        plt.tight_layout()
-    except OverflowError as e:
-        print(f"[ERROR] tight_layout() failed: {e}")
-
-    # Save plot
-    plot_file_name = pnf.mknameext("burst_analysis", compared_elements, "png")
-    print(f"Saving plot to: {plot_file_name}")
-    plt.savefig(plot_file_name)
-    plt.close()
-
-    # Save statistics
-    stats_df = pd.DataFrame(burst_stats)
-    csv_file_name = pnf.mknameext("burst_analysis", compared_elements, "csv")
-    print(f"Saving statistics to: {csv_file_name}")
-    stats_df.to_csv(csv_file_name, index=False)
-    """
-
 
 def sanitize(data):
     return [x for x in data if not (math.isinf(x) or math.isnan(x))]
@@ -665,3 +566,118 @@ def _load_experiment_config(experiment_xml_file, experiment_name="*"):
     else:
         config = ExperimentConfig.get_by_name(experiment_xml_file, experiment_name)
         return config
+
+
+##################################
+
+
+def plot_traffic_distributions(experiment_xml_file, experiment_name, target_list=[]):
+    print(
+        f"Plotting traffic distribution analysis for experiment: {experiment_name} from file: {experiment_xml_file}"
+    )
+
+    c = _load_experiment_config(experiment_xml_file, experiment_name)
+
+    plot_payload_size_distribution(c, target_list)
+    plot_packet_load_distribution(c, target_list)
+    plot_bandwidth_distribution(c, target_list)
+    plot_interarrival_by_index(c, target_list)
+
+
+def plot_payload_size_distribution(experiment_config, target_list):
+    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
+    pnf = PNF(experiment_config.out_dir, experiment_config.name)
+    df_map = {}
+    compared = []
+
+    for file in data_files.list_names(ADNF.INTERARRIVAL, "csv"):
+        target = ADNF.parse(file, "test_target")
+        if not target_list or target in target_list:
+            df = pd.read_csv(file)
+            df_map[target] = df
+            compared.append(target)
+
+    save_base = pnf.mkname("payload_size_cdf", compared)
+    plots.plot_cdf(
+        df_map,
+        "pkt_size",
+        "Packet Size (Bytes)",
+        "Payload Size Distribution (CDF)",
+        save_base,
+        log_scale=True,
+    )
+
+
+def plot_packet_load_distribution(experiment_config, target_list):
+    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
+    pnf = PNF(experiment_config.out_dir, experiment_config.name)
+    df_map = {}
+    compared = []
+
+    for file in data_files.list_names(ADNF.BW_PPS_FPS, "csv"):
+        target = ADNF.parse(file, "test_target")
+        if not target_list or target in target_list:
+            df = pd.read_csv(file)
+            df_map[target] = df
+            compared.append(target)
+
+    save_base = pnf.mkname("packet_load_cdf", compared)
+    plots.plot_cdf(
+        df_map,
+        "npackets",
+        "Packets per Second",
+        "Packet Load Distribution (CDF)",
+        save_base,
+        log_scale=True,
+    )
+
+
+def plot_bandwidth_distribution(experiment_config, target_list):
+    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
+    pnf = PNF(experiment_config.out_dir, experiment_config.name)
+    df_map = {}
+    compared = []
+
+    for file in data_files.list_names(ADNF.BW_PPS_FPS, "csv"):
+        target = ADNF.parse(file, "test_target")
+        if not target_list or target in target_list:
+            df = pd.read_csv(file)
+            df_map[target] = df
+            compared.append(target)
+
+    save_base = pnf.mkname("bandwidth_distribution_cdf", compared)
+    plots.plot_cdf(
+        df_map,
+        "bandwidth",
+        "Bandwidth (bps)",
+        "Bandwidth Distribution (CDF)",
+        save_base,
+        log_scale=True,
+    )
+
+
+def plot_interarrival_by_index(experiment_config, target_list):
+    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
+    pnf = PNF(experiment_config.out_dir, experiment_config.name)
+    df_map = {}
+    compared = []
+
+    for file in data_files.list_names(ADNF.INTERARRIVAL, "csv"):
+        target = ADNF.parse(file, "test_target")
+        if not target_list or target in target_list:
+            df = pd.read_csv(file).reset_index()
+            df["index"] = df.index
+            df_map[target] = df
+            compared.append(target)
+
+    save_base = pnf.mkname("interarrival_by_index", compared)
+    plots.plot_line(
+        df_map,
+        "index",
+        "inter_arrival",
+        "Packet Index",
+        "Interarrival Time (s)",
+        "Interarrival Time by Packet Index",
+        save_base,
+        log_y=True,
+    )

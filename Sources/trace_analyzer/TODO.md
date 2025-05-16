@@ -5,13 +5,15 @@
 - [ ] Packet Loss & Loss Rate
 - [ ] Latency (Min/Max/Avg)
 - [ ] Jitter (Latency Variation)
+- bandwidth cdf
+- packet size pdf
 
 # 2. Burstiness & Temporal Analysis
 - [x] Interarrival Mean (Violin/Boxplot)
 - [x] Interarrival variance (Violin/Boxplot)
 - [x] Interarrival CDF
 - [x] Interarrival PDF
-- [ ] Burst Size Distribution (Duration and size of traffic bursts)
+- [x] Burst Size Distribution (Duration and size of traffic bursts)
 - [ ] Peak-to-Average Ratio
 - [ ] Coefficient of Variation (CV) of interarrival times
 
