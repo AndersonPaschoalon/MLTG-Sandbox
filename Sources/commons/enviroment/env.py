@@ -1,9 +1,12 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
+from commons.pylang.repr_mixin import ReprMixin
 
-class Env:
+
+class Env(ReprMixin):
     """
     Simple run-time environment / variable bag with dot-notation access
     and JSON persistence for primitive Python types.
@@ -91,9 +94,13 @@ class Env:
         -------
         env.load("session.json")
         """
+        if not os.path.exists(path):
+            print(f"Enviroment file {path} does not exist.")
+            raise FileNotFoundError(f"{path}")
         path = Path(path)
         blob = json.loads(path.read_text())
-        self._vars = Env._decode(blob)
+        # self._vars = Env._decode(blob)
+        super().__setattr__("_vars", Env._decode(blob))
         print(f"✔ Environment loaded from {path}")
 
 

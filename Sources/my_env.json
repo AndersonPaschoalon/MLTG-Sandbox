@@ -1,0 +1,20 @@
+{
+  "iteration": 3,
+  "alpha": 0.01,
+  "description": "test run",
+  "sizes": [
+    64,
+    128,
+    256
+  ],
+  "settings": {
+    "method": "iperf",
+    "retry": {
+      "__tuple__": [
+        1,
+        2,
+        3
+      ]
+    }
+  }
+}

@@ -23,35 +23,6 @@ from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
 from trace_analyzer.loader.sniffer_wrapper import SnifferWrapper
 
 
-def load_experiment(experiment_xml_file, experiment_name):
-    """
-    Loads experiment metadata and parses all associated pcap files into the sniffer database.
-
-    This utility function performs the following steps:
-    1. Loads experiment configuration from the specified XML file.
-    2. Lists all generated `.pcap` files associated with the given experiment name.
-    3. Initializes the sniffer database for the experiment.
-    4. Parses and stores packet data into the database.
-    5. Parses and stores packet data from all experiment runs (client captures) into the same database.
-
-    Args:
-        experiment_xml_file (str): Path to the XML file describing the experiment setup.
-        experiment_name (str): Name of the experiment to load.
-    """
-    config = _load_experiment_config(experiment_xml_file, experiment_name)
-    print("#1 Loading data from Pcaps")
-    pcap_fmt = RDNF(config.out_dir, config.name, "pcap")
-    # list all *.pcap and client catpures. no tool_under_test means all will be returned.
-    file_list = pcap_fmt.list_names("capture", "pcap", "client")
-    sniffer = SnifferWrapper(config.experiment_dir(), config.name)
-    # store ground truth
-    sniffer.exec(config.pcap)
-    for f in file_list:
-        # store each experiment run
-        # if i need recover this data later, I should use SnifferWrapper.trace_entry_name()
-        sniffer.exec(f)
-
-
 def list_experiments(experiment_xml_file):
     """
     Lists all traces loaded into the sniffer database for each experiment defined in the XML file.
@@ -80,6 +51,35 @@ def list_experiments(experiment_xml_file):
     for l in lout:
         for i in l:
             print(f"-\t{i}")
+
+
+def load_experiment(experiment_xml_file, experiment_name):
+    """
+    Loads experiment metadata and parses all associated pcap files into the sniffer database.
+
+    This utility function performs the following steps:
+    1. Loads experiment configuration from the specified XML file.
+    2. Lists all generated `.pcap` files associated with the given experiment name.
+    3. Initializes the sniffer database for the experiment.
+    4. Parses and stores packet data into the database.
+    5. Parses and stores packet data from all experiment runs (client captures) into the same database.
+
+    Args:
+        experiment_xml_file (str): Path to the XML file describing the experiment setup.
+        experiment_name (str): Name of the experiment to load.
+    """
+    config = _load_experiment_config(experiment_xml_file, experiment_name)
+    print("#1 Loading data from Pcaps")
+    pcap_fmt = RDNF(config.out_dir, config.name, "pcap")
+    # list all *.pcap and client catpures. no tool_under_test means all will be returned.
+    file_list = pcap_fmt.list_names("capture", "pcap", "client")
+    sniffer = SnifferWrapper(config.experiment_dir(), config.name)
+    # store ground truth
+    sniffer.exec(config.pcap)
+    for f in file_list:
+        # store each experiment run
+        # if i need recover this data later, I should use SnifferWrapper.trace_entry_name()
+        sniffer.exec(f)
 
 
 def analyze_experiment(experiment_xml_file, experiment_name):

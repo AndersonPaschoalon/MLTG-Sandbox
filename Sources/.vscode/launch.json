@@ -54,6 +54,18 @@
             }
         },
         {
+            "name": "trace_analyzer:trace_analyzer_functions2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/trace_analyzer/trace_analyzer_functions2.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "name": "commons:DatafileNameFormatter",
             "type": "debugpy",
             "request": "launch",
@@ -65,7 +77,30 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
+        },
+        {
+            "name": "commons:env",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/commons/enviroment/env.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "commons:memory_store",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/commons/enviroment/memory_store.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         }
-
     ]
 }
