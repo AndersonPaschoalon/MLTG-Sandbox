@@ -251,6 +251,13 @@ def run_tests():
     # plot_interarrival_pdf(target_list=target_list)
     # plot_interarrival_cdf(target_list=target_list)
     plot_interarrival_by_index(target_list=target_list)
+    plot_bw_pps_fps_refactored("bandwidth", target_list=None)
+    plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
+    plot_bw_pps_fps_refactored("flow_per_second", target_list=None)
+    plot_pktsize_histogram(target_list=None)
+    plot_bandwidth_cdf()
+    plot_packet_load_cdf()
+    plot_payload_size_cdf()
 
 
 def _plot_this(target, target_list):
@@ -504,6 +511,143 @@ def plot_interarrival_by_index(target_list=None):
         title="Interarrival Time by Packet Index",
         save_path_base=filename,
         log_y=True,
+    )
+
+
+def plot_bw_pps_fps_refactored(plot_type, target_list=None):
+    """
+    Plot bandwidth, packets/sec or flows/sec using preloaded mem.bw_df_map and mem.bw_min_time_max.
+    """
+    target_list = target_list or []
+    df_map = {
+        k: v for k, v in mem.bw_df_map.items() if not target_list or k in target_list
+    }
+    compared = list(df_map.keys())
+    tmax = mem.bw_min_time_max
+
+    metric_map = {
+        "bandwidth": ("bandwidth", "bandwidth_average", "Bandwidth (bps)"),
+        "packet_per_second": ("npackets", "npackets_average", "Packets per Second"),
+        "flow_per_second": ("nflows", "nflows_average", "Flows per Second"),
+    }
+
+    if plot_type not in metric_map:
+        raise ValueError(f"Unknown plot_type '{plot_type}'")
+
+    raw_col, avg_col, y_label = metric_map[plot_type]
+
+    save_path = mem.pnf.mkname(plot_type, compared)
+
+    plots.plot_timeseries(
+        df_map=df_map,
+        x_col="time",
+        y_cols=[(raw_col, "raw", 1), (avg_col, "avg", 2.5)],
+        title=f"{y_label} vs Time",
+        xlabel="Time (s)",
+        ylabel=y_label,
+        save_path_base=save_path,
+        time_max=tmax,
+    )
+
+
+def plot_pktsize_histogram(target_list=None):
+    """
+    Plot a separate packet size histogram for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
+    else:
+        df_map = mem.inter_df_map
+
+    colors = cm.get_cmap("tab10")
+    for i, (target, df) in enumerate(df_map.items()):
+        df = df[df["time"] <= mem.bw_min_time_max]
+        save_path = mem.pnf.mkname("histogram-pktsize", [target])
+        color = colors(i % 10)
+        plots.plot_histogram(
+            df=df,
+            column="pkt_size",
+            title=f"Packet Size Distribution — {target}",
+            xlabel="Packet Size (bytes)",
+            ylabel="Frequency",
+            save_path=save_path,
+            color=color,
+        )
+
+
+def plot_bandwidth_cdf(target_list=None):
+    """
+    Plot the CDF of bandwidth values for each target.
+    Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bw_df_map
+
+    truncated_map = {
+        target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
+    }
+
+    save_path_base = mem.pnf.mkname("bandwidth_cdf", list(truncated_map.keys()))
+    plots.plot_cdf(
+        df_map=truncated_map,
+        column="bandwidth",
+        xlabel="Bandwidth (bps)",
+        title="Bandwidth Distribution (CDF)",
+        save_path_base=save_path_base,
+        log_scale=True,
+    )
+
+
+def plot_payload_size_cdf(target_list=None):
+    """
+    Plot the CDF of packet sizes for each target.
+    Uses preloaded and truncated interarrival data from mem.inter_df_map and mem.inter_min_time_max.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
+    else:
+        df_map = mem.inter_df_map
+
+    truncated_map = {
+        target: df[df["time"] <= mem.inter_min_time_max]
+        for target, df in df_map.items()
+    }
+
+    save_path_base = mem.pnf.mkname("payload_size_cdf", list(truncated_map.keys()))
+    plots.plot_cdf(
+        df_map=truncated_map,
+        column="pkt_size",
+        xlabel="Packet Size (Bytes)",
+        title="Payload Size Distribution (CDF)",
+        save_path_base=save_path_base,
+        log_scale=True,
+    )
+
+
+def plot_packet_load_cdf(target_list=None):
+    """
+    Plot the CDF of packet load (packets per second) for each target.
+    Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bw_df_map
+
+    truncated_map = {
+        target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
+    }
+
+    save_path_base = mem.pnf.mkname("packet_load_cdf", list(truncated_map.keys()))
+    plots.plot_cdf(
+        df_map=truncated_map,
+        column="npackets",
+        xlabel="Packets per Second",
+        title="Packet Load Distribution (CDF)",
+        save_path_base=save_path_base,
+        log_scale=True,
     )
 
 

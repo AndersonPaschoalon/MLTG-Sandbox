@@ -207,3 +207,69 @@ def plot_pdf(
     plt.tight_layout()
     plt.savefig(f"{save_path_base}.png")
     plt.close()
+
+
+def plot_timeseries(
+    df_map,
+    x_col,
+    y_cols,
+    title,
+    xlabel,
+    ylabel,
+    save_path_base,
+    time_max=None,
+):
+    """
+    Plot time series for multiple targets with optional truncation.
+
+    Parameters:
+    - df_map: dict of {label: DataFrame}
+    - x_col: column name for X-axis (usually "time")
+    - y_cols: list of tuples like [(col_name, label_suffix, linewidth)]
+    - title: plot title
+    - xlabel: X-axis label
+    - ylabel: Y-axis label
+    - save_path_base: output base name (for .png and .csv)
+    - time_max: truncate X at this max value (e.g., shared max time)
+    """
+    import matplotlib.cm as cm
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(10, 6))
+    colors = cm.get_cmap("tab10")
+
+    for i, (label, df) in enumerate(df_map.items()):
+        df_plot = df[df[x_col] <= time_max] if time_max else df
+        color = colors(i % 10)
+        for col_name, suffix, lw in y_cols:
+            plt.plot(
+                df_plot[x_col],
+                df_plot[col_name],
+                label=f"{label} ({suffix})",
+                linewidth=lw,
+                color=color,
+            )
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.tight_layout()
+    plt.savefig(f"{save_path_base}.png")
+    plt.close()
+
+
+def plot_histogram(df, column, title, xlabel, ylabel, save_path, color="blue", bins=30):
+    """
+    Plot and save a histogram for a single time-series column.
+    """
+    plt.figure(figsize=(10, 6))
+    plt.hist(df[column].dropna(), bins=bins, alpha=0.75, edgecolor="black", color=color)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.tight_layout()
+    plt.savefig(f"{save_path}.png")
+    plt.close()
