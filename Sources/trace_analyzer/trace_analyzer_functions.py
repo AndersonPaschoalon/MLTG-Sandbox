@@ -23,6 +23,7 @@ from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
 from trace_analyzer.loader.sniffer_wrapper import SnifferWrapper
 
 
+# DONE
 def list_experiments(experiment_xml_file):
     """
     Lists all traces loaded into the sniffer database for each experiment defined in the XML file.
@@ -53,6 +54,7 @@ def list_experiments(experiment_xml_file):
             print(f"-\t{i}")
 
 
+# DONE
 def load_experiment(experiment_xml_file, experiment_name):
     """
     Loads experiment metadata and parses all associated pcap files into the sniffer database.
@@ -82,6 +84,7 @@ def load_experiment(experiment_xml_file, experiment_name):
         sniffer.exec(f)
 
 
+# DONE
 def analyze_experiment(experiment_xml_file, experiment_name):
     """ """
 
@@ -118,7 +121,7 @@ def analyze_experiment(experiment_xml_file, experiment_name):
         interarrival(t, ac)
 
 
-# packet_size, pdf, cdf
+# DONE
 def plot_pktsize_pdf_cdf_violinbox(
     experiment_xml_file, experiment_name, target_list=[], plot_type="packet_size"
 ):
@@ -572,6 +575,7 @@ def _load_experiment_config(experiment_xml_file, experiment_name="*"):
 ##################################
 
 
+# DONE
 def plot_traffic_distributions(experiment_xml_file, experiment_name, target_list=[]):
     print(
         f"Plotting traffic distribution analysis for experiment: {experiment_name} from file: {experiment_xml_file}"
@@ -585,6 +589,7 @@ def plot_traffic_distributions(experiment_xml_file, experiment_name, target_list
     plot_interarrival_by_index(c, target_list)
 
 
+# DONE
 def plot_payload_size_distribution(experiment_config, target_list):
     data_files = ADNF(experiment_config.out_dir, experiment_config.name)
     pnf = PNF(experiment_config.out_dir, experiment_config.name)
@@ -609,6 +614,7 @@ def plot_payload_size_distribution(experiment_config, target_list):
     )
 
 
+# DONE
 def plot_packet_load_distribution(experiment_config, target_list):
     data_files = ADNF(experiment_config.out_dir, experiment_config.name)
     pnf = PNF(experiment_config.out_dir, experiment_config.name)
@@ -633,6 +639,7 @@ def plot_packet_load_distribution(experiment_config, target_list):
     )
 
 
+# DONE
 def plot_bandwidth_distribution(experiment_config, target_list):
     data_files = ADNF(experiment_config.out_dir, experiment_config.name)
     pnf = PNF(experiment_config.out_dir, experiment_config.name)
@@ -657,6 +664,7 @@ def plot_bandwidth_distribution(experiment_config, target_list):
     )
 
 
+# DONE
 def plot_interarrival_by_index(experiment_config, target_list):
     data_files = ADNF(experiment_config.out_dir, experiment_config.name)
     pnf = PNF(experiment_config.out_dir, experiment_config.name)

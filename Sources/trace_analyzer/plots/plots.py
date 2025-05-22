@@ -1,10 +1,14 @@
+from typing import Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
 
-def plot_cdf(df_map, column, xlabel, title, save_path_base, log_scale=False):
+def plot_cdf(
+    df_map, column, xlabel, title, save_path_base, log_scale=False
+) -> Tuple[str, str]:
     plt.figure(figsize=(10, 6))
     for label, df in df_map.items():
         values = df[column].dropna().values
@@ -20,11 +24,13 @@ def plot_cdf(df_map, column, xlabel, title, save_path_base, log_scale=False):
     plt.grid(True, linestyle="--", linewidth=0.5)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"{save_path_base}.png")
+    png_file = f"{save_path_base}.png"
+    plt.savefig(png_file)
     plt.close()
 
     # Save raw CDF data
-    with open(f"{save_path_base}.csv", "w") as f:
+    csv_file = f"{save_path_base}.csv"
+    with open(csv_file, "w") as f:
         f.write("label,value,cdf\n")
         for label, df in df_map.items():
             values = df[column].dropna().values
@@ -33,8 +39,12 @@ def plot_cdf(df_map, column, xlabel, title, save_path_base, log_scale=False):
             for v, c in zip(values, cdf):
                 f.write(f"{label},{v},{c}\n")
 
+    return png_file, csv_file
 
-def plot_line(df_map, x_col, y_col, xlabel, ylabel, title, save_path_base, log_y=False):
+
+def plot_line(
+    df_map, x_col, y_col, xlabel, ylabel, title, save_path_base, log_y=False
+) -> str:
     plt.figure(figsize=(10, 6))
     for label, df in df_map.items():
         plt.plot(df[x_col], df[y_col], label=label)
@@ -46,8 +56,10 @@ def plot_line(df_map, x_col, y_col, xlabel, ylabel, title, save_path_base, log_y
     plt.grid(True, linestyle="--", linewidth=0.5)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"{save_path_base}.png")
+    png_file = f"{save_path_base}.png"
+    plt.savefig(png_file)
     plt.close()
+    return png_file
 
 
 def plot_distribution_plot(
@@ -59,7 +71,7 @@ def plot_distribution_plot(
     save_path_base,
     plot_kind="violin",  # "box" or "violin"
     log_y=True,
-):
+) -> Tuple[str, str]:
     """
     Generate a distribution plot (violin or box) comparing a numerical column across multiple datasets.
 
@@ -98,7 +110,6 @@ def plot_distribution_plot(
     Output
     ------
     Saves a plot as a PNG and summary statistics (mean and std per group) as a CSV.
-    Does not return any value.
     """
     assert plot_kind in ("violin", "box"), "Invalid plot kind. Use 'box' or 'violin'."
 
@@ -148,11 +159,14 @@ def plot_distribution_plot(
 
     plt.grid(True, linestyle="--", linewidth=0.5)
     plt.tight_layout()
-    plt.savefig(f"{save_path_base}.png")
+    file_png = f"{save_path_base}.png"
+    plt.savefig(file_png)
     plt.close()
 
     # Save stats to CSV
-    pd.DataFrame(stats_records).to_csv(f"{save_path_base}.csv", index=False)
+    csv_file = f"{save_path_base}.csv"
+    pd.DataFrame(stats_records).to_csv(csv_file, index=False)
+    return file_png, csv_file
 
 
 def plot_pdf(

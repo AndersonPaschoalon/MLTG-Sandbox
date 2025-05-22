@@ -182,3 +182,54 @@ def get_packet_arrival_df(connector: AlchemyConnector, flowID: int = 0) -> pd.Da
         )
 
         return df
+
+
+def calc_urst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshold=0.01):
+    """
+    Analyze bursts for a given target and DB connector.
+
+    - Burst: sequence of packets where inter-arrival < threshold.
+    """
+
+    print(f"[burst] Analyzing bursts for target: {target}")
+
+    df = get_packet_arrival_df(ac)  # Assumes df has 'time' column
+    df = df.sort_values("time").reset_index(drop=True)
+
+    if df.empty or len(df) < 2:
+        print(f"[WARN] Not enough packets for burst analysis: {target}")
+        return
+
+    # Calculate inter-arrival times
+    df["inter_arrival"] = df["time"].diff().fillna(0)
+
+    # Detect bursts
+    bursts = []
+    current_burst = [df.iloc[0]]
+    for i in range(1, len(df)):
+        if df["inter_arrival"].iloc[i] < inter_arrival_threshold:
+            current_burst.append(df.iloc[i])
+        else:
+            bursts.append(pd.DataFrame(current_burst))
+            current_burst = [df.iloc[i]]
+    if current_burst:
+        bursts.append(pd.DataFrame(current_burst))
+
+    # Compute metrics
+    burst_sizes = [len(burst) for burst in bursts]
+    burst_durations = [
+        burst["time"].iloc[-1] - burst["time"].iloc[0] for burst in bursts
+    ]
+    inter_burst_intervals = [
+        bursts[i]["time"].iloc[0] - bursts[i - 1]["time"].iloc[-1]
+        for i in range(1, len(bursts))
+    ]
+
+    # Filter valid values
+    burst_sizes = [x for x in burst_sizes if x > 0 and np.isfinite(x)]
+    burst_durations = [x for x in burst_durations if x > 0 and np.isfinite(x)]
+    inter_burst_intervals = [
+        x for x in inter_burst_intervals if x > 0 and np.isfinite(x)
+    ]
+
+    return burst_sizes, burst_durations, inter_burst_intervals

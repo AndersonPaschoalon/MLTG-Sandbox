@@ -2,6 +2,7 @@ import argparse
 import math
 import os
 import sys
+import traceback
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ import seaborn as sns
 from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
-import trace_analyzer.analyzer.bandwidth as bandwidth
+import trace_analyzer.analyzer.metrics_estimator as metrics_estimator
 import trace_analyzer.plots.plots as plots
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
@@ -61,6 +62,7 @@ def rm_env():
     print(f"Enviroment file {env_file} not found.")
 
 
+"""
 def load_env():
     if not os.path.exists(env_file):
         raise FileNotFoundError(f"No experiment was loaded yet.")
@@ -115,6 +117,85 @@ def load_env():
             bt = (file, target)
             interdata_target.append(bt)
         mem.interdata_target = interdata_target
+        # burst durations files
+        burstdurdata_target = []
+        burstdurdata_files = mem.anf.list_names(ADNF.BURST_DURATIONS, "csv")
+        for file in burstdurdata_files:
+            target = mem.anf.parse(file, "test_target")
+            t = (file, target)
+            burstdurdata_target.append(t)
+        mem.burstdurdata_target = burstdurdata_target
+        # burst intervals files
+        burstinterdata_target = []
+        burstinterdata_files = mem.anf.list_names(ADNF.BURST_INTERVALS, "csv")
+        for file in burstinterdata_files:
+            target = mem.anf.parse(file, "test_target")
+            t = (file, target)
+            burstinterdata_target.append(t)
+        mem.burstinterdata_target = burstinterdata_target
+        # burst sizes files
+        burstsizesdata_target = []
+        burstsizesdata_files = mem.anf.list_names(ADNF.BURST_SIZES, "csv")
+        for file in burstsizesdata_files:
+            target = mem.anf.parse(file, "test_target")
+            t = (file, target)
+            burstsizesdata_target.append(t)
+        mem.burstsizesdata_target = burstsizesdata_target
+    print("load_env done")
+"""
+
+
+def load_env():
+    def _load_target_data(file_type, mem_attr):
+        try:
+            data_target = []
+            data_files = mem.anf.list_names(file_type, "csv")
+            for file in data_files:
+                target = mem.anf.parse(file, "test_target")
+                data_target.append((file, target))
+            setattr(mem, mem_attr, data_target)
+            print(f"Loaded {len(data_target)} items for {mem_attr}")
+        except Exception as e:
+            print(f"Failed to load {mem_attr}: {e}")
+
+    if not os.path.exists(env_file):
+        raise FileNotFoundError(f"No experiment was loaded yet.")
+    env.load(env_file)
+    ex_xml = env.ex_xml
+    ex_name = env.ex_name
+    print(f"Importing experiment from: {ex_xml} with name: {ex_name}")
+    if not os.path.exists(ex_xml):
+        raise FileNotFoundError(f"{ex_xml}")
+    config = ExperimentConfig.get_by_name(ex_xml, ex_name)
+    list_configs = ExperimentConfig.load(env.ex_xml)
+
+    # Register basic objects
+    mem.list_configs = list_configs
+    mem.c = config
+    mem.rpcap = RDNF(config.out_dir, config.name, "pcap")
+    mem.rcsv = RDNF(config.out_dir, config.name, "pcap")
+    mem.anf = ADNF(config.out_dir, config.name)
+    mem.pnf = PNF(config.out_dir, ex_name)
+    mem.ex_name = config.name
+    mem.ex_dir = config.experiment_dir()
+    mem.sniffer = SnifferWrapper(config.experiment_dir(), config.name)
+    mem.ground_truth = config.pcap
+    mem.client_pcaps = mem.rpcap.list_names("capture", "pcap", "client")
+    mem.server_pcaps = mem.rpcap.list_names("capture", "pcap", "server")
+
+    # Register after --mk-env objects
+    if env.ex_loaded:
+        data_types = [
+            (ADNF.BW_PPS_FPS, "bwdata_target"),
+            (ADNF.INTERARRIVAL, "interdata_target"),
+            (ADNF.BURST_DURATIONS, "burstdurdata_target"),
+            (ADNF.BURST_INTERVALS, "burstinterdata_target"),
+            (ADNF.BURST_SIZES, "burstsizesdata_target"),
+        ]
+        for file_type, mem_attr in data_types:
+            # sets a tuple (file, target) to the atribut xpto_target of the corresponding file prefix.
+            _load_target_data(file_type, mem_attr)
+
     print("load_env done")
 
 
@@ -186,34 +267,61 @@ def load_experiment():
 
 def analyze_experiment():
     """
-    Analyze parsed data and generate CSVs for plotting (bandwidth and interarrival).
+    Analyze parsed experiment data and generate CSVs for plotting.
 
-    Step-by-step:
-    1. Load the environment using `load_env()`.
-    2. Abort if the experiment was already analyzed (`env.ex_analyzed`).
-    3. For each loaded trace:
-        - Open a DB connector with `mem.sniffer.flowdb_connector`.
-        - Compute and export:
-            a. Bandwidth / packets per second / flows per second (`bw_pps_fps`)
-            b. Packet interarrival times (`interarrival`)
-    4. Mark the experiment as analyzed and update the environment file.
+    Workflow:
+    1. Load the experiment environment (`load_env()`).
+    2. Abort if the experiment has already been analyzed (`env.ex_analyzed` flag).
+    3. For each trace in `mem.traces_target`:
+        - Open a DB connector (`mem.sniffer.flowdb_connector`).
+        - Compute and export to CSV:
+            a. Bandwidth, packets per second, and flows per second (`ADNF.BW_PPS_FPS`).
+            b. Packet inter-arrival times (`ADNF.INTERARRIVAL`).
+            c. Burst metrics:
+                - Burst sizes (`ADNF.BURST_SIZES`),
+                - Burst durations (`ADNF.BURST_DURATIONS`),
+                - Inter-burst intervals (`ADNF.BURST_INTERVALS`).
 
     Notes:
-    - Intermediate CSVs are stored in paths based on `ADNF`.
-    - This function assumes the experiment was already loaded successfully.
+    - CSV files are named and stored via `mem.anf.mknameext`.
+    - Analysis will not proceed if already marked as analyzed.
+    - To redo the analysis:
+      Use `{CMD_RM_ENV}` to remove the environment, `{CMD_MAKE_ENV}` to reload, and `{CMD_ANALYZE}` to analyze again.
+
+    Returns:
+        bool: False if analysis is skipped due to prior completion; True otherwise.
     """
 
     def bw_pps_fps(target: str, ac: AlchemyConnector):
-        df = bandwidth.calc_bw_pps_fps_as_df(ac)
+        df = metrics_estimator.calc_bw_pps_fps_as_df(ac)
         csv_file = mem.anf.mknameext(ADNF.BW_PPS_FPS, target, "csv")
         df.to_csv(csv_file, index=False)
         return csv_file
 
     def interarrival(target: str, ac: AlchemyConnector):
-        df = bandwidth.get_packet_arrival_df(ac)
+        df = metrics_estimator.get_packet_arrival_df(ac)
         csv_file = mem.anf.mknameext(ADNF.INTERARRIVAL, target, "csv")
         df.to_csv(csv_file, index=False)
         return csv_file
+
+    def burst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshould=0.01):
+        """
+        Analyze bursts for a given target and DB connector.
+
+        - Burst: sequence of packets where inter-arrival < threshold.
+        - Saves burst sizes, durations, and inter-burst intervals to CSVs.
+        """
+        burst_sizes, burst_durations, inter_burst_intervals = (
+            metrics_estimator.calc_urst_metrics(target, ac)
+        )
+        # Save results to CSVs
+        f1 = mem.anf.mknameext(ADNF.BURST_SIZES, target, "csv")
+        pd.DataFrame({"burst_size": burst_sizes}).to_csv(f1, index=False)
+        f2 = mem.anf.mknameext(ADNF.BURST_DURATIONS, target, "csv")
+        pd.DataFrame({"burst_duration": burst_durations}).to_csv(f2, index=False)
+        f3 = mem.anf.mknameext(ADNF.BURST_INTERVALS, target, "csv")
+        pd.DataFrame({"burst_interval": inter_burst_intervals}).to_csv(f3, index=False)
+        return f1, f2, f3
 
     load_env()
     if env.ex_analyzed:
@@ -230,6 +338,7 @@ def analyze_experiment():
         # Calculate and exporting bandwidth, packets per second and flows per second
         bw_pps_fps(target, ac)
         interarrival(target, ac)
+        burst_metrics(target, ac)
 
     env.ex_analyzed = True
     env.save(env_file)
@@ -238,26 +347,6 @@ def analyze_experiment():
 ###############################################################################
 # Plot utilities
 ###############################################################################
-
-
-def run_tests():
-    print("#########")
-    target_list = []
-    load_analysis_data(target_list=target_list)
-    # plot_violin_interarrival(target_list=target_list)
-    # plot_violin_pkt(target_list=target_list)
-    # plot_box_interarrival(target_list=target_list)
-    # plot_box_pkt(target_list=target_list)
-    # plot_interarrival_pdf(target_list=target_list)
-    # plot_interarrival_cdf(target_list=target_list)
-    plot_interarrival_by_index(target_list=target_list)
-    plot_bw_pps_fps_refactored("bandwidth", target_list=None)
-    plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
-    plot_bw_pps_fps_refactored("flow_per_second", target_list=None)
-    plot_pktsize_histogram(target_list=None)
-    plot_bandwidth_cdf()
-    plot_packet_load_cdf()
-    plot_payload_size_cdf()
 
 
 def _plot_this(target, target_list):
@@ -291,8 +380,9 @@ def _prepare_distribution_data(target_list: list[str]):
     return filtered_df_map, compared_targets
 
 
+"""
 def load_analysis_data(target_list=[]):
-    """
+    ""
     Load post-analysis data from CSVs, prepare in-memory DataFrames and compute min time ranges.
 
     Step-by-step:
@@ -312,7 +402,7 @@ def load_analysis_data(target_list=[]):
         - inter_min_time_max: float, shortest max time among inter-arrival DFs
         - bw_df_map: dict of target → bandwidth/pps/fps DataFrame
         - bw_min_time_max: float, shortest max time among BW DFs
-    """
+    ""
     load_env()
     # Load and store relevant DataFrames, and compute the shortest time range
     inter_min_time_max = None
@@ -346,6 +436,103 @@ def load_analysis_data(target_list=[]):
                 bw_min_time_max = max_time
     mem.bw_min_time_max = bw_min_time_max
     mem.bw_df_map = bw_df_map
+
+    # burst durations
+    bdurations_df_map = {}
+    for file, target in mem.burstdurdata_target:
+        if _plot_this(target, target_list):
+            df = pd.read_csv(file)
+            bdurations_df_map[target] = df
+    mem.bdurations_df_map = bdurations_df_map
+
+    # burst intervals
+    bintervals_df_map = {}
+    for file, target in mem.burstinterdata_target:
+        if _plot_this(target, target_list):
+            df = pd.read_csv(file)
+            bintervals_df_map[target] = df
+    mem.bintervals_df_map = bintervals_df_map
+
+    # burst sizes
+    bsizes_df_map = {}
+    for file, target in mem.burstsizesdata_target:
+        if _plot_this(target, target_list):
+            df = pd.read_csv(file)
+            bsizes_df_map[target] = df
+    mem.bsizes_df_map = bsizes_df_map
+"""
+
+
+def load_analysis_data(target_list=None):
+    """
+    Load post-analysis data from CSVs, prepare in-memory DataFrames and compute min time ranges.
+
+    Data types loaded:
+    - Inter-arrival Data: mem.inter_df_map + mem.inter_min_time_max
+    - Bandwidth/PPS/FPS Data: mem.bw_df_map + mem.bw_min_time_max
+    - Burst Durations: mem.bdurations_df_map
+    - Burst Intervals: mem.bintervals_df_map
+    - Burst Sizes: mem.bsizes_df_map
+
+    Args:
+        target_list (list[str], optional): Filter for which targets to load. If empty, load all.
+    """
+
+    # utility 01
+    def _load_data_with_min_time(data_target, target_list):
+        """
+        Load CSVs for data targets and compute the minimal max time across DataFrames.
+
+        Returns:
+            data_map (dict): target → DataFrame
+            min_time_max (float): smallest of all max times
+        """
+        data_map = {}
+        min_time_max = None
+
+        for file, target in data_target:
+            if _plot_this(target, target_list):
+                df = pd.read_csv(file)
+                data_map[target] = df
+                max_time = df["time"].max()
+                if min_time_max is None or max_time < min_time_max:
+                    min_time_max = max_time
+        return data_map, min_time_max
+
+    # utility 02
+    def _load_data_map(data_target, target_list):
+        """
+        Load CSVs for data targets into a simple target → DataFrame map.
+
+        Returns:
+            data_map (dict): target → DataFrame
+        """
+        data_map = {}
+        for file, target in data_target:
+            if _plot_this(target, target_list):
+                df = pd.read_csv(file)
+                data_map[target] = df
+        return data_map
+
+    if target_list is None:
+        target_list = []
+
+    load_env()
+
+    # Data that needs min time tracking
+    mem.inter_df_map, mem.inter_min_time_max = _load_data_with_min_time(
+        mem.interdata_target, target_list
+    )
+    mem.bw_df_map, mem.bw_min_time_max = _load_data_with_min_time(
+        mem.bwdata_target, target_list
+    )
+
+    # Simple data maps
+    mem.bdurations_df_map = _load_data_map(mem.burstdurdata_target, target_list)
+    mem.bintervals_df_map = _load_data_map(mem.burstinterdata_target, target_list)
+    mem.bsizes_df_map = _load_data_map(mem.burstsizesdata_target, target_list)
+
+    print("load_analysis_data done")
 
 
 ###############################################################################
@@ -651,28 +838,122 @@ def plot_packet_load_cdf(target_list=None):
     )
 
 
-if __name__ == "__main__":
-    # create_env("scripts/xml/sample_tests.xml", "Banana")
-    # load_env()
-    # print(mem)
-    cmd_list_tr = False
-    cmd_mk_env = False
-    cmd_rm_env = False
-    cmd_analyze = False
-    test05 = True
+def plot_burst_duration_violin(target_list=None):
+    """
+    Plot violin distribution of burst durations for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bdurations_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bdurations_df_map
+    filename = mem.pnf.mkname("violin-burst-duration", list(df_map.keys()))
+    plots.plot_distribution_plot(
+        df_map=df_map,
+        column="burst_duration",
+        title="Violin Plot of Burst Durations",
+        xlabel="Target",
+        ylabel="Burst Duration (s)",
+        save_path_base=filename,
+        plot_kind="violin",
+        log_y=True,
+    )
 
-    # --list-traces
-    if cmd_list_tr:
-        list_experiments()
-    # --mk-env
-    if cmd_mk_env:
-        create_env("scripts/xml/sample_tests.xml", "Banana")
-        load_experiment()
-        list_experiments()
-    # --rm-env
-    if cmd_rm_env:
-        rm_env()
-    elif cmd_analyze:
-        analyze_experiment()
-    elif test05:
-        run_tests()
+
+def plot_inter_burst_interval_cdf(target_list=None):
+    """
+    Plot CDF of inter-burst intervals for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bintervals_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bintervals_df_map
+    filename = mem.pnf.mkname("burst_interval_cdf", list(df_map.keys()))
+    plots.plot_cdf(
+        df_map=df_map,
+        column="burst_interval",
+        xlabel="Inter-Burst Interval (s)",
+        title="Inter-Burst Interval Distribution (CDF)",
+        save_path_base=filename,
+        log_scale=True,
+    )
+
+
+def plot_burst_size_violin(target_list=None):
+    """
+    Plot violin distribution of burst sizes for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bsizes_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bsizes_df_map
+    filename = mem.pnf.mkname("violin-burst-size", list(df_map.keys()))
+    plots.plot_distribution_plot(
+        df_map=df_map,
+        column="burst_size",
+        title="Violin Plot of Burst Sizes",
+        xlabel="Target",
+        ylabel="Burst Size (packets)",
+        save_path_base=filename,
+        plot_kind="violin",
+        log_y=True,
+    )
+
+
+def run_tests():
+    print("#########")
+    target_list = []
+    load_analysis_data(target_list=target_list)
+    # plot_violin_interarrival(target_list=target_list)
+    # plot_violin_pkt(target_list=target_list)
+    # plot_box_interarrival(target_list=target_list)
+    # plot_box_pkt(target_list=target_list)
+    # plot_interarrival_pdf(target_list=target_list)
+    # plot_interarrival_cdf(target_list=target_list)
+    plot_interarrival_by_index(target_list=target_list)
+    plot_bw_pps_fps_refactored("bandwidth", target_list=None)
+    plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
+    plot_bw_pps_fps_refactored("flow_per_second", target_list=None)
+    plot_pktsize_histogram(target_list=None)
+    plot_bandwidth_cdf()
+    plot_packet_load_cdf()
+    plot_payload_size_cdf()
+    plot_burst_size_violin()
+    plot_inter_burst_interval_cdf()
+    plot_burst_duration_violin()
+
+
+def test_main():
+    try:
+        # create_env("scripts/xml/sample_tests.xml", "Banana")
+        # load_env()
+        # print(mem)
+        cmd_list_tr = False
+        cmd_mk_env = False
+        cmd_rm_env = False
+        cmd_analyze = True
+        cmd_run_tests = True
+
+        # --list-traces
+        if cmd_list_tr:
+            list_experiments()
+        # --mk-env
+        if cmd_mk_env:
+            create_env("scripts/xml/sample_tests.xml", "Banana")
+            load_experiment()
+            list_experiments()
+        # --rm-env
+        if cmd_rm_env:
+            rm_env()
+        if cmd_analyze:
+            analyze_experiment()
+        if cmd_run_tests:
+            run_tests()
+    except Exception as ex:
+        print("********** EXCEPTION **********")
+        traceback.print_exc()
+        print("*******************************")
+        print(ex)
+
+
+if __name__ == "__main__":
+    test_main()

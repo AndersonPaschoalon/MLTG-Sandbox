@@ -25,6 +25,9 @@ class AnalysisDataNameFormatter(ReprMixin):
     # Analysis identifiers (add more as needed)
     BW_PPS_FPS = "bw_pps_fps"
     INTERARRIVAL = "inter_arrival_ttl"
+    BURST_SIZES = "burst_sizes"
+    BURST_DURATIONS = "burst_durations"
+    BURST_INTERVALS = "burst_intervals"
 
     def __init__(self, out_dir: str, experiment_name: str):
         """
