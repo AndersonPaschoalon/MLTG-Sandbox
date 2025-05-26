@@ -12,7 +12,7 @@ import seaborn as sns
 from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
-import trace_analyzer.analyzer.metrics_estimator as metrics_estimator
+import trace_analyzer.metrics.metrics_estimator as metrics_estimator
 import trace_analyzer.plots.plots as plots
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
@@ -23,7 +23,7 @@ from commons.naming.analysis_data_name_formatter import (
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
-from trace_analyzer.loader.sniffer_wrapper import SnifferWrapper
+from trace_analyzer.snifferdb.sniffer_wrapper import SnifferWrapper
 
 env_file = ".trace_analyzer_env.json"
 env = Env()
@@ -60,89 +60,6 @@ def rm_env():
         os.remove(env_file)
         return
     print(f"Enviroment file {env_file} not found.")
-
-
-"""
-def load_env():
-    if not os.path.exists(env_file):
-        raise FileNotFoundError(f"No experiment was loaded yet.")
-    env.load(env_file)
-    ex_xml = env.ex_xml
-    ex_name = env.ex_name
-    print(f"Importing experiment from: {ex_xml} with name: {ex_name}")
-    if not os.path.exists(ex_xml):
-        raise FileNotFoundError(f"{ex_xml}")
-    config = ExperimentConfig.get_by_name(ex_xml, ex_name)
-    list_configs = ExperimentConfig.load(env.ex_xml)
-
-    # Register basic objects
-    mem.list_configs = list_configs
-    mem.c = config
-    mem.rpcap = RDNF(config.out_dir, config.name, "pcap")
-    mem.rcsv = RDNF(config.out_dir, config.name, "pcap")
-    mem.anf = ADNF(config.out_dir, config.name)
-    mem.pnf = PNF(config.out_dir, ex_name)
-    mem.ex_name = config.name
-    mem.ex_dir = config.experiment_dir()
-    mem.sniffer = SnifferWrapper(config.experiment_dir(), config.name)
-    mem.ground_truth = config.pcap
-    mem.client_pcaps = mem.rpcap.list_names("capture", "pcap", "client")
-    mem.server_pcaps = mem.rpcap.list_names("capture", "pcap", "server")
-
-    # Register after --mk-env objects
-    if env.ex_loaded:
-        ltraces = mem.sniffer.list_loaded_traces()
-        traces_target = []
-        for trace in ltraces:
-            target = mem.rpcap.parse(trace, RDNF.TEST_TARGET)
-            tt = (trace, target)
-            traces_target.append(tt)
-        mem.traces_terget = traces_target
-
-    # Register after --analyze objects
-    if env.ex_analyzed:
-        # bw data files
-        bwdata_target = []
-        bwdata_files = mem.anf.list_names(ADNF.BW_PPS_FPS, "csv")
-        for file in bwdata_files:
-            target = mem.anf.parse(file, "test_target")
-            bt = (file, target)
-            bwdata_target.append(bt)
-        mem.bwdata_target = bwdata_target
-        # interarrival data files
-        interdata_target = []
-        interdata_files = mem.anf.list_names(ADNF.INTERARRIVAL, "csv")
-        for file in interdata_files:
-            target = mem.anf.parse(file, "test_target")
-            bt = (file, target)
-            interdata_target.append(bt)
-        mem.interdata_target = interdata_target
-        # burst durations files
-        burstdurdata_target = []
-        burstdurdata_files = mem.anf.list_names(ADNF.BURST_DURATIONS, "csv")
-        for file in burstdurdata_files:
-            target = mem.anf.parse(file, "test_target")
-            t = (file, target)
-            burstdurdata_target.append(t)
-        mem.burstdurdata_target = burstdurdata_target
-        # burst intervals files
-        burstinterdata_target = []
-        burstinterdata_files = mem.anf.list_names(ADNF.BURST_INTERVALS, "csv")
-        for file in burstinterdata_files:
-            target = mem.anf.parse(file, "test_target")
-            t = (file, target)
-            burstinterdata_target.append(t)
-        mem.burstinterdata_target = burstinterdata_target
-        # burst sizes files
-        burstsizesdata_target = []
-        burstsizesdata_files = mem.anf.list_names(ADNF.BURST_SIZES, "csv")
-        for file in burstsizesdata_files:
-            target = mem.anf.parse(file, "test_target")
-            t = (file, target)
-            burstsizesdata_target.append(t)
-        mem.burstsizesdata_target = burstsizesdata_target
-    print("load_env done")
-"""
 
 
 def load_env():
@@ -191,6 +108,7 @@ def load_env():
             (ADNF.BURST_DURATIONS, "burstdurdata_target"),
             (ADNF.BURST_INTERVALS, "burstinterdata_target"),
             (ADNF.BURST_SIZES, "burstsizesdata_target"),
+            (ADNF.WAVELET, "waveletdata_target"),
         ]
         for file_type, mem_attr in data_types:
             # sets a tuple (file, target) to the atribut xpto_target of the corresponding file prefix.
@@ -231,7 +149,7 @@ def list_experiments():
             print(f"-\t{i}")
 
 
-def load_experiment():
+def load_into_snifferdb():
     """
     Load packet capture data into the experiment sniffer database.
 
@@ -265,7 +183,7 @@ def load_experiment():
     return True
 
 
-def analyze_experiment():
+def analyze_experiment_and_store():
     """
     Analyze parsed experiment data and generate CSVs for plotting.
 
@@ -312,7 +230,7 @@ def analyze_experiment():
         - Saves burst sizes, durations, and inter-burst intervals to CSVs.
         """
         burst_sizes, burst_durations, inter_burst_intervals = (
-            metrics_estimator.calc_urst_metrics(target, ac)
+            metrics_estimator.calc_burst_metrics(target, ac)
         )
         # Save results to CSVs
         f1 = mem.anf.mknameext(ADNF.BURST_SIZES, target, "csv")
@@ -322,6 +240,12 @@ def analyze_experiment():
         f3 = mem.anf.mknameext(ADNF.BURST_INTERVALS, target, "csv")
         pd.DataFrame({"burst_interval": inter_burst_intervals}).to_csv(f3, index=False)
         return f1, f2, f3
+
+    def wavelet_analysis(target: str, ac: AlchemyConnector):
+        df = metrics_estimator.calc_wavelet_as_df(ac)
+        csv_file = mem.anf.mknameext(ADNF.WAVELET, target, "csv")
+        df.to_csv(csv_file, index=False)
+        return csv_file
 
     load_env()
     if env.ex_analyzed:
@@ -339,6 +263,7 @@ def analyze_experiment():
         bw_pps_fps(target, ac)
         interarrival(target, ac)
         burst_metrics(target, ac)
+        wavelet_analysis(target, ac)
 
     env.ex_analyzed = True
     env.save(env_file)
@@ -380,90 +305,7 @@ def _prepare_distribution_data(target_list: list[str]):
     return filtered_df_map, compared_targets
 
 
-"""
-def load_analysis_data(target_list=[]):
-    ""
-    Load post-analysis data from CSVs, prepare in-memory DataFrames and compute min time ranges.
-
-    Step-by-step:
-    1. Load the current experiment environment via `load_env()`.
-    2. For each inter-arrival CSV file:
-        - Load the DataFrame.
-        - Track the max `time` for each and update the global min of all max times.
-        - Store each DataFrame in a map for quick access.
-    3. Repeat the same process for bandwidth/pps/fps CSVs.
-    4. Register all values into the memory store (`mem`) for downstream plotting.
-
-    Args:
-        target_list (list[str], optional): Filter for which targets to load. If empty, load all.
-
-    Stored in `mem`:
-        - inter_df_map: dict of target → inter-arrival DataFrame
-        - inter_min_time_max: float, shortest max time among inter-arrival DFs
-        - bw_df_map: dict of target → bandwidth/pps/fps DataFrame
-        - bw_min_time_max: float, shortest max time among BW DFs
-    ""
-    load_env()
-    # Load and store relevant DataFrames, and compute the shortest time range
-    inter_min_time_max = None
-    inter_df_map = {}  # target -> df
-    compared_elements = []
-
-    # for inter-arrival data
-    for file, target in mem.interdata_target:
-        if _plot_this(target, target_list):
-            df = pd.read_csv(file)
-            inter_df_map[target] = df
-            compared_elements.append(target)
-            max_time = df["time"].max()
-            if inter_min_time_max is None or max_time < inter_min_time_max:
-                inter_min_time_max = max_time
-    mem.inter_df_map = inter_df_map
-    mem.inter_min_time_max = inter_min_time_max
-
-    # Load and store relevant DataFrames, and compute the shortest time range
-    bw_min_time_max = None
-    bw_df_map = {}  # target -> df
-    compared_elements = []
-
-    for file, target in mem.bwdata_target:
-        if _plot_this(target, target_list):
-            df = pd.read_csv(file)
-            bw_df_map[target] = df
-            compared_elements.append(target)
-            max_time = df["time"].max()
-            if bw_min_time_max is None or max_time < bw_min_time_max:
-                bw_min_time_max = max_time
-    mem.bw_min_time_max = bw_min_time_max
-    mem.bw_df_map = bw_df_map
-
-    # burst durations
-    bdurations_df_map = {}
-    for file, target in mem.burstdurdata_target:
-        if _plot_this(target, target_list):
-            df = pd.read_csv(file)
-            bdurations_df_map[target] = df
-    mem.bdurations_df_map = bdurations_df_map
-
-    # burst intervals
-    bintervals_df_map = {}
-    for file, target in mem.burstinterdata_target:
-        if _plot_this(target, target_list):
-            df = pd.read_csv(file)
-            bintervals_df_map[target] = df
-    mem.bintervals_df_map = bintervals_df_map
-
-    # burst sizes
-    bsizes_df_map = {}
-    for file, target in mem.burstsizesdata_target:
-        if _plot_this(target, target_list):
-            df = pd.read_csv(file)
-            bsizes_df_map[target] = df
-    mem.bsizes_df_map = bsizes_df_map
-"""
-
-
-def load_analysis_data(target_list=None):
+def load_stored_analysis_data(target_list=None):
     """
     Load post-analysis data from CSVs, prepare in-memory DataFrames and compute min time ranges.
 
@@ -531,6 +373,7 @@ def load_analysis_data(target_list=None):
     mem.bdurations_df_map = _load_data_map(mem.burstdurdata_target, target_list)
     mem.bintervals_df_map = _load_data_map(mem.burstinterdata_target, target_list)
     mem.bsizes_df_map = _load_data_map(mem.burstsizesdata_target, target_list)
+    mem.wavelet_df_map = _load_data_map(mem.waveletdata_target, target_list)
 
     print("load_analysis_data done")
 
@@ -902,7 +745,7 @@ def plot_burst_size_violin(target_list=None):
 def run_tests():
     print("#########")
     target_list = []
-    load_analysis_data(target_list=target_list)
+    load_stored_analysis_data(target_list=target_list)
     # plot_violin_interarrival(target_list=target_list)
     # plot_violin_pkt(target_list=target_list)
     # plot_box_interarrival(target_list=target_list)
@@ -939,13 +782,13 @@ def test_main():
         # --mk-env
         if cmd_mk_env:
             create_env("scripts/xml/sample_tests.xml", "Banana")
-            load_experiment()
+            load_into_snifferdb()
             list_experiments()
         # --rm-env
         if cmd_rm_env:
             rm_env()
         if cmd_analyze:
-            analyze_experiment()
+            analyze_experiment_and_store()
         if cmd_run_tests:
             run_tests()
     except Exception as ex:

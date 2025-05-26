@@ -1,30 +1,32 @@
-- Sources                    # todos os fontes aqui
-  +- deep-ditg               # c++, ditg modificado para utilizar os modelos de machine learning em tensorflow
-  +- scripts/                # bash, scripts to automate the test scenarios
-  +- sim-tg/                 # python, simulador de gerador de trafego com output no formato csv
-  +- sniffer/                # c++, sniffer
-  +- testbed/                # python, generate a testbed to test the aplication
-  +- trace-plot/             # python, plota graficos e analises relevantes de traces armazenados no formato csv
-  +- trace-models/           # python, modelos de machine learning
+- Sources
+  +- .vscode/:        arquivos do vscode
+  +- commons/:        packeges python compatilhados por dois ou mais componentes
+  +- deep_ditg/:      (?t) Versão modificada do DITG com suporte aos modelos de DeepLearning
+  +- Logs/:           Diretório de Logs
+  +- Results/:        Diretório onde os resultados dos experimentos são armazenados
+  +- sandbox/:        Diretório reservado para testes, nenhum script ou programa aqui deve ser consumido por outro pacote. 
+  +- scripts/:        Scripts utilizados no projeto para atividades gerais como instalação de dependências, configuração de experimentos, entre outos
+  +- sim_gt/:         (t) Simulador de gerador de tráfego, gera "tráfego" no formato de texto (csv). Util para validações e provas de conceito, dada a simplicidade do dado. 
+  +- sniffer/:        Codigo fonte do sniffer SnifyLite, desenvolvido em C++
+  +- testbed/:        Scripts para crição do ambiente onde os testes serão executados. Atualmente suporta cenários utilizando o mininet. 
+  +- trace_analyzer:  Componente responsável pela extração de dados dos dados brugos gerados pelo testbed, processamento análise e plotagem em gráficos destes dados. 
+  +- trace_models:    (t) neste componente serão implementados os modelos de DeepLearning utilizados no projeto
 
-- build.sh                   # compila aplicações e cria links e pastas no diretorio apps
+- Docs
+  +- Links/:          Links para conteúdosrelevantes
+  +- Notes/:          Anotações simples em txt
+  +- Papers/:         Todos os papers que eu for utilizando/citando
+  +- Tables/:         Tabelas desenvolvidas durante o projeto
+  +- Tutorials/:      Tutoriais úteis para o desenvolvimento e validação
 
-- Apps                       # aplicações
-  # sniffer e visualização de dados
-  +- sniffer.exe             # sniffer
-  +- db/                     # bases de dados do sniffer
-  +- trace-analyzer.ln       # plota analises de traces
-  +- trace-analyzer-plots    # graficos do trace-analyzer.ln
-  # modelos de deep learning
-  +- model-gen.ln            # gerador de modelos de machine learning via tensorflow
-  +- models/                 # modelos do tensorflow
-  +- models-plots/           # graficos dos modelos e treinamento
-  # geradores de trafego
-  +- deep-ditg/              # ditg modificado
-  +- sim-tg.ln               # emulador de geração de trafego, gera output no formato csv
-  +- csvtraces/              # traces gerados pelo csvsimtg.ln no formato csv
+- Pcaps/:             Arquivos de pcaps consumidos pelos experimentos.
 
-- Docs   # documentação
+
+----
+
+(?) - Idéia para desenvolvimento, ainda não iniciado
+(t) - Todo
+
 
 
  

@@ -28,6 +28,7 @@ class AnalysisDataNameFormatter(ReprMixin):
     BURST_SIZES = "burst_sizes"
     BURST_DURATIONS = "burst_durations"
     BURST_INTERVALS = "burst_intervals"
+    WAVELET = "wavelet"
 
     def __init__(self, out_dir: str, experiment_name: str):
         """

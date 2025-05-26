@@ -2,6 +2,7 @@ import argparse
 import math
 import os
 import sys
+import traceback
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -11,682 +12,463 @@ import seaborn as sns
 from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
-import trace_analyzer.analyzer.bandwidth as bandwidth
+import trace_analyzer.core as core
+import trace_analyzer.data_loader as data_loader
+import trace_analyzer.loader as loader
+import trace_analyzer.metrics.metrics_estimator as metrics_estimator
 import trace_analyzer.plots.plots as plots
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
+from commons.enviroment.env import Env
+from commons.enviroment.memory_store import MemoryStore
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
-from trace_analyzer.loader.sniffer_wrapper import SnifferWrapper
+from trace_analyzer.core import get_env, get_mem, load_env
+from trace_analyzer.snifferdb.sniffer_wrapper import SnifferWrapper
+
+env = get_env()
+mem = get_mem()
 
 
-# DONE
-def list_experiments(experiment_xml_file):
+# env_file = ".trace_analyzer_env.json"
+# env = Env()
+# mem = MemoryStore()
+# CMD_RM_ENV = "--rm-env"
+# CMD_MAKE_ENV = "--mk-env"
+# CMD_ANALYZE = "--analyze"
+# CMD_LIST_TR = "--list-traces"
+
+
+###############################################################################
+# Plot calls
+###############################################################################
+
+
+def plot_violin_interarrival(target_list=None):
     """
-    Lists all traces loaded into the sniffer database for each experiment defined in the XML file.
+    Plot violin distribution of inter-arrival times for each target.
 
-    This function:
-    1. Loads all experiment configurations from the given XML file (supports multiple experiments).
-    2. For each experiment, checks if its sniffer database has been initialized.
-    3. If initialized, lists all traces that were previously loaded into the sniffer database.
-    4. Prints a summary of all loaded traces.
-
-    Args:
-        experiment_xml_file (str): Path to the XML file containing one or more experiment configurations.
-
+    Filters data up to mem.inter_min_time_max and optionally by target_list.
     """
-    list_configs = _load_experiment_config(experiment_xml_file, "*")
-    lout = []
-    c: ExperimentConfig
-    for c in list_configs:
-        if not os.path.exists(c.experiment_db_dir()):
-            print(f"Experiment {c.experiment_dir()} wasn't loaded yet.")
-            continue
-        sniffer = SnifferWrapper(c.experiment_dir(), c.name)
-        l = sniffer.list_loaded_traces()
-        lout.append(l)
-    print("Loaded experiments.traces are:")
-    for l in lout:
-        for i in l:
-            print(f"-\t{i}")
 
-
-# DONE
-def load_experiment(experiment_xml_file, experiment_name):
-    """
-    Loads experiment metadata and parses all associated pcap files into the sniffer database.
-
-    This utility function performs the following steps:
-    1. Loads experiment configuration from the specified XML file.
-    2. Lists all generated `.pcap` files associated with the given experiment name.
-    3. Initializes the sniffer database for the experiment.
-    4. Parses and stores packet data into the database.
-    5. Parses and stores packet data from all experiment runs (client captures) into the same database.
-
-    Args:
-        experiment_xml_file (str): Path to the XML file describing the experiment setup.
-        experiment_name (str): Name of the experiment to load.
-    """
-    config = _load_experiment_config(experiment_xml_file, experiment_name)
-    print("#1 Loading data from Pcaps")
-    pcap_fmt = RDNF(config.out_dir, config.name, "pcap")
-    # list all *.pcap and client catpures. no tool_under_test means all will be returned.
-    file_list = pcap_fmt.list_names("capture", "pcap", "client")
-    sniffer = SnifferWrapper(config.experiment_dir(), config.name)
-    # store ground truth
-    sniffer.exec(config.pcap)
-    for f in file_list:
-        # store each experiment run
-        # if i need recover this data later, I should use SnifferWrapper.trace_entry_name()
-        sniffer.exec(f)
-
-
-# DONE
-def analyze_experiment(experiment_xml_file, experiment_name):
-    """ """
-
-    def bw_pps_fps(trace: str, ac: AlchemyConnector):
-        print(f"Calculating bandwidth, pps and fps {trace}")
-        df = bandwidth.calc_bw_pps_fps_as_df(ac)
-        # Save the results. File name is bw_pps_fps.<tool>.csv, where tool can be
-        # evaluated from the trace name using RDNF.parse()
-        target = pcap.parse(trace, RDNF.TEST_TARGET)
-        csv_file = fmt.mknameext(ADNF.BW_PPS_FPS, target, "csv")
-        print(f"Saving results to {csv_file}")
-        df.to_csv(csv_file, index=False)
-        return csv_file
-
-    def interarrival(trace: str, ac: AlchemyConnector):
-        df = bandwidth.get_packet_arrival_df(ac)
-        target = pcap.parse(trace, RDNF.TEST_TARGET)
-        csv_file = fmt.mknameext(ADNF.INTERARRIVAL, target, "csv")
-        print(f"Saving results to {csv_file}")
-        df.to_csv(csv_file, index=False)
-        return csv_file
-
-    print(f"Analyzing experiment: {experiment_name} from file: {experiment_xml_file}")
-    c = _load_experiment_config(experiment_xml_file, experiment_name)
-    sniffer = SnifferWrapper(c.experiment_dir(), c.name)
-    ltraces = sniffer.list_loaded_traces()
-    fmt = ADNF(c.out_dir, c.name)
-    pcap = RDNF(c.out_dir, c.name, "pcap")
-    for t in ltraces:
-        print(f"Loading db connector for trace {t}")
-        ac: AlchemyConnector = sniffer.flowdb_connector(t)
-        # Calculate and exporting bandwidth, packets per second and flows per second
-        bw_pps_fps(t, ac)
-        interarrival(t, ac)
-
-
-# DONE
-def plot_pktsize_pdf_cdf_violinbox(
-    experiment_xml_file, experiment_name, target_list=[], plot_type="packet_size"
-):
-    def plot_this(target, target_list):
-        return not target_list or target in target_list
-
-    c = _load_experiment_config(experiment_xml_file, experiment_name)
-    data_files = ADNF(c.out_dir, c.name)
-    pnf = PNF(c.out_dir, experiment_name)
-
-    # Load and store relevant DataFrames, and compute the shortest time range
-    min_time_max = None
-    df_map = {}  # target -> df
-    compared_elements = []
-
-    inter_arrival_files = data_files.list_names(ADNF.INTERARRIVAL, "csv")
-    for file in inter_arrival_files:
-        target = ADNF.parse(file, "test_target")
-        if plot_this(target, target_list):
-            df = pd.read_csv(file)
-            df_map[target] = df
-            compared_elements.append(target)
-            max_time = df["time"].max()
-            if min_time_max is None or max_time < min_time_max:
-                min_time_max = max_time
-
-    print(f"Truncating all dataframes to max time: {min_time_max:.2f}s")
-
-    # Setup plot
-    plt.figure(figsize=(10, 6))
-    colors = cm.get_cmap("tab10")
-    stats_records = []
-
-    if plot_type in (
-        "violin-interarrival",
-        "violin-pkt",
-        "box-interarrival",
-        "box-pkt",
-    ):
-        data_all = []
-        labels = []
-
-        is_violin = "violin" in plot_type
-        is_packet = "pkt" in plot_type
-
-        for target, df in df_map.items():
-            df = df[df["time"] <= min_time_max]
-
-            if is_packet:
-                series = df["pkt_size"]
-                title = f"{'Violin' if is_violin else 'Box'} Plot of Packet Sizes"
-                xlabel = "Target"
-                ylabel = "Packet Size (bytes)"
-            else:
-                series = df["inter_arrival"]
-                title = (
-                    f"{'Violin' if is_violin else 'Box'} Plot of Inter-Arrival Times"
-                )
-                xlabel = "Target"
-                ylabel = "Inter-Arrival Time (s)"
-
-            data_all.extend(series)
-            labels.extend([target] * len(series))
-
-            # Save mean and std for this target
-            stats_records.append(
-                {"target": target, "mean": series.mean(), "std": series.std()}
-            )
-
-        df_plot = pd.DataFrame({"value": data_all, "target": labels})
-        if is_violin:
-            sns.violinplot(x="target", y="value", data=df_plot, inner="box", cut=0)
-        else:
-            sns.boxplot(x="target", y="value", data=df_plot)
-
-        plt.yscale("log")
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-
-        # Annotate mean ± std above each plot
-        for i, target in enumerate(compared_elements):
-            s = df_plot[df_plot["target"] == target]["value"]
-            mean_val = s.mean()
-            std_val = s.std()
-            plt.text(
-                i,
-                s.max() * 1.05,
-                f"μ={mean_val:.2e}\nσ={std_val:.2e}",
-                ha="center",
-                va="bottom",
-                fontsize=9,
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", lw=1),
-            )
-    else:
-        for i, (target, df) in enumerate(df_map.items()):
-            df = df[df["time"] <= min_time_max]
-
-            if plot_type == "packet_size":
-                plt.hist(
-                    df["pkt_size"],
-                    bins=30,
-                    alpha=0.5,
-                    label=target,
-                    color=colors(i),
-                    edgecolor="black",
-                )
-                plt.xlabel("Packet Size (bytes)")
-                plt.ylabel("Frequency")
-                plt.title("Packet Size Distribution")
-
-            elif plot_type == "pdf":
-                data = df["inter_arrival"].values
-                data = data[
-                    data > 0
-                ]  # Remove zeros (log-scale issue and undefined KDE)
-
-                # Apply KDE for smooth PDF
-                kde = gaussian_kde(data)
-                x_range = np.linspace(data.min(), data.max(), 1000)
-                y_vals = kde(x_range)
-
-                plt.plot(
-                    x_range,
-                    y_vals,
-                    label=target,
-                    color=colors(i),
-                    linewidth=2,
-                )
-                plt.xscale("log")
-                plt.xlabel("Inter-Arrival Time (s)")
-                plt.ylabel("Density")
-                plt.title("PDF of Inter-Arrival Times")
-
-            elif plot_type == "log-pdf":
-                data = df["inter_arrival"].values
-                data = data[data > 0]  # drop zeros
-
-                log_data = np.log(data)  # natural‑log is fine; base doesn't matter
-                kde_log = gaussian_kde(log_data)
-
-                log_x = np.linspace(log_data.min(), log_data.max(), 1000)
-                x = np.exp(log_x)  # revert to linear space
-                y = kde_log(log_x) / x  # apply Jacobian  f_log / x  →  f_t
-
-                plt.plot(
-                    x,
-                    y,
-                    label=target,
-                    color=colors(i),
-                    linewidth=2,
-                )
-                plt.xscale("log")
-                plt.xlabel("Inter‑Arrival Time (s)")
-                plt.ylabel("Density")
-                plt.title("PDF of Inter‑Arrival Times (log‑domain normalised)")
-
-            elif plot_type == "cdf":
-                sorted_data = np.sort(df["inter_arrival"])
-                cdf = np.arange(len(sorted_data)) / float(len(sorted_data))
-                plt.plot(
-                    sorted_data,
-                    cdf,
-                    marker=".",
-                    linestyle="none",
-                    label=target,
-                    color=colors(i),
-                )
-                plt.xscale("log")
-                plt.xlabel("Inter-Arrival Time (s)")
-                plt.ylabel("CDF")
-                plt.title("CDF of Inter-Arrival Times")
-
-            else:
-                raise ValueError(f"Unknown plot_type: {plot_type}")
-
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    # Save plot
-    file_name = pnf.mknameext(plot_type, compared_elements, "png")
-    print(f"Saving plot to: {file_name}")
-    plt.savefig(file_name)
-    plt.close()
-
-    # Save stats to CSV
-    if stats_records:
-        csv_name = pnf.mknameext(plot_type, compared_elements, "csv")
-        pd.DataFrame(stats_records).to_csv(csv_name, index=False)
-        print(f"Saved statistics to: {csv_name}")
-
-
-# --------- OK
-def plot_bw_pps_fps(
-    experiment_xml_file, experiment_name, target_list=[], plot_type="bandwidth"
-):
-    def plot_this(target, target_list):
-        return not target_list or target in target_list
-
-    print(
-        f"Plotting '{plot_type}' analysis for experiment: {experiment_name} from file: {experiment_xml_file}"
+    filtered_df_map, compared_targets = data_loader._prepare_distribution_data(
+        target_list
     )
-    c = _load_experiment_config(experiment_xml_file, experiment_name)
-    data_files = ADNF(c.out_dir, c.name)
-    pnf = PNF(c.out_dir, experiment_name)
+    filename = mem.pnf.mkname("violin-interarrival", compared_targets)
 
-    # Map plot_type to correct column names
+    # Plot
+    plots.plot_distribution_plot(
+        df_map=filtered_df_map,
+        column="inter_arrival",
+        title="Violin Plot of Inter-Arrival Times",
+        xlabel="Target",
+        ylabel="Inter-Arrival Time (s)",
+        save_path_base=filename,
+        plot_kind="violin",
+        log_y=True,
+    )
+
+
+def plot_violin_pkt(target_list=None):
+    """
+    Plot violin distribution of packet sizes for each target.
+
+    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    """
+    filtered_df_map, compared_targets = data_loader._prepare_distribution_data(
+        target_list
+    )
+    filename = mem.pnf.mkname("violin-pkt", compared_targets)
+
+    plots.plot_distribution_plot(
+        df_map=filtered_df_map,
+        column="pkt_size",
+        title="Violin Plot of Packet Sizes",
+        xlabel="Target",
+        ylabel="Packet Size (bytes)",
+        save_path_base=filename,
+        plot_kind="violin",
+        log_y=True,
+    )
+
+
+def plot_box_interarrival(target_list=None):
+    """
+    Plot boxplot distribution of inter-arrival times for each target.
+
+    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    """
+    filtered_df_map, compared_targets = data_loader._prepare_distribution_data(
+        target_list
+    )
+    filename = mem.pnf.mkname("box-interarrival", compared_targets)
+
+    plots.plot_distribution_plot(
+        df_map=filtered_df_map,
+        column="inter_arrival",
+        title="Box Plot of Inter-Arrival Times",
+        xlabel="Target",
+        ylabel="Inter-Arrival Time (s)",
+        save_path_base=filename,
+        plot_kind="box",
+        log_y=True,
+    )
+
+
+def plot_box_pkt(target_list=None):
+    """
+    Plot boxplot distribution of packet sizes for each target.
+
+    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    """
+    filtered_df_map, compared_targets = data_loader._prepare_distribution_data(
+        target_list
+    )
+    filename = mem.pnf.mkname("box-pkt", compared_targets)
+
+    plots.plot_distribution_plot(
+        df_map=filtered_df_map,
+        column="pkt_size",
+        title="Box Plot of Packet Sizes",
+        xlabel="Target",
+        ylabel="Packet Size (bytes)",
+        save_path_base=filename,
+        plot_kind="box",
+        log_y=True,
+    )
+
+
+def plot_interarrival_pdf(target_list=None):
+    """
+    Plot the PDF of inter-arrival times (log-log KDE).
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
+    else:
+        df_map = mem.inter_df_map
+    targets = list(df_map.keys())
+
+    filename = mem.pnf.mkname("pdf-interarrival", targets)
+    plots.plot_pdf(
+        df_map=df_map,
+        column="inter_arrival",
+        title="PDF of Inter-Arrival Times (log-domain normalized)",
+        xlabel="Inter-Arrival Time (s)",
+        ylabel="Density",
+        save_path_base=filename,
+        target_list=target_list,
+        log_x=True,
+        log_y=False,
+    )
+
+
+def plot_interarrival_cdf(target_list=None):
+    """
+    Wrapper to plot the CDF of inter-arrival times using the generic plot_cdf().
+    Filters targets if target_list is provided.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
+    else:
+        df_map = mem.inter_df_map
+    targets = list(df_map.keys())
+    filename = mem.pnf.mkname("cdf-interarrival", targets)
+
+    plots.plot_cdf(
+        df_map=df_map,
+        column="inter_arrival",
+        xlabel="Inter-Arrival Time (s)",
+        title="CDF of Inter-Arrival Times",
+        save_path_base=filename,
+        log_scale=True,
+    )
+
+
+def plot_interarrival_by_index(target_list=None):
+    """
+    Plot inter-arrival time over packet index, per target.
+    """
+    if target_list:
+        df_map = {k: v.copy() for k, v in mem.inter_df_map.items() if k in target_list}
+    else:
+        df_map = {k: v.copy() for k, v in mem.inter_df_map.items()}
+
+    # Ensure 'index' column exists
+    for df in df_map.values():
+        df.reset_index(drop=True, inplace=True)
+        df["index"] = df.index
+
+    targets = list(df_map.keys())
+    filename = mem.pnf.mkname("interarrival_by_index", targets)
+
+    plots.plot_line(
+        df_map=df_map,
+        x_col="index",
+        y_col="inter_arrival",
+        xlabel="Packet Index",
+        ylabel="Interarrival Time (s)",
+        title="Interarrival Time by Packet Index",
+        save_path_base=filename,
+        log_y=True,
+    )
+
+
+def plot_bw_pps_fps_refactored(plot_type, target_list=None):
+    """
+    Plot bandwidth, packets/sec or flows/sec using preloaded mem.bw_df_map and mem.bw_min_time_max.
+    """
+    target_list = target_list or []
+    df_map = {
+        k: v for k, v in mem.bw_df_map.items() if not target_list or k in target_list
+    }
+    compared = list(df_map.keys())
+    tmax = mem.bw_min_time_max
+
     metric_map = {
-        "bandwidth": ("bandwidth", "bandwidth_average"),
-        "packet_per_second": ("npackets", "npackets_average"),
-        "flow_per_second": ("nflows", "nflows_average"),
+        "bandwidth": ("bandwidth", "bandwidth_average", "Bandwidth (bps)"),
+        "packet_per_second": ("npackets", "npackets_average", "Packets per Second"),
+        "flow_per_second": ("nflows", "nflows_average", "Flows per Second"),
     }
 
     if plot_type not in metric_map:
-        raise ValueError(
-            f"Unsupported plot_type '{plot_type}'. Choose from {list(metric_map.keys())}"
-        )
+        raise ValueError(f"Unknown plot_type '{plot_type}'")
 
-    raw_col, avg_col = metric_map[plot_type]
+    raw_col, avg_col, y_label = metric_map[plot_type]
 
-    # Load and store relevant DataFrames, and compute the shortest time range
-    min_time_max = None
-    df_map = {}  # target -> df
-    compared_elements = []
+    save_path = mem.pnf.mkname(plot_type, compared)
 
-    for file in data_files.list_names(ADNF.BW_PPS_FPS, "csv"):
-        target = ADNF.parse(file, "test_target")
-        if plot_this(target, target_list):
-            df = pd.read_csv(file)
-            df_map[target] = df
-            compared_elements.append(target)
-            max_time = df["time"].max()
-            if min_time_max is None or max_time < min_time_max:
-                min_time_max = max_time
+    plots.plot_timeseries(
+        df_map=df_map,
+        x_col="time",
+        y_cols=[(raw_col, "raw", 1), (avg_col, "avg", 2.5)],
+        title=f"{y_label} vs Time",
+        xlabel="Time (s)",
+        ylabel=y_label,
+        save_path_base=save_path,
+        time_max=tmax,
+    )
 
-    print(f"Truncating all dataframes to max time: {min_time_max:.2f}s")
 
-    # Setup plot
-    plt.figure(figsize=(10, 6))
+def plot_pktsize_histogram(target_list=None):
+    """
+    Plot a separate packet size histogram for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
+    else:
+        df_map = mem.inter_df_map
+
     colors = cm.get_cmap("tab10")
-
     for i, (target, df) in enumerate(df_map.items()):
-        df_trunc = df[df["time"] <= min_time_max]
+        df = df[df["time"] <= mem.bw_min_time_max]
+        save_path = mem.pnf.mkname("histogram-pktsize", [target])
         color = colors(i % 10)
-        plt.plot(
-            df_trunc["time"],
-            df_trunc[raw_col],
-            linewidth=1,
-            label=f"{target} (raw)",
-            color=color,
-        )
-        plt.plot(
-            df_trunc["time"],
-            df_trunc[avg_col],
-            linewidth=2.5,
-            label=f"{target} (avg)",
+        plots.plot_histogram(
+            df=df,
+            column="pkt_size",
+            title=f"Packet Size Distribution — {target}",
+            xlabel="Packet Size (bytes)",
+            ylabel="Frequency",
+            save_path=save_path,
             color=color,
         )
 
-    # Axis labels and title
-    y_labels = {
-        "bandwidth": "Bandwidth (bps)",
-        "packet_per_second": "Packets per Second",
-        "flow_per_second": "Flows per Second",
+
+def plot_bandwidth_cdf(target_list=None):
+    """
+    Plot the CDF of bandwidth values for each target.
+    Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bw_df_map
+
+    truncated_map = {
+        target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
     }
 
-    plt.xlabel("Time (s)")
-    plt.ylabel(y_labels[plot_type])
-    plt.title(f"{y_labels[plot_type]} vs Time — {experiment_name}")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-
-    # Save plot
-    file_name = pnf.mknameext(plot_type, compared_elements, "png")
-    print(f"Saving plot to: {file_name}")
-    plt.savefig(file_name)
-    plt.close()
-
-
-def _plot_burst_analysis(
-    experiment_xml_file,
-    experiment_name,
-    target_list=[],
-    inter_arrival_threshold=0.01,  # 10ms default threshold
-):
-    def plot_this(target, target_list):
-        return not target_list or target in target_list
-
-    # Load experiment configuration
-    c = _load_experiment_config(experiment_xml_file, experiment_name)
-    data_files = ADNF(c.out_dir, c.name)
-    pnf = PNF(c.out_dir, experiment_name)
-
-    # Initialize variables
-    min_time_max = None
-    df_map = {}  # target -> df
-    compared_elements = []
-
-    # Load inter-arrival data
-    inter_arrival_files = data_files.list_names(ADNF.INTERARRIVAL, "csv")
-    for file in inter_arrival_files:
-        target = ADNF.parse(file, "test_target")
-        if plot_this(target, target_list):
-            df = pd.read_csv(file)
-            df_map[target] = df
-            compared_elements.append(target)
-            max_time = df["time"].max()
-            if min_time_max is None or max_time < min_time_max:
-                min_time_max = max_time
-
-    print(f"Truncating all dataframes to max time: {min_time_max:.2f}s")
-
-    # Initialize structures to hold burst metrics
-    burst_stats = []
-    colors = cm.get_cmap("tab10")
-
-    burst_sizes_ax = plt.figure(figsize=(8, 6)).add_subplot(111)
-    burst_durations_ax = plt.figure(figsize=(8, 6)).add_subplot(111)
-    inter_burst_ax = plt.figure(figsize=(8, 6)).add_subplot(111)
-
-    for i, (target, df) in enumerate(df_map.items()):
-        df = df[df["time"] <= min_time_max]
-        inter_arrivals = df["inter_arrival"].values
-
-        # Detect bursts
-        bursts = []
-        current_burst = [df.iloc[0]]
-        for j in range(1, len(df)):
-            if inter_arrivals[j] < inter_arrival_threshold:
-                current_burst.append(df.iloc[j])
-            else:
-                bursts.append(pd.DataFrame(current_burst))
-                current_burst = [df.iloc[j]]
-        if current_burst:
-            bursts.append(pd.DataFrame(current_burst))
-
-        # Compute burst metrics
-        burst_sizes = sanitize([len(burst) for burst in bursts])
-        burst_durations = sanitize(
-            [burst["time"].iloc[-1] - burst["time"].iloc[0] for burst in bursts]
-        )
-        inter_burst_intervals = sanitize(
-            [
-                bursts[k]["time"].iloc[0] - bursts[k - 1]["time"].iloc[-1]
-                for k in range(1, len(bursts))
-            ]
-        )
-        burst_sizes = [v for v in burst_sizes if v > 0 and np.isfinite(v)]
-        burst_durations = [v for v in burst_durations if v > 0 and np.isfinite(v)]
-        inter_burst_intervals = [
-            v for v in inter_burst_intervals if v > 0 and np.isfinite(v)
-        ]
-
-        if not burst_sizes or not burst_durations or not inter_burst_intervals:
-            print(f"[WARN] No valid burst data for target: {target}. Skipping.")
-            continue
-
-        # Store statistics
-        burst_stats.append(
-            {
-                "target": target,
-                "mean_size": np.mean(burst_sizes),
-                "std_size": np.std(burst_sizes),
-                "mean_duration": np.mean(burst_durations),
-                "std_duration": np.std(burst_durations),
-                "mean_interval": np.mean(inter_burst_intervals),
-                "std_interval": np.std(inter_burst_intervals),
-            }
-        )
-
-        # Plot burst sizes
-        sns.violinplot(y=burst_sizes, ax=burst_sizes_ax, color=colors(i), label=target)
-
-        # Plot burst durations
-        sns.violinplot(
-            y=burst_durations, ax=burst_durations_ax, color=colors(i), label=target
-        )
-
-        # Plot inter-burst intervals
-        sns.histplot(
-            inter_burst_intervals,
-            bins=50,
-            ax=inter_burst_ax,
-            color=colors(i),
-            label=target,
-            log_scale=(False, True),
-        )
-
-    # Finalize and save burst sizes plot
-    burst_sizes_ax.set_yscale("log")
-    burst_sizes_ax.set_title("Burst Sizes")
-    burst_sizes_ax.set_ylabel("Number of Packets")
-    burst_sizes_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-    burst_sizes_ax.legend()
-    plt.figure(burst_sizes_ax.figure.number)
-    burst_sizes_file = pnf.mknameext("burst_sizes", compared_elements, "png")
-    print(f"Saving burst sizes plot to: {burst_sizes_file}")
-    plt.tight_layout()
-    plt.savefig(burst_sizes_file)
-    plt.close()
-
-    # Finalize and save burst durations plot
-    burst_durations_ax.set_yscale("log")
-    burst_durations_ax.set_title("Burst Durations")
-    burst_durations_ax.set_ylabel("Duration (s)")
-    burst_durations_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-    burst_durations_ax.legend()
-    plt.figure(burst_durations_ax.figure.number)
-    burst_durations_file = pnf.mknameext("burst_durations", compared_elements, "png")
-    print(f"Saving burst durations plot to: {burst_durations_file}")
-    plt.tight_layout()
-    plt.savefig(burst_durations_file)
-    plt.close()
-
-    # Finalize and save inter-burst intervals plot
-    inter_burst_ax.set_title("Inter-Burst Intervals")
-    inter_burst_ax.set_xlabel("Interval (s)")
-    inter_burst_ax.set_ylabel("Frequency")
-    inter_burst_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
-    inter_burst_ax.legend()
-    plt.figure(inter_burst_ax.figure.number)
-    inter_burst_file = pnf.mknameext("inter_burst_intervals", compared_elements, "png")
-    print(f"Saving inter-burst intervals plot to: {inter_burst_file}")
-    plt.tight_layout()
-    plt.savefig(inter_burst_file)
-    plt.close()
-
-
-def sanitize(data):
-    return [x for x in data if not (math.isinf(x) or math.isnan(x))]
-
-
-def _load_experiment_config(experiment_xml_file, experiment_name="*"):
-    print(
-        f"Importing experiment from: {experiment_xml_file} with name: {experiment_name}"
+    save_path_base = mem.pnf.mkname("bandwidth_cdf", list(truncated_map.keys()))
+    plots.plot_cdf(
+        df_map=truncated_map,
+        column="bandwidth",
+        xlabel="Bandwidth (bps)",
+        title="Bandwidth Distribution (CDF)",
+        save_path_base=save_path_base,
+        log_scale=True,
     )
-    if not os.path.exists(experiment_xml_file):
-        raise FileNotFoundError(f"{experiment_xml_file}")
-    if experiment_name == "*":
-        list_configs = ExperimentConfig.load(experiment_xml_file)
-        return list_configs
+
+
+def plot_payload_size_cdf(target_list=None):
+    """
+    Plot the CDF of packet sizes for each target.
+    Uses preloaded and truncated interarrival data from mem.inter_df_map and mem.inter_min_time_max.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
     else:
-        config = ExperimentConfig.get_by_name(experiment_xml_file, experiment_name)
-        return config
+        df_map = mem.inter_df_map
 
+    truncated_map = {
+        target: df[df["time"] <= mem.inter_min_time_max]
+        for target, df in df_map.items()
+    }
 
-##################################
-
-
-# DONE
-def plot_traffic_distributions(experiment_xml_file, experiment_name, target_list=[]):
-    print(
-        f"Plotting traffic distribution analysis for experiment: {experiment_name} from file: {experiment_xml_file}"
-    )
-
-    c = _load_experiment_config(experiment_xml_file, experiment_name)
-
-    plot_payload_size_distribution(c, target_list)
-    plot_packet_load_distribution(c, target_list)
-    plot_bandwidth_distribution(c, target_list)
-    plot_interarrival_by_index(c, target_list)
-
-
-# DONE
-def plot_payload_size_distribution(experiment_config, target_list):
-    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
-    pnf = PNF(experiment_config.out_dir, experiment_config.name)
-    df_map = {}
-    compared = []
-
-    for file in data_files.list_names(ADNF.INTERARRIVAL, "csv"):
-        target = ADNF.parse(file, "test_target")
-        if not target_list or target in target_list:
-            df = pd.read_csv(file)
-            df_map[target] = df
-            compared.append(target)
-
-    save_base = pnf.mkname("payload_size_cdf", compared)
+    save_path_base = mem.pnf.mkname("payload_size_cdf", list(truncated_map.keys()))
     plots.plot_cdf(
-        df_map,
-        "pkt_size",
-        "Packet Size (Bytes)",
-        "Payload Size Distribution (CDF)",
-        save_base,
+        df_map=truncated_map,
+        column="pkt_size",
+        xlabel="Packet Size (Bytes)",
+        title="Payload Size Distribution (CDF)",
+        save_path_base=save_path_base,
         log_scale=True,
     )
 
 
-# DONE
-def plot_packet_load_distribution(experiment_config, target_list):
-    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
-    pnf = PNF(experiment_config.out_dir, experiment_config.name)
-    df_map = {}
-    compared = []
+def plot_packet_load_cdf(target_list=None):
+    """
+    Plot the CDF of packet load (packets per second) for each target.
+    Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bw_df_map
 
-    for file in data_files.list_names(ADNF.BW_PPS_FPS, "csv"):
-        target = ADNF.parse(file, "test_target")
-        if not target_list or target in target_list:
-            df = pd.read_csv(file)
-            df_map[target] = df
-            compared.append(target)
+    truncated_map = {
+        target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
+    }
 
-    save_base = pnf.mkname("packet_load_cdf", compared)
+    save_path_base = mem.pnf.mkname("packet_load_cdf", list(truncated_map.keys()))
     plots.plot_cdf(
-        df_map,
-        "npackets",
-        "Packets per Second",
-        "Packet Load Distribution (CDF)",
-        save_base,
+        df_map=truncated_map,
+        column="npackets",
+        xlabel="Packets per Second",
+        title="Packet Load Distribution (CDF)",
+        save_path_base=save_path_base,
         log_scale=True,
     )
 
 
-# DONE
-def plot_bandwidth_distribution(experiment_config, target_list):
-    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
-    pnf = PNF(experiment_config.out_dir, experiment_config.name)
-    df_map = {}
-    compared = []
-
-    for file in data_files.list_names(ADNF.BW_PPS_FPS, "csv"):
-        target = ADNF.parse(file, "test_target")
-        if not target_list or target in target_list:
-            df = pd.read_csv(file)
-            df_map[target] = df
-            compared.append(target)
-
-    save_base = pnf.mkname("bandwidth_distribution_cdf", compared)
-    plots.plot_cdf(
-        df_map,
-        "bandwidth",
-        "Bandwidth (bps)",
-        "Bandwidth Distribution (CDF)",
-        save_base,
-        log_scale=True,
-    )
-
-
-# DONE
-def plot_interarrival_by_index(experiment_config, target_list):
-    data_files = ADNF(experiment_config.out_dir, experiment_config.name)
-    pnf = PNF(experiment_config.out_dir, experiment_config.name)
-    df_map = {}
-    compared = []
-
-    for file in data_files.list_names(ADNF.INTERARRIVAL, "csv"):
-        target = ADNF.parse(file, "test_target")
-        if not target_list or target in target_list:
-            df = pd.read_csv(file).reset_index()
-            df["index"] = df.index
-            df_map[target] = df
-            compared.append(target)
-
-    save_base = pnf.mkname("interarrival_by_index", compared)
-    plots.plot_line(
-        df_map,
-        "index",
-        "inter_arrival",
-        "Packet Index",
-        "Interarrival Time (s)",
-        "Interarrival Time by Packet Index",
-        save_base,
+def plot_burst_duration_violin(target_list=None):
+    """
+    Plot violin distribution of burst durations for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bdurations_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bdurations_df_map
+    filename = mem.pnf.mkname("violin-burst-duration", list(df_map.keys()))
+    plots.plot_distribution_plot(
+        df_map=df_map,
+        column="burst_duration",
+        title="Violin Plot of Burst Durations",
+        xlabel="Target",
+        ylabel="Burst Duration (s)",
+        save_path_base=filename,
+        plot_kind="violin",
         log_y=True,
     )
+
+
+def plot_inter_burst_interval_cdf(target_list=None):
+    """
+    Plot CDF of inter-burst intervals for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bintervals_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bintervals_df_map
+    filename = mem.pnf.mkname("burst_interval_cdf", list(df_map.keys()))
+    plots.plot_cdf(
+        df_map=df_map,
+        column="burst_interval",
+        xlabel="Inter-Burst Interval (s)",
+        title="Inter-Burst Interval Distribution (CDF)",
+        save_path_base=filename,
+        log_scale=True,
+    )
+
+
+def plot_burst_size_violin(target_list=None):
+    """
+    Plot violin distribution of burst sizes for each target.
+    """
+    if target_list:
+        df_map = {k: v for k, v in mem.bsizes_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bsizes_df_map
+    filename = mem.pnf.mkname("violin-burst-size", list(df_map.keys()))
+    plots.plot_distribution_plot(
+        df_map=df_map,
+        column="burst_size",
+        title="Violin Plot of Burst Sizes",
+        xlabel="Target",
+        ylabel="Burst Size (packets)",
+        save_path_base=filename,
+        plot_kind="violin",
+        log_y=True,
+    )
+
+
+def run_tests():
+    print("#########")
+    target_list = []
+    data_loader.load_stored_analysis_data(target_list=target_list)
+    # plot_violin_interarrival(target_list=target_list)
+    # plot_violin_pkt(target_list=target_list)
+    # plot_box_interarrival(target_list=target_list)
+    # plot_box_pkt(target_list=target_list)
+    # plot_interarrival_pdf(target_list=target_list)
+    # plot_interarrival_cdf(target_list=target_list)
+    plot_interarrival_by_index(target_list=target_list)
+    plot_bw_pps_fps_refactored("bandwidth", target_list=None)
+    plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
+    plot_bw_pps_fps_refactored("flow_per_second", target_list=None)
+    plot_pktsize_histogram(target_list=None)
+    plot_bandwidth_cdf()
+    plot_packet_load_cdf()
+    plot_payload_size_cdf()
+    plot_burst_size_violin()
+    plot_inter_burst_interval_cdf()
+    plot_burst_duration_violin()
+
+
+def test_main():
+    try:
+        # create_env("scripts/xml/sample_tests.xml", "Banana")
+        # load_env()
+        # print(mem)
+        cmd_list_tr = False
+        cmd_mk_env = False
+        cmd_rm_env = False
+        cmd_analyze = True
+        cmd_run_tests = True
+
+        # --list-traces
+        if cmd_list_tr:
+            loader.list_experiments()
+        # --mk-env
+        if cmd_mk_env:
+            core.create_env("scripts/xml/sample_tests.xml", "Banana")
+            loader.load_into_snifferdb()
+            loader.list_experiments()
+        # --rm-env
+        if cmd_rm_env:
+            core.rm_env()
+        if cmd_analyze:
+            loader.analyze_experiment_and_store()
+        if cmd_run_tests:
+            run_tests()
+    except Exception as ex:
+        print("********** EXCEPTION **********")
+        traceback.print_exc()
+        print("*******************************")
+        print(ex)
+
+
+if __name__ == "__main__":
+    test_main()

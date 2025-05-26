@@ -184,7 +184,7 @@ def get_packet_arrival_df(connector: AlchemyConnector, flowID: int = 0) -> pd.Da
         return df
 
 
-def calc_urst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshold=0.01):
+def calc_burst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshold=0.01):
     """
     Analyze bursts for a given target and DB connector.
 
@@ -233,3 +233,6 @@ def calc_urst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshold
     ]
 
     return burst_sizes, burst_durations, inter_burst_intervals
+
+
+def calc_wavelet_as_df(target: str, ac: AlchemyConnector): ...

@@ -41,23 +41,10 @@
             }
         },
         {
-            "name": "trace_analyzer:main",
+            "name": "trace_analyzer:trace_analyzer_functions",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/trace_analyzer/main.py",
-            "args": [
-            ],
-            "console": "integratedTerminal",
-            "sudo": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "trace_analyzer:trace_analyzer_functions2",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/trace_analyzer/trace_analyzer_functions2.py",
+            "program": "${workspaceFolder}/trace_analyzer/trace_analyzer_functions.py",
             "args": [
             ],
             "console": "integratedTerminal",

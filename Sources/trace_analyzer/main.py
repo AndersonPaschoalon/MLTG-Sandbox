@@ -1,8 +1,6 @@
 import argparse
 import sys
 
-import trace_analyzer_functions as taf
-
 VERSION = "v0.1"
 PROGRAM_NAME = "trace_analyzer.py"
 HELP_DESCRIPTION = """
@@ -71,75 +69,7 @@ def _test():
             experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
         )
     if t04:
-        """
-        taf.plot_bw_pps_fps(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="bandwidth",
-        )
-        taf.plot_bw_pps_fps(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="packet_per_second",
-        )
-        taf.plot_bw_pps_fps(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="flow_per_second",
-        )
-
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="packet_size",
-        )
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="pdf",
-        )
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="log-pdf",
-        )
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="cdf",
-        )
-        """
-        # ----------------------
-        """
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="violin-interarrival",
-        )
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="violin-pkt",
-        )
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="box-interarrival",
-        )
-        taf.plot_pktsize_pdf_cdf_violinbox(
-            experiment_xml_file="scripts/xml/sample_tests.xml",
-            experiment_name="Banana",
-            plot_type="box-pkt",
-        )
-        """
-
-        # taf._plot_burst_analysis(
-        #    experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
-        # )
-
-        taf.plot_traffic_distributions(
-            experiment_xml_file="scripts/xml/sample_tests.xml", experiment_name="Banana"
-        )
+        print("call trace_analyzer_functions")
 
 
 def main():

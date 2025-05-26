@@ -12,13 +12,20 @@
 - [Synthetic generation of realistic network traffic](./Books/synthetic_generation_of_realistic_network_traffic.pdf)
 - [Dynamic od matrix estimation exploiting ict traffic measurements](./Books/dynamic_od_matrix_estimation_exploiting_ict_traffic_measurements.pdf)
 
+
 ---
 
+## Links 
+
+- [Ml project structure](./Links/ml_project_structure.txt)
+
+
+---
 
 ## Notes
 
-- [Ml project structure](./Notes/ml_project_structure.txt)
 - [Proj structure](./Notes/proj-structure.txt)
+
 
 ---
 
@@ -26,14 +33,16 @@
 ## Tutorials
 
 - [Realistic traffic gen and validation](./Tutorials/realistic_traffic_gen_and_validation.md)
-- [Create tuntap interfaces](./Tutorials/create_tuntap_interfaces.md)
+- [How to Create tuntap interfaces](./Tutorials/create_tuntap_interfaces.md)
 - [Kolmogorov smirnov test](./Tutorials/Kolmogorov-Smirnov_test.md)
 - [Ml techniques for timeseries synthesis](./Tutorials/ml-techniques-for-timeseries-synthesis.md)
+- [Box-plot vs Violin Plots: Comparision for inter-arrival times and packet sizes](./Tutorials/boxplot-vs-violinplot.md)
+- [plot_burst_analysis scrit development tutorial](./Tutorials/plot_burst_analysis_script_tutorial.md)
+
 
 ---
 
 ## Papers
-
 
 ### Traffic Generation
 
@@ -58,6 +67,7 @@
 ### Traffic Classification
 
 - [Towards generic quality assessment of synthetic traffic for evaluating intrusion detection systems](./Papers/TrafficClassification/Towards%20generic%20quality%20assessment%20of%20synthetic%20traffic%20for%20evaluating%20intrusion%20detection%20systems.pdf)
+
 
 ---
 
