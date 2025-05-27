@@ -230,7 +230,7 @@ def analyze_experiment_and_store():
         - Saves burst sizes, durations, and inter-burst intervals to CSVs.
         """
         burst_sizes, burst_durations, inter_burst_intervals = (
-            metrics_estimator.calc_burst_metrics(target, ac)
+            metrics_estimator.calc_burst_metrics(ac)
         )
         # Save results to CSVs
         f1 = mem.anf.mknameext(ADNF.BURST_SIZES, target, "csv")

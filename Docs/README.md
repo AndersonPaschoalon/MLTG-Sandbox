@@ -3,6 +3,14 @@
 ---
 
 
+## Abstracts
+
+- [Swing Paper](./Abstracts/swing-paper.md)
+
+
+---
+
+
 ## Books
 
 - [Realistic traffic generation capability for saam testbed](./Books/realistic_traffic_generation_capability_for_saam_testbed.pdf)
@@ -25,24 +33,18 @@
 ## Notes
 
 - [Proj structure](./Notes/proj-structure.txt)
-
-
----
-
-
-## Tutorials
-
-- [Realistic traffic gen and validation](./Tutorials/realistic_traffic_gen_and_validation.md)
-- [How to Create tuntap interfaces](./Tutorials/create_tuntap_interfaces.md)
-- [Kolmogorov smirnov test](./Tutorials/Kolmogorov-Smirnov_test.md)
-- [Ml techniques for timeseries synthesis](./Tutorials/ml-techniques-for-timeseries-synthesis.md)
-- [Box-plot vs Violin Plots: Comparision for inter-arrival times and packet sizes](./Tutorials/boxplot-vs-violinplot.md)
-- [plot_burst_analysis scrit development tutorial](./Tutorials/plot_burst_analysis_script_tutorial.md)
+- [Reflections About Next Steps](./Notes/reflection_about_next_steps.md)
+- [Papers to read](./Notes/papers-to-read.txt)
 
 
 ---
 
 ## Papers
+
+### Traffic Classification
+
+- [Towards generic quality assessment of synthetic traffic for evaluating intrusion detection systems](./Papers/TrafficClassification/Towards%20generic%20quality%20assessment%20of%20synthetic%20traffic%20for%20evaluating%20intrusion%20detection%20systems.pdf)
+
 
 ### Traffic Generation
 
@@ -51,10 +53,12 @@
 - [Tools for network traffic generation - a quantitative comparison](./Papers/TrafficGeneration/Tools%20for%20Network%20Traffic%20Generation%20-%20A%20Quantitative%20Comparison.pdf)
 - [Litgen a lightweight traffic generator application](./Papers/TrafficGeneration/LiTGen_a_Lightweight_Traffic_Generator_Application.pdf)
 
+
 ### Traffic Modelling
 
 - [A multiscaling traffic model for udp streams (full)](./Papers/TrafficModelling/A%20Multiscaling%20Traffic%20Model%20for%20UDP%20Streams%20(Full).pdf)
 - [A multiscaling traffic model for udp streams](./Papers/TrafficModelling/A%20Multiscaling%20Traffic%20Model%20for%20UDP%20Streams.pdf)
+
 
 ### Traffic Validation
 
@@ -64,14 +68,35 @@
 - [A non-intrusive, wavelet-based approach to detecting network performance problems](./Papers/TrafficValidation/A%20non-intrusive,%20wavelet-based%20approach%20to%20detecting%20network%20performance%20problems.pdf)
 -   [Analytic Evaluation of RED Performance.pdf](./Papers/TrafficValidation/Analytic%20Evaluation%20of%20RED%20Performance.pdf): Este paper pode ser muito util pois ele estabelece um framework de validação do impacto de tráfego self-simular em middleboxes. Inclusive ele propõe um cenário de validação semelhante ao que eu estou utilizando.
 
-### Traffic Classification
 
-- [Towards generic quality assessment of synthetic traffic for evaluating intrusion detection systems](./Papers/TrafficClassification/Towards%20generic%20quality%20assessment%20of%20synthetic%20traffic%20for%20evaluating%20intrusion%20detection%20systems.pdf)
+---
+
+## Tables
+
+- [Validation Table](./Tables/TrafficValidation.xlsx)
+
+
+---
+
+## Tex
+
+- [Bibliography](./Tex/bibliography.bib)
 
 
 ---
 
 
-### 📄 Misc
+## Tutorials
 
-- [Papers to read](./Papers/papers-to-read.txt)
+- [Analytic Evaluation of RED Perfoarmance](./Tutorials/Analytic%20Evaluation%20of%20RED%20Performance.md)
+- [Box-plot vs Violin Plots: Comparision for inter-arrival times and packet sizes](./Tutorials/boxplot-vs-violinplot.md)
+- [How to Create tuntap interfaces](./Tutorials/create_tuntap_interfaces.md)
+- [Estimation of Delay, Link Capacity and Lows per Flow](./Tutorials/delay_capacity_loss_per_flow_calc.md)
+- [Realistic traffic gen and validation](./Tutorials/realistic_traffic_gen_and_validation.md)
+- [Kolmogorov smirnov test](./Tutorials/Kolmogorov-Smirnov_test.md)
+- [Machine Learning techniques for timeseries synthesis](./Tutorials/ml-techniques-for-timeseries-synthesis.md)
+- [plot_burst_analysis scrit development tutorial](./Tutorials/plot_burst_analysis_script_tutorial.md)
+- [How to analyze Traffic metrisc and plots](./Tutorials/how_to_analyze_traffic_metrics_and_plots.md)
+- [Introduction to Wavelet Analysis](./Tutorials/wavelets.md)
+
+---

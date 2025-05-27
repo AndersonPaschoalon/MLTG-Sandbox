@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pywt
 from sqlalchemy import TEXT, Column, ForeignKey, Integer, create_engine
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -184,20 +185,20 @@ def get_packet_arrival_df(connector: AlchemyConnector, flowID: int = 0) -> pd.Da
         return df
 
 
-def calc_burst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshold=0.01):
+def calc_burst_metrics(ac: AlchemyConnector, inter_arrival_threshold=0.01):
     """
     Analyze bursts for a given target and DB connector.
 
     - Burst: sequence of packets where inter-arrival < threshold.
     """
 
-    print(f"[burst] Analyzing bursts for target: {target}")
+    print(f"[burst] Analyzing bursts")
 
     df = get_packet_arrival_df(ac)  # Assumes df has 'time' column
     df = df.sort_values("time").reset_index(drop=True)
 
     if df.empty or len(df) < 2:
-        print(f"[WARN] Not enough packets for burst analysis: {target}")
+        print(f"[WARN] Not enough packets for burst analysis")
         return
 
     # Calculate inter-arrival times
@@ -235,4 +236,69 @@ def calc_burst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshol
     return burst_sizes, burst_durations, inter_burst_intervals
 
 
-def calc_wavelet_as_df(target: str, ac: AlchemyConnector): ...
+def calc_wavelet_as_df(
+    ac: AlchemyConnector,
+    flowID: int = 0,
+    wavelet: str = "db4",
+    level: int = 5,
+    bin_width: float = 0.01,  # bin width in seconds
+    agg: str = "count",  # or 'sum' for bandwidth
+) -> pd.DataFrame:
+    """
+    Perform WMEA using timestamp binning from SnifyLite DB.
+
+    Args:
+        ac (AlchemyConnector): Active database connector.
+        flowID (int): Specific flow to analyze. Default is 0 (all).
+        wavelet (str): Wavelet type.
+        level (int): Decomposition level.
+        bin_width (float): Width of time bins in seconds.
+        agg (str): Aggregation: 'count' for packet rate, 'sum' for bandwidth.
+
+    Returns:
+        pd.DataFrame: DataFrame with scale, log2_energy, and target.
+    """
+
+    # --- 1. Load packet data ---
+    df = get_packet_arrival_df(ac, flowID=flowID)
+
+    if df.empty:
+        print(f"No packets found for flowID={flowID}.")
+        return pd.DataFrame(columns=["scale", "log2_energy", "target"])
+
+    # --- 2. Bin timestamps into fixed intervals ---
+    time_start = df["time"].min()
+    time_end = df["time"].max()
+
+    bins = np.arange(time_start, time_end + bin_width, bin_width)
+    df["time_bin"] = pd.cut(df["time"], bins=bins, labels=False)
+
+    if agg == "count":
+        signal = df.groupby("time_bin").size().values  # Packet counts per bin
+    elif agg == "sum":
+        signal = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values  # Bandwidth
+    else:
+        raise ValueError("agg must be 'count' or 'sum'")
+
+    # --- 3. Ensure enough samples for wavelet decomposition ---
+    signal = signal[np.isfinite(signal)]
+
+    if len(signal) < 2**level:
+        print(
+            f"Not enough data points ({len(signal)}) for level {level} decomposition."
+        )
+        return pd.DataFrame(columns=["scale", "log2_energy", "target"])
+
+    # --- 4. Wavelet decomposition ---
+    coeffs = pywt.wavedec(signal, wavelet, level=level)
+    energies = [np.sum(np.square(c)) for c in coeffs]
+
+    # --- 5. Build DataFrame ---
+    scales = np.arange(len(energies))
+    log2_energies = np.log2(energies + 1e-10)  # Avoid log(0)
+
+    result_df = pd.DataFrame(
+        {"scale": scales, "log2_energy": log2_energies, "energy_abs": energies}
+    )
+
+    return result_df
