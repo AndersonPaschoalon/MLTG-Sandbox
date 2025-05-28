@@ -11,8 +11,8 @@ import seaborn as sns
 from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
-import trace_analyzer.analyzer.metrics_estimator as metrics_estimator
-import trace_analyzer.plots.plots as plots
+import trace_analyzer.metrics_estimator as metrics_estimator
+import trace_analyzer.plot_functions as plot_functions
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.naming.analysis_data_name_formatter import (
@@ -20,7 +20,7 @@ from commons.naming.analysis_data_name_formatter import (
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
-from trace_analyzer.snifferdb.sniffer_wrapper import SnifferWrapper
+from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 
 # DONE
@@ -604,7 +604,7 @@ def plot_payload_size_distribution(experiment_config, target_list):
             compared.append(target)
 
     save_base = pnf.mkname("payload_size_cdf", compared)
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map,
         "pkt_size",
         "Packet Size (Bytes)",
@@ -629,7 +629,7 @@ def plot_packet_load_distribution(experiment_config, target_list):
             compared.append(target)
 
     save_base = pnf.mkname("packet_load_cdf", compared)
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map,
         "npackets",
         "Packets per Second",
@@ -654,7 +654,7 @@ def plot_bandwidth_distribution(experiment_config, target_list):
             compared.append(target)
 
     save_base = pnf.mkname("bandwidth_distribution_cdf", compared)
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map,
         "bandwidth",
         "Bandwidth (bps)",
@@ -680,7 +680,7 @@ def plot_interarrival_by_index(experiment_config, target_list):
             compared.append(target)
 
     save_base = pnf.mkname("interarrival_by_index", compared)
-    plots.plot_line(
+    plot_functions.plot_line(
         df_map,
         "index",
         "inter_arrival",

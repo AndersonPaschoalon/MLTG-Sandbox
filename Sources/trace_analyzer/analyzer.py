@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-import trace_analyzer.metrics.metrics_estimator as metrics_estimator
+import trace_analyzer.metrics_estimator as metrics_estimator
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.enviroment.memory_store import MemoryStore
@@ -19,7 +19,7 @@ from trace_analyzer.core import (
     load_env,
     rm_env,
 )
-from trace_analyzer.snifferdb.sniffer_wrapper import SnifferWrapper
+from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 env = get_env()
 mem = get_mem()
@@ -160,7 +160,7 @@ def analyze_experiment_and_store():
         )
         return False
 
-    for trace, target in mem.traces_terget:
+    for trace, target in mem.traces_target:
         print(f"Loading db connector for trace {trace}")
         ac: AlchemyConnector = mem.sniffer.flowdb_connector(trace)
         # Calculate and exporting bandwidth, packets per second and flows per second

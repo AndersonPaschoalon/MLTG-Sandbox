@@ -12,8 +12,8 @@ import seaborn as sns
 from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
-import trace_analyzer.metrics.metrics_estimator as metrics_estimator
-import trace_analyzer.plots.plots as plots
+import trace_analyzer.metrics_estimator as metrics_estimator
+import trace_analyzer.plot_functions as plot_functions
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.enviroment.env import Env
@@ -23,7 +23,7 @@ from commons.naming.analysis_data_name_formatter import (
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
-from trace_analyzer.snifferdb.sniffer_wrapper import SnifferWrapper
+from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 env_file = ".trace_analyzer_env.json"
 env = Env()
@@ -394,7 +394,7 @@ def plot_violin_interarrival(target_list=None):
     filename = mem.pnf.mkname("violin-interarrival", compared_targets)
 
     # Plot
-    plots.plot_distribution_plot(
+    plot_functions.plot_distribution_plot(
         df_map=filtered_df_map,
         column="inter_arrival",
         title="Violin Plot of Inter-Arrival Times",
@@ -415,7 +415,7 @@ def plot_violin_pkt(target_list=None):
     filtered_df_map, compared_targets = _prepare_distribution_data(target_list)
     filename = mem.pnf.mkname("violin-pkt", compared_targets)
 
-    plots.plot_distribution_plot(
+    plot_functions.plot_distribution_plot(
         df_map=filtered_df_map,
         column="pkt_size",
         title="Violin Plot of Packet Sizes",
@@ -436,7 +436,7 @@ def plot_box_interarrival(target_list=None):
     filtered_df_map, compared_targets = _prepare_distribution_data(target_list)
     filename = mem.pnf.mkname("box-interarrival", compared_targets)
 
-    plots.plot_distribution_plot(
+    plot_functions.plot_distribution_plot(
         df_map=filtered_df_map,
         column="inter_arrival",
         title="Box Plot of Inter-Arrival Times",
@@ -457,7 +457,7 @@ def plot_box_pkt(target_list=None):
     filtered_df_map, compared_targets = _prepare_distribution_data(target_list)
     filename = mem.pnf.mkname("box-pkt", compared_targets)
 
-    plots.plot_distribution_plot(
+    plot_functions.plot_distribution_plot(
         df_map=filtered_df_map,
         column="pkt_size",
         title="Box Plot of Packet Sizes",
@@ -480,7 +480,7 @@ def plot_interarrival_pdf(target_list=None):
     targets = list(df_map.keys())
 
     filename = mem.pnf.mkname("pdf-interarrival", targets)
-    plots.plot_pdf(
+    plot_functions.plot_pdf(
         df_map=df_map,
         column="inter_arrival",
         title="PDF of Inter-Arrival Times (log-domain normalized)",
@@ -505,7 +505,7 @@ def plot_interarrival_cdf(target_list=None):
     targets = list(df_map.keys())
     filename = mem.pnf.mkname("cdf-interarrival", targets)
 
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map=df_map,
         column="inter_arrival",
         xlabel="Inter-Arrival Time (s)",
@@ -532,7 +532,7 @@ def plot_interarrival_by_index(target_list=None):
     targets = list(df_map.keys())
     filename = mem.pnf.mkname("interarrival_by_index", targets)
 
-    plots.plot_line(
+    plot_functions.plot_line(
         df_map=df_map,
         x_col="index",
         y_col="inter_arrival",
@@ -568,7 +568,7 @@ def plot_bw_pps_fps_refactored(plot_type, target_list=None):
 
     save_path = mem.pnf.mkname(plot_type, compared)
 
-    plots.plot_timeseries(
+    plot_functions.plot_timeseries(
         df_map=df_map,
         x_col="time",
         y_cols=[(raw_col, "raw", 1), (avg_col, "avg", 2.5)],
@@ -594,7 +594,7 @@ def plot_pktsize_histogram(target_list=None):
         df = df[df["time"] <= mem.bw_min_time_max]
         save_path = mem.pnf.mkname("histogram-pktsize", [target])
         color = colors(i % 10)
-        plots.plot_histogram(
+        plot_functions.plot_histogram(
             df=df,
             column="pkt_size",
             title=f"Packet Size Distribution — {target}",
@@ -620,7 +620,7 @@ def plot_bandwidth_cdf(target_list=None):
     }
 
     save_path_base = mem.pnf.mkname("bandwidth_cdf", list(truncated_map.keys()))
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map=truncated_map,
         column="bandwidth",
         xlabel="Bandwidth (bps)",
@@ -646,7 +646,7 @@ def plot_payload_size_cdf(target_list=None):
     }
 
     save_path_base = mem.pnf.mkname("payload_size_cdf", list(truncated_map.keys()))
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map=truncated_map,
         column="pkt_size",
         xlabel="Packet Size (Bytes)",
@@ -671,7 +671,7 @@ def plot_packet_load_cdf(target_list=None):
     }
 
     save_path_base = mem.pnf.mkname("packet_load_cdf", list(truncated_map.keys()))
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map=truncated_map,
         column="npackets",
         xlabel="Packets per Second",
@@ -690,7 +690,7 @@ def plot_burst_duration_violin(target_list=None):
     else:
         df_map = mem.bdurations_df_map
     filename = mem.pnf.mkname("violin-burst-duration", list(df_map.keys()))
-    plots.plot_distribution_plot(
+    plot_functions.plot_distribution_plot(
         df_map=df_map,
         column="burst_duration",
         title="Violin Plot of Burst Durations",
@@ -711,7 +711,7 @@ def plot_inter_burst_interval_cdf(target_list=None):
     else:
         df_map = mem.bintervals_df_map
     filename = mem.pnf.mkname("burst_interval_cdf", list(df_map.keys()))
-    plots.plot_cdf(
+    plot_functions.plot_cdf(
         df_map=df_map,
         column="burst_interval",
         xlabel="Inter-Burst Interval (s)",
@@ -730,7 +730,7 @@ def plot_burst_size_violin(target_list=None):
     else:
         df_map = mem.bsizes_df_map
     filename = mem.pnf.mkname("violin-burst-size", list(df_map.keys()))
-    plots.plot_distribution_plot(
+    plot_functions.plot_distribution_plot(
         df_map=df_map,
         column="burst_size",
         title="Violin Plot of Burst Sizes",

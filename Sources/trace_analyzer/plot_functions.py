@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -176,7 +177,6 @@ def plot_pdf(
     xlabel,
     ylabel,
     save_path_base,
-    target_list=None,
     log_y=False,
     log_x=False,
 ):
@@ -190,18 +190,12 @@ def plot_pdf(
         xlabel (str): X-axis label.
         ylabel (str): Y-axis label.
         save_path_base (str): Base path for saving output files (no extension).
-        target_list (list[str], optional): If provided, only plots these targets.
         log_y (bool): Whether to use logarithmic scale on Y-axis.
         log_x (bool): Whether to use logarithmic scale on X-axis.
     """
-    target_list = target_list or []
-
     plt.figure(figsize=(10, 6))
 
     for label, df in df_map.items():
-        if target_list and label not in target_list:
-            continue
-
         series = df[column].dropna()
         if series.empty:
             continue
@@ -246,9 +240,6 @@ def plot_timeseries(
     - save_path_base: output base name (for .png and .csv)
     - time_max: truncate X at this max value (e.g., shared max time)
     """
-    import matplotlib.cm as cm
-    import matplotlib.pyplot as plt
-
     plt.figure(figsize=(10, 6))
     colors = cm.get_cmap("tab10")
 
@@ -287,3 +278,50 @@ def plot_histogram(df, column, title, xlabel, ylabel, save_path, color="blue", b
     plt.tight_layout()
     plt.savefig(f"{save_path}.png")
     plt.close()
+
+
+def plot_wavelet_multiresolution_energy_analysis(
+    df_map,
+    x_column="scale",
+    y_column="log2_energy",
+    title="Wavelet Multiresolution Energy Analysis",
+    xlabel="Time Scale j",
+    ylabel="log2(Energy(j))",
+    save_path_base="wavelet_energy_plot",
+) -> str:
+    """
+    Plot wavelet multiresolution energy analysis (WMEA) for multiple targets with distinct colors.
+
+    Parameters:
+        df_map (dict[str, pd.DataFrame]): Mapping from target name to DataFrame.
+        x_column (str): Column name for X-axis. Default is 'scale'.
+        y_column (str): Column name for Y-axis. Default is 'log2_energy'.
+        title (str): Title for the plot.
+        xlabel (str): X-axis label.
+        ylabel (str): Y-axis label.
+        save_path_base (str): Base path to save the plot (without extension).
+        log_y (bool): Whether to use log scale on Y-axis.
+
+    Returns:
+        str: The filename of the saved plot.
+    """
+    plt.figure(figsize=(10, 6))
+    colors = cm.get_cmap("tab10")
+
+    for idx, (label, df) in enumerate(df_map.items()):
+        color = colors(idx % 10)
+        plt.plot(df[x_column], df[y_column], label=label, linewidth=2, color=color)
+
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+
+    png_file = f"{save_path_base}.png"
+    plt.savefig(png_file, dpi=300)
+    plt.close()
+
+    return png_file

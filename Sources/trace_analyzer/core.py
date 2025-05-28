@@ -8,7 +8,7 @@ from commons.naming.analysis_data_name_formatter import (
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
-from trace_analyzer.snifferdb.sniffer_wrapper import SnifferWrapper
+from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 env_file = ".trace_analyzer_env.json"
 env = Env()
@@ -94,6 +94,16 @@ def load_env():
 
     # Register after --mk-env objects
     if env.ex_loaded:
+        # register sniffer traces
+        ltraces = mem.sniffer.list_loaded_traces()
+        traces_target = []
+        for trace in ltraces:
+            target = mem.rpcap.parse(trace, RDNF.TEST_TARGET)
+            tt = (trace, target)
+            traces_target.append(tt)
+        mem.traces_target = traces_target
+
+        # regiester csv data files
         data_types = [
             (ADNF.BW_PPS_FPS, "bwdata_target"),
             (ADNF.INTERARRIVAL, "interdata_target"),

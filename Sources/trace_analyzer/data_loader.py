@@ -27,7 +27,41 @@ def _plot_this(target, target_list):
     return not target_list or target in target_list
 
 
-def _prepare_distribution_data(target_list: list[str]):
+# TODO: passar "time" como parametro
+def prepare_distribution_data(target_list: list[str]):
+    """
+    Prepare filtered data for distribution plotting.
+
+    This function filters the global inter-arrival DataFrame map (`mem.inter_df_map`)
+    by:
+    - Restricting data to targets included in `target_list`.
+    - Truncating data by the shared maximum time (`mem.inter_min_time_max`).
+
+    It returns:
+    - A dictionary of filtered DataFrames (`filtered_df_map`), ready for plotting.
+    - A list of target names that are actually included in the plot (`compared_targets`).
+
+    Parameters:
+    ----------
+    target_list : list of str
+        List of target names to include in the analysis.
+        If empty, all targets in `mem.inter_df_map` are considered.
+
+    Returns:
+    -------
+    filtered_df_map : dict[str, pd.DataFrame]
+        Dictionary mapping target names to filtered DataFrames, each limited
+        by `mem.inter_min_time_max`.
+
+    compared_targets : list of str
+        List of target names that were included in the filtering process,
+        useful for tracking which targets are compared in the plot.
+
+    Example:
+    --------
+    >>> filtered_map, targets = prepare_distribution_data(["orig", "swing"])
+    >>> plot_pdf(filtered_map, ...)
+    """
     # Filter df_map by time and target list
     filtered_df_map = {}
     for target, df in mem.inter_df_map.items():

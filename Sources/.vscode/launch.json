@@ -41,10 +41,10 @@
             }
         },
         {
-            "name": "trace_analyzer:trace_analyzer_functions",
+            "name": "trace_analyzer:plotter",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/trace_analyzer/trace_analyzer_functions.py",
+            "program": "${workspaceFolder}/trace_analyzer/plotter.py",
             "args": [
             ],
             "console": "integratedTerminal",

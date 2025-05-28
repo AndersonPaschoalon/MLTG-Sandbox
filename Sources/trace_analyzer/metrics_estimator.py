@@ -291,7 +291,7 @@ def calc_wavelet_as_df(
 
     # --- 4. Wavelet decomposition ---
     coeffs = pywt.wavedec(signal, wavelet, level=level)
-    energies = [np.sum(np.square(c)) for c in coeffs]
+    energies = np.array([np.sum(np.square(c)) for c in coeffs])
 
     # --- 5. Build DataFrame ---
     scales = np.arange(len(energies))
