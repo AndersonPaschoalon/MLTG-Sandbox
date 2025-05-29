@@ -5,6 +5,7 @@ import pandas as pd
 import trace_analyzer.metrics_estimator as metrics_estimator
 from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
+from commons.enviroment.env import Env
 from commons.enviroment.memory_store import MemoryStore
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
@@ -21,8 +22,8 @@ from trace_analyzer.core import (
 )
 from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
-env = get_env()
-mem = get_mem()
+env: Env = get_env()
+mem: MemoryStore = get_mem()
 env_file = get_env_file()
 
 

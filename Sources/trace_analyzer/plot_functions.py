@@ -213,8 +213,10 @@ def plot_pdf(
     plt.legend()
     plt.grid(True, linestyle="--", linewidth=0.5)
     plt.tight_layout()
-    plt.savefig(f"{save_path_base}.png")
+    filename = f"{save_path_base}.png"
+    plt.savefig(filename)
     plt.close()
+    return filename
 
 
 def plot_timeseries(
@@ -261,8 +263,10 @@ def plot_timeseries(
     plt.legend()
     plt.grid(True, linestyle="--", linewidth=0.5)
     plt.tight_layout()
-    plt.savefig(f"{save_path_base}.png")
+    filename = f"{save_path_base}.png"
+    plt.savefig(filename)
     plt.close()
+    return filename
 
 
 def plot_histogram(df, column, title, xlabel, ylabel, save_path, color="blue", bins=30):
@@ -276,31 +280,35 @@ def plot_histogram(df, column, title, xlabel, ylabel, save_path, color="blue", b
     plt.title(title)
     plt.grid(True, linestyle="--", linewidth=0.5)
     plt.tight_layout()
-    plt.savefig(f"{save_path}.png")
+    filename = f"{save_path}.png"
+    plt.savefig(filename)
     plt.close()
+    return filename
 
 
-def plot_wavelet_multiresolution_energy_analysis(
+def plot_multiline_metric(
     df_map,
-    x_column="scale",
-    y_column="log2_energy",
-    title="Wavelet Multiresolution Energy Analysis",
-    xlabel="Time Scale j",
-    ylabel="log2(Energy(j))",
-    save_path_base="wavelet_energy_plot",
+    x_column: str,
+    y_column: str,
+    title: str = "Multiline Metric Plot",
+    xlabel: str = "X-axis",
+    ylabel: str = "Y-axis",
+    save_path_base: str = "multiline_metric_plot",
 ) -> str:
     """
-    Plot wavelet multiresolution energy analysis (WMEA) for multiple targets with distinct colors.
+    Plot multiple lines from a dictionary of DataFrames with distinct colors.
+
+    This function is generic and can be used for plotting any X vs Y metrics
+    across multiple targets (e.g., wavelet energy, time series comparisons, etc.).
 
     Parameters:
         df_map (dict[str, pd.DataFrame]): Mapping from target name to DataFrame.
-        x_column (str): Column name for X-axis. Default is 'scale'.
-        y_column (str): Column name for Y-axis. Default is 'log2_energy'.
+        x_column (str): Column name for X-axis.
+        y_column (str): Column name for Y-axis.
         title (str): Title for the plot.
         xlabel (str): X-axis label.
         ylabel (str): Y-axis label.
         save_path_base (str): Base path to save the plot (without extension).
-        log_y (bool): Whether to use log scale on Y-axis.
 
     Returns:
         str: The filename of the saved plot.

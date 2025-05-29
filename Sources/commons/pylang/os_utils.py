@@ -10,8 +10,36 @@ from typing import IO, Generator, List, Optional, Tuple
 class OSUtils:
     """Operating system utility methods for debugging and process execution."""
 
-    # def __init__(self):
-    #    pass
+    @staticmethod
+    def write_on_file(string: str, filename: str) -> bool:
+        """
+        Writes the provided string to a file with the given filename.
+
+        Parameters:
+        -----------
+        string : str
+            The content to be written to the file.
+        filename : str
+            The name of the file where the content will be written.
+
+        Returns:
+        --------
+        None
+            The method does not return any value. It prints a success or error message to the console.
+
+        Example:
+        --------
+        >>> PyLang.write_on_file("Hello, world!", "example.txt")
+        Content successfully written to example.txt
+        """
+        try:
+            with open(filename, "w", encoding="utf-8") as file:
+                file.write(string)
+            print(f"Content successfully written to {filename}")
+            return True
+        except Exception as e:
+            print(f"An error occurred while writing to the file: {e}")
+        return False
 
     @staticmethod
     def check_port_open(port: int) -> bool:

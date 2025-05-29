@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas import DataFrame
 
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
@@ -27,15 +28,18 @@ def _plot_this(target, target_list):
     return not target_list or target in target_list
 
 
-# TODO: passar "time" como parametro
-def prepare_distribution_data(target_list: list[str]):
+def prepare_distribution_data(
+    df_map: dict[str, DataFrame],
+    time_column: str,
+    max_time: float,
+    target_list: list[str],
+):
     """
     Prepare filtered data for distribution plotting.
 
-    This function filters the global inter-arrival DataFrame map (`mem.inter_df_map`)
-    by:
+    This function filters the DataFrame map (`df_map`)by:
     - Restricting data to targets included in `target_list`.
-    - Truncating data by the shared maximum time (`mem.inter_min_time_max`).
+    - Truncating data by the shared maximum time (`max_time`).
 
     It returns:
     - A dictionary of filtered DataFrames (`filtered_df_map`), ready for plotting.
@@ -43,9 +47,15 @@ def prepare_distribution_data(target_list: list[str]):
 
     Parameters:
     ----------
+    df_map: dict[str, pd.DataFrame]
+        Dictionary mapping target names to DataFrames containing the data to be filtered.
+    time_column: str
+        The name of the column in the DataFrames that contains time values.
+    max_time: float
+        The maximum time value to filter the DataFrames by.
     target_list : list of str
         List of target names to include in the analysis.
-        If empty, all targets in `mem.inter_df_map` are considered.
+        If empty, all targets in `df_map` are considered.
 
     Returns:
     -------
@@ -59,19 +69,36 @@ def prepare_distribution_data(target_list: list[str]):
 
     Example:
     --------
-    >>> filtered_map, targets = prepare_distribution_data(["orig", "swing"])
+    >>> filtered_map, targets = prepare_distribution_data(df_map, "time", max_time, ["orig", "swing"])
     >>> plot_pdf(filtered_map, ...)
     """
     # Filter df_map by time and target list
     filtered_df_map = {}
-    for target, df in mem.inter_df_map.items():
+    for target, df in df_map.items():
         if not _plot_this(target, target_list):
             continue
-        filtered_df = df[df["time"] <= mem.inter_min_time_max]
+        filtered_df = df[df[time_column] <= max_time]
         filtered_df_map[target] = filtered_df
     # Generate filename based on included targets
     compared_targets = list(filtered_df_map.keys())
     return filtered_df_map, compared_targets
+
+
+def filter_df_map_by_target(df_map: dict[str, DataFrame], target_list: list[str]):
+    """
+    Filter the DataFrame map by the target list.
+
+    This function filters the DataFrame map (`mem.inter_df_map`) to include only those targets
+    that are specified in `target_list`. If `target_list` is empty, all targets are included.
+
+    Returns:
+        dict[str, DataFrame]: Filtered DataFrame map.
+    """
+    filtered_df_map = {}
+    for target, df in df_map.items():
+        if _plot_this(target, target_list):
+            filtered_df_map[target] = df
+    return filtered_df_map
 
 
 def load_stored_analysis_data(target_list=None):
@@ -90,7 +117,7 @@ def load_stored_analysis_data(target_list=None):
     """
 
     # utility 01
-    def _load_data_with_min_time(data_target, target_list):
+    def _load_data_with_min_time(data_target, target_list, time_column="time"):
         """
         Load CSVs for data targets and compute the minimal max time across DataFrames.
 
@@ -105,7 +132,7 @@ def load_stored_analysis_data(target_list=None):
             if _plot_this(target, target_list):
                 df = pd.read_csv(file)
                 data_map[target] = df
-                max_time = df["time"].max()
+                max_time = df[time_column].max()
                 if min_time_max is None or max_time < min_time_max:
                     min_time_max = max_time
         return data_map, min_time_max
@@ -132,10 +159,10 @@ def load_stored_analysis_data(target_list=None):
 
     # Data that needs min time tracking
     mem.inter_df_map, mem.inter_min_time_max = _load_data_with_min_time(
-        mem.interdata_target, target_list
+        mem.interdata_target, target_list, "time"
     )
     mem.bw_df_map, mem.bw_min_time_max = _load_data_with_min_time(
-        mem.bwdata_target, target_list
+        mem.bwdata_target, target_list, "time"
     )
 
     # Simple data maps

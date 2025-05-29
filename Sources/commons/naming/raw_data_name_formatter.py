@@ -192,9 +192,7 @@ class RawDataNameFormatter(ReprMixin):
         Raises:
             ValueError: If the filename is not in the expected format or field key is invalid.
         """
-        print(f"=====>>> {file_name}")
         parts = os.path.basename(file_name).split(".")
-        print(len(parts))
         if len(parts) != 7 and len(parts) != 6 and len(parts) != 3:
             raise ValueError(f"Invalid filename format: {file_name}")
 

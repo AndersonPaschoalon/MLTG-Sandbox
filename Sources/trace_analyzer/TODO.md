@@ -2,11 +2,11 @@
 - [x] Throughput / Bandwidth (bps, Mbps)
 - [x] Packet Rate (pps)
 - [x] Packet size histogram
-- [ ] Packet Loss & Loss Rate
-- [ ] Latency (Min/Max/Avg)
-- [ ] Jitter (Latency Variation)
-- bandwidth cdf
-- packet size pdf
+- [-] Packet Loss & Loss Rate
+- [-] Latency (Min/Max/Avg)
+- [-] Jitter (Latency Variation)
+- [x] bandwidth cdf
+- [x]packet size pdf
 
 # 2. Burstiness & Temporal Analysis
 - [x] Interarrival Mean (Violin/Boxplot)
@@ -21,14 +21,14 @@
 - [ ] Hurst Exponent (H): Estimation via R/S analysis
 - [ ] Hurst Exponent (H): variance-time plot 
 - [ ] Hurst Exponent (H): wavelet-based methods
-- [ ] Wavelet Analysis (Use multiresolution analysis to detect scaling behavior: Plot energy vs. time-scale)
+- [x] Wavelet Analysis (Use multiresolution analysis to detect scaling behavior: Plot energy vs. time-scale)
 - [ ] Log-Log Plot of Variance (To analyze long-range dependence (LRD))
 - [ ] Interarrival Time CDF (against best fit using bic?)
 
 # 4. Sensitivity Analysis
-- [ ] Vary Load and Measure Impact: Throughput vs. packet rate
-- [ ] Vary Load and Measure Impact: Latency vs. queue size
-- [ ] Vary Load and Measure Impact: Loss vs. background traffic
+- [-] Vary Load and Measure Impact: Throughput vs. packet rate
+- [-] Vary Load and Measure Impact: Latency vs. queue size
+- [-] Vary Load and Measure Impact: Loss vs. background traffic
 
 # 5. Protocol & Flow-Level Behavior
 - [x] Flow rate (flows per second)

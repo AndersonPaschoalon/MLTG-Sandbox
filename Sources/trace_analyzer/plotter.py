@@ -26,6 +26,7 @@ from commons.naming.analysis_data_name_formatter import (
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
+from commons.pylang.os_utils import OSUtils as osutils
 from trace_analyzer.core import get_env, get_mem, load_env
 from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
@@ -39,13 +40,13 @@ def plot_violin_interarrival(target_list=None):
 
     Filters data up to mem.inter_min_time_max and optionally by target_list.
     """
-
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        target_list
+        df_map=mem.inter_df_map,
+        time_column="time",
+        max_time=mem.inter_min_time_max,
+        target_list=target_list,
     )
     filename = mem.pnf.mkname("violin-interarrival", compared_targets)
-
-    # Plot
     plot_functions.plot_distribution_plot(
         df_map=filtered_df_map,
         column="inter_arrival",
@@ -65,7 +66,10 @@ def plot_violin_pkt(target_list=None):
     Filters data up to mem.inter_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        target_list
+        df_map=mem.inter_df_map,
+        time_column="time",
+        max_time=mem.inter_min_time_max,
+        target_list=target_list,
     )
     filename = mem.pnf.mkname("violin-pkt", compared_targets)
 
@@ -88,10 +92,12 @@ def plot_box_interarrival(target_list=None):
     Filters data up to mem.inter_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        target_list
+        df_map=mem.inter_df_map,
+        time_column="time",
+        max_time=mem.inter_min_time_max,
+        target_list=target_list,
     )
     filename = mem.pnf.mkname("box-interarrival", compared_targets)
-
     plot_functions.plot_distribution_plot(
         df_map=filtered_df_map,
         column="inter_arrival",
@@ -111,7 +117,10 @@ def plot_box_pkt(target_list=None):
     Filters data up to mem.inter_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        target_list
+        df_map=mem.inter_df_map,
+        time_column="time",
+        max_time=mem.inter_min_time_max,
+        target_list=target_list,
     )
     filename = mem.pnf.mkname("box-pkt", compared_targets)
 
@@ -131,10 +140,7 @@ def plot_interarrival_pdf(target_list=None):
     """
     Plot the PDF of inter-arrival times (log-log KDE).
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
-    else:
-        df_map = mem.inter_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.inter_df_map, target_list)
     targets = list(df_map.keys())
 
     filename = mem.pnf.mkname("pdf-interarrival", targets)
@@ -155,10 +161,7 @@ def plot_interarrival_cdf(target_list=None):
     Wrapper to plot the CDF of inter-arrival times using the generic plot_cdf().
     Filters targets if target_list is provided.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
-    else:
-        df_map = mem.inter_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.inter_df_map, target_list)
     targets = list(df_map.keys())
     filename = mem.pnf.mkname("cdf-interarrival", targets)
 
@@ -176,10 +179,7 @@ def plot_interarrival_by_index(target_list=None):
     """
     Plot inter-arrival time over packet index, per target.
     """
-    if target_list:
-        df_map = {k: v.copy() for k, v in mem.inter_df_map.items() if k in target_list}
-    else:
-        df_map = {k: v.copy() for k, v in mem.inter_df_map.items()}
+    df_map = data_loader.filter_df_map_by_target(mem.inter_df_map, target_list)
 
     # Ensure 'index' column exists
     for df in df_map.values():
@@ -205,10 +205,7 @@ def plot_bw_pps_fps_refactored(plot_type, target_list=None):
     """
     Plot bandwidth, packets/sec or flows/sec using preloaded mem.bw_df_map and mem.bw_min_time_max.
     """
-    target_list = target_list or []
-    df_map = {
-        k: v for k, v in mem.bw_df_map.items() if not target_list or k in target_list
-    }
+    df_map = data_loader.filter_df_map_by_target(mem.bw_df_map, target_list)
     compared = list(df_map.keys())
     tmax = mem.bw_min_time_max
 
@@ -217,12 +214,10 @@ def plot_bw_pps_fps_refactored(plot_type, target_list=None):
         "packet_per_second": ("npackets", "npackets_average", "Packets per Second"),
         "flow_per_second": ("nflows", "nflows_average", "Flows per Second"),
     }
-
     if plot_type not in metric_map:
         raise ValueError(f"Unknown plot_type '{plot_type}'")
 
     raw_col, avg_col, y_label = metric_map[plot_type]
-
     save_path = mem.pnf.mkname(plot_type, compared)
 
     plot_functions.plot_timeseries(
@@ -342,10 +337,7 @@ def plot_burst_duration_violin(target_list=None):
     """
     Plot violin distribution of burst durations for each target.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.bdurations_df_map.items() if k in target_list}
-    else:
-        df_map = mem.bdurations_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.bdurations_df_map, target_list)
     filename = mem.pnf.mkname("violin-burst-duration", list(df_map.keys()))
     plot_functions.plot_distribution_plot(
         df_map=df_map,
@@ -363,10 +355,7 @@ def plot_inter_burst_interval_cdf(target_list=None):
     """
     Plot CDF of inter-burst intervals for each target.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.bintervals_df_map.items() if k in target_list}
-    else:
-        df_map = mem.bintervals_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.bintervals_df_map, target_list)
     filename = mem.pnf.mkname("burst_interval_cdf", list(df_map.keys()))
     plot_functions.plot_cdf(
         df_map=df_map,
@@ -382,10 +371,7 @@ def plot_burst_size_violin(target_list=None):
     """
     Plot violin distribution of burst sizes for each target.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.bsizes_df_map.items() if k in target_list}
-    else:
-        df_map = mem.bsizes_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.bsizes_df_map, target_list)
     filename = mem.pnf.mkname("violin-burst-size", list(df_map.keys()))
     plot_functions.plot_distribution_plot(
         df_map=df_map,
@@ -404,12 +390,9 @@ def plot_wavelet_multiresolution_energy_analysis(target_list=None):
     Plots Multiresolution Energy analysis!
     wavelet_df_map
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.wavelet_df_map.items() if k in target_list}
-    else:
-        df_map = mem.wavelet_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.wavelet_df_map, target_list)
     filename = mem.pnf.mkname("wavelet-mea", list(df_map.keys()))
-    plot_functions.plot_wavelet_multiresolution_energy_analysis(
+    plot_functions.plot_multiline_metric(
         df_map=df_map,
         x_column="scale",
         y_column="log2_energy",
@@ -424,12 +407,12 @@ def run_tests():
     print("#########")
     target_list = []
     data_loader.load_stored_analysis_data(target_list=target_list)
-    # plot_violin_interarrival(target_list=target_list)
-    # plot_violin_pkt(target_list=target_list)
-    # plot_box_interarrival(target_list=target_list)
-    # plot_box_pkt(target_list=target_list)
-    # plot_interarrival_pdf(target_list=target_list)
-    # plot_interarrival_cdf(target_list=target_list)
+    plot_violin_interarrival(target_list=target_list)
+    plot_violin_pkt(target_list=target_list)
+    plot_box_interarrival(target_list=target_list)
+    plot_box_pkt(target_list=target_list)
+    plot_interarrival_pdf(target_list=target_list)
+    plot_interarrival_cdf(target_list=target_list)
     plot_interarrival_by_index(target_list=target_list)
     plot_bw_pps_fps_refactored("bandwidth", target_list=None)
     plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
