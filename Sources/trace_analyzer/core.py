@@ -55,7 +55,59 @@ def rm_env():
 
 
 def load_env():
+    """
+    Load experiment environment configuration and register key runtime objects into `mem`.
+
+    This function performs the following steps:
+
+    1. **Load environment configuration**:
+        - Reads from `env_file` JSON and retrieves experiment XML and name.
+
+    2. **Verify experiment configuration file exists**:
+        - Raises FileNotFoundError if XML file is missing.
+
+    3. **Register base runtime objects in `mem`**:
+        - Experiment configuration (`mem.c`).
+        - Raw data name formatter (`mem.rpcap` and `mem.rcsv`).
+        - Analysis data name formatter (`mem.anf`).
+        - Plot name formatter (`mem.pnf`).
+        - Sniffer wrapper (`mem.sniffer`).
+        - PCAP files for ground truth, client, and server.
+
+    4. **If the experiment is marked as loaded**:
+        - Register loaded sniffer traces (`mem.traces_target`) as list of (trace_file, target).
+        - For each analysis type (e.g., wavelet, burst sizes):
+            - Load associated CSVs.
+            - Register as list of (file, target) tuples in corresponding `mem` attribute using `_load_target_data()`.
+
+    Finalizes by printing `"load_env done"`.
+
+    Raises:
+        FileNotFoundError: If environment or experiment XML is missing.
+
+    Side Effects:
+        - Populates `mem` with all necessary runtime objects for analysis and plotting.
+        - Prints progress to console.
+    """
+
     def _load_target_data(file_type, mem_attr):
+        """
+        Load analysis CSV files of a given type and register them as a list of (file, target) tuples in `mem`.
+
+        This function:
+        - Retrieves all CSV files associated with the specified `file_type` using `mem.anf.list_names()`.
+        - Extracts the `test_target` from each file name using `mem.anf.parse()`.
+        - Creates a list of tuples: (file_path, target_name).
+        - Registers this list as an attribute of `mem` with name `mem_attr`.
+
+        Parameters:
+            file_type (str): The analysis file type (e.g., ADNF.WAVELET, ADNF.BURST_SIZES).
+            mem_attr (str): The name of the attribute to set on `mem` to store the result.
+
+        Side Effects:
+            - Adds or overwrites `mem.<mem_attr>` with a list of tuples: [(file_path, target), ...].
+            - Logs success or failure to the console.
+        """
         try:
             data_target = []
             data_files = mem.anf.list_names(file_type, "csv")
@@ -113,7 +165,7 @@ def load_env():
             (ADNF.WAVELET, "waveletdata_target"),
         ]
         for file_type, mem_attr in data_types:
-            # sets a tuple (file, target) to the atribut xpto_target of the corresponding file prefix.
+            # sets a tuple (file, target) to the atribute xpto_target of the corresponding file prefix.
             _load_target_data(file_type, mem_attr)
 
     print("load_env done")

@@ -98,5 +98,6 @@
 - [plot_burst_analysis scrit development tutorial](./Tutorials/plot_burst_analysis_script_tutorial.md)
 - [How to analyze Traffic metrisc and plots](./Tutorials/how_to_analyze_traffic_metrics_and_plots.md)
 - [Introduction to Wavelet Analysis](./Tutorials/wavelets.md)
+- [Hurst Tutoriak](./Tutorials/hurst_tutorial.py)
 
 ---
