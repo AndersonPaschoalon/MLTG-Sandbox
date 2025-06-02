@@ -1,6 +1,8 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pywt
+import scipy
 from sqlalchemy import TEXT, Column, ForeignKey, Integer, create_engine
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -302,3 +304,270 @@ def calc_wavelet_as_df(
     )
 
     return result_df
+
+
+def calc_self_similarity_stats_as_df(
+    ac: AlchemyConnector,
+    flowID: int = 0,
+    agregation_levels_m=[1, 5, 10, 50, 100, 500, 1000],
+    max_timestamp: float = 0,  # 0 means no limit. Owerwise, only consider packets with timestamp <= max_timestamp.
+) -> pd.DataFrame:
+    """
+    Calculate self-similarity statistics for multiple aggregation levels.
+
+    Returns:
+        dict[str, pd.DataFrame]:
+            - 'rs': DataFrame for R/S plot (log(m), log(R/S))
+            - 'var': DataFrame for Variance-Time plot (log(m), log(Var))
+            - 'hurst': DataFrame summarizing Hurst exponents from each method
+    """
+
+    # --- 1. Load packet data ---
+    if ac:
+        df = get_packet_arrival_df(ac, flowID=flowID)
+    else:
+        df = _generate_synthetic_interarrival_df(
+            n_packets=10000, heavy_tail=True, seed=42
+        )
+
+    if df.empty:
+        print(f"No packets found for flowID={flowID}.")
+        return {
+            "rs": pd.DataFrame(),
+            "var": pd.DataFrame(),
+            "hurst": pd.DataFrame(),
+        }
+
+    # Limit to max_timestamp if set
+    if max_timestamp > 0:
+        df = df[df["time"] <= max_timestamp]
+
+    # For analysis, let's work with inter-arrival times
+    signal = df["inter_arrival"].values
+
+    # To accumulate results
+    rs_data = []
+    var_data = []
+
+    # For slope estimation → Hurst
+    rs_logs = []
+    var_logs = []
+
+    agg_logs = []
+
+    for m in agregation_levels_m:
+        # --- 2. Aggregate signal by level m ---
+        # Using non-overlapping blocks of size m:
+        # e.g., for m=10, each new value is sum of 10 inter-arrivals
+        num_blocks = len(signal) // m
+        if num_blocks == 0:
+            print(f"Not enough data for aggregation level m={m}. Skipping.")
+            continue
+
+        agg_signal = signal[: num_blocks * m].reshape(-1, m).sum(axis=1)
+
+        # --- 3. R/S statistic ---
+        mean_agg = np.mean(agg_signal)
+        Z = np.cumsum(agg_signal - mean_agg)
+        R = np.max(Z) - np.min(Z)
+        S = np.std(agg_signal, ddof=1)
+
+        rs_stat = R / S if S != 0 else np.nan
+
+        # --- 4. Variance ---
+        var_stat = np.var(agg_signal)
+
+        # --- 5. Accumulate data ---
+        rs_data.append({"m": m, "rs": rs_stat})
+        var_data.append({"m": m, "var": var_stat})
+
+        # For Hurst estimation via slope: log-log points
+        if rs_stat > 0 and var_stat > 0:
+            rs_logs.append(np.log(rs_stat))
+            var_logs.append(np.log(var_stat))
+            agg_logs.append(np.log(m))
+
+    # --- 6. Prepare DataFrames ---
+
+    rs_df = pd.DataFrame(rs_data)
+    var_df = pd.DataFrame(var_data)
+
+    rs_df["log_m"] = np.log(rs_df["m"])
+    rs_df["log_rs"] = np.log(rs_df["rs"])
+
+    var_df["log_m"] = np.log(var_df["m"])
+    var_df["log_var"] = np.log(var_df["var"])
+
+    # --- 7. Linear regression to estimate Hurst exponents ---
+
+    # R/S: log(R/S) = H log(m) + const → slope = H
+    rs_slope, _, _, _, _ = scipy.stats.linregress(agg_logs, rs_logs)
+    hurst_rs = rs_slope
+
+    # Variance: log(Var) = (2H - 2) log(m) + const → slope = 2H - 2 → H = (slope + 2)/2
+    var_slope, _, _, _, _ = scipy.stats.linregress(agg_logs, var_logs)
+    hurst_var = (var_slope + 2) / 2
+
+    # --- 8. Optionally, periodogram method ---
+
+    # Using scipy's Welch method for spectral density estimation
+    freqs, power = scipy.signal.welch(signal, scaling="density")
+
+    periodogram_df = pd.DataFrame(
+        {
+            "freq": freqs,
+            "power": power,
+            "log_freq": np.log(freqs + 1e-8),
+            "log_power": np.log(power + 1e-8),
+        }
+    )
+
+    # Linear fit on low frequency region (e.g., first 10% of freqs)
+    low_freq = int(0.1 * len(freqs))
+    slope, _, _, _, _ = scipy.stats.linregress(
+        periodogram_df["log_freq"][:low_freq], periodogram_df["log_power"][:low_freq]
+    )
+
+    # Spectral slope β → H = (1 + β) / 2
+    hurst_spec = (1 + abs(slope)) / 2  # Take abs to avoid negative
+
+    # --- 9. Summary DataFrame ---
+
+    hurst_df = pd.DataFrame(
+        {"method": ["rs", "var", "spec"], "hurst": [hurst_rs, hurst_var, hurst_spec]}
+    )
+
+    # --- 10. Return all DataFrames ---
+
+    return {
+        "rs": rs_df,
+        "var": var_df,
+        "periodogram": periodogram_df,
+        "hurst": hurst_df,
+    }
+
+
+#############################################
+
+
+def _generate_synthetic_interarrival_df(n_packets=10000, heavy_tail=True, seed=42):
+    """
+    Generate synthetic packet inter-arrival DataFrame.
+
+    Parameters:
+        n_packets (int): Number of packets.
+        heavy_tail (bool): Whether to use heavy-tailed distribution.
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        pd.DataFrame: With columns 'time', 'inter_arrival', 'pkt_size', 'ttl'
+    """
+    np.random.seed(seed)
+
+    if heavy_tail:
+        # Pareto distribution for heavy-tailed inter-arrivals
+        inter_arrivals = np.random.pareto(a=2.5, size=n_packets) + 0.1
+    else:
+        # Exponential for memoryless inter-arrivals
+        inter_arrivals = np.random.exponential(scale=1.0, size=n_packets)
+
+    timestamps = np.cumsum(inter_arrivals)
+
+    pkt_sizes = np.random.randint(40, 1500, size=n_packets)  # Ethernet-like sizes
+    ttls = np.random.randint(32, 128, size=n_packets)  # Some TTL range
+
+    df = pd.DataFrame(
+        {
+            "time": timestamps,
+            "inter_arrival": inter_arrivals,
+            "pkt_size": pkt_sizes,
+            "ttl": ttls,
+        }
+    )
+
+    return df
+
+
+def test_calc_self_similarity_stats_as_df():
+    result = calc_self_similarity_stats_as_df(None)
+    # Plot R/S
+    rs_df = result["rs"]
+    plt.figure(figsize=(8, 4))
+    plt.plot(rs_df["log_m"], rs_df["log_rs"], "o-", label="R/S")
+    plt.xlabel("log(m)")
+    plt.ylabel("log(R/S)")
+    plt.title("R/S Plot")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("rs_plot.png")
+    plt.clf()
+
+    # Plot Variance
+    var_df = result["var"]
+    plt.figure(figsize=(8, 4))
+    plt.plot(var_df["log_m"], var_df["log_var"], "o-", color="orange", label="Variance")
+    plt.xlabel("log(m)")
+    plt.ylabel("log(Variance)")
+    plt.title("Variance-Time Plot")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("variance_plot.png")
+    plt.clf()
+
+    # Periodogram
+    periodogram_df = result["periodogram"]
+    plt.figure(figsize=(8, 4))
+    plt.plot(
+        periodogram_df["log_freq"],
+        periodogram_df["log_power"],
+        ".",
+        label="Periodogram",
+    )
+    plt.xlabel("log(Frequency)")
+    plt.ylabel("log(Power)")
+    plt.title("Periodogram")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("periodogram_plot.png")
+    plt.clf()
+
+    # Plot Hurst estimate vs aggregation level
+    hurst_df = result["hurst"]
+    print("\nHurst Exponent Estimates:")
+    print(hurst_df)
+
+    plt.figure(figsize=(8, 4))
+
+    # R/S and Variance are related to aggregation level
+    plt.axhline(
+        y=hurst_df.loc[hurst_df["method"] == "rs", "hurst"].values[0],
+        color="b",
+        linestyle="--",
+        label="R/S Estimate",
+    )
+    plt.axhline(
+        y=hurst_df.loc[hurst_df["method"] == "var", "hurst"].values[0],
+        color="orange",
+        linestyle="--",
+        label="Variance Estimate",
+    )
+
+    # Spectral estimate as horizontal line
+    plt.axhline(
+        y=hurst_df.loc[hurst_df["method"] == "spec", "hurst"].values[0],
+        color="green",
+        linestyle="--",
+        label="Spectral Estimate",
+    )
+
+    plt.xlabel("Aggregation level (m)")
+    plt.ylabel("Estimated Hurst Exponent")
+    plt.title("Hurst Exponent Estimates")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("hurst_estimates.png")
+    plt.clf()
+
+
+if __name__ == "__main__":
+    test_calc_self_similarity_stats_as_df()

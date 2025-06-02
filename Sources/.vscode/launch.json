@@ -53,6 +53,18 @@
             }
         },
         {
+            "name": "trace_analyzer:metrics_estimator",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/trace_analyzer/metrics_estimator.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "name": "commons:DatafileNameFormatter",
             "type": "debugpy",
             "request": "launch",
@@ -88,6 +100,6 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
-        }
+        },
     ]
 }
