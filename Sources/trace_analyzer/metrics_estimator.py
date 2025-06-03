@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pywt
 import scipy
+from scipy.stats import linregress
 from sqlalchemy import TEXT, Column, ForeignKey, Integer, create_engine
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -306,13 +307,14 @@ def calc_wavelet_as_df(
     return result_df
 
 
+"""
 def calc_self_similarity_stats_as_df(
     ac: AlchemyConnector,
     flowID: int = 0,
     agregation_levels_m=[1, 5, 10, 50, 100, 500, 1000],
     max_timestamp: float = 0,  # 0 means no limit. Owerwise, only consider packets with timestamp <= max_timestamp.
 ) -> pd.DataFrame:
-    """
+    ""
     Calculate self-similarity statistics for multiple aggregation levels.
 
     Returns:
@@ -320,7 +322,7 @@ def calc_self_similarity_stats_as_df(
             - 'rs': DataFrame for R/S plot (log(m), log(R/S))
             - 'var': DataFrame for Variance-Time plot (log(m), log(Var))
             - 'hurst': DataFrame summarizing Hurst exponents from each method
-    """
+    ""
 
     # --- 1. Load packet data ---
     if ac:
@@ -445,6 +447,103 @@ def calc_self_similarity_stats_as_df(
         "periodogram": periodogram_df,
         "hurst": hurst_df,
     }
+"""
+
+
+def calc_self_similarity_stats_as_df(
+    ac: AlchemyConnector,
+    flowID: int = 0,
+    agregation_levels_m=[1, 5, 10, 50, 100, 500, 1000],
+    max_timestamp: float = 0,  # 0 means no limit. Owerwise, only consider packets with timestamp <= max_timestamp.
+) -> pd.DataFrame:
+    """
+    Calculate self-similarity statistics for multiple aggregation levels.
+
+    Returns:
+        dict[str, pd.DataFrame]:
+            - 'rs': DataFrame for R/S plot (log(m), log(R/S))
+            - 'var': DataFrame for Variance-Time plot (log(m), log(Var))
+            - 'hurst': DataFrame summarizing Hurst exponents from each method
+    """
+
+    def _calc_aggregate_series(series, m):
+        n = len(series) // m
+        truncated = series[: n * m]
+        reshaped = truncated.reshape((n, m))
+        aggregated = reshaped.mean(axis=1)  # average over each block
+        return aggregated
+
+    def _calc_aggregated_series_dict(df):
+        # Limit to max_timestamp if set
+        if max_timestamp > 0:
+            df = df[df["time"] <= max_timestamp]
+
+        bin_width = 0.01  # 10 milliseconds
+        time_start = df["timestamp"].min()
+        time_end = df["timestamp"].max()
+
+        bins = np.arange(time_start, time_end + bin_width, bin_width)
+        df["time_bin"] = pd.cut(df["timestamp"], bins=bins, labels=False)
+        bytes_per_bin = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values
+        pkts_per_bin = df.groupby("time_bin").size().values
+
+        aggregated_series_dict = {}
+
+        for m in agregation_levels_m:
+            agg_bytes = _calc_aggregate_series(bytes_per_bin, m)
+            agg_pkts = _calc_aggregate_series(pkts_per_bin, m)
+            aggregated_series_dict[m] = {"bytes": agg_bytes, "pkts": agg_pkts}
+
+        return aggregated_series_dict
+
+    def _calc_rs_for_series(series):
+        """
+        Compute the rescaled range (R/S) statistic for a series.
+        """
+        n = len(series)
+        mean = np.mean(series)
+        dev = series - mean
+        cum_dev = np.cumsum(dev)
+        R = np.max(cum_dev) - np.min(cum_dev)
+        S = np.std(series, ddof=1)
+        if S == 0:
+            return np.nan
+        return R / S
+
+    def _estimate_hurst(rs_df):
+        """
+        Estimate Hurst exponent from R/S plot.
+        """
+        slope, intercept, r_value, p_value, std_err = linregress(
+            rs_df["log_m"], rs_df["log_rs"]
+        )
+        return slope
+
+    # --- 1. Load packet data ---
+    if ac:
+        df = get_packet_arrival_df(ac, flowID=flowID)
+    else:
+        df = _generate_synthetic_interarrival_df(
+            n_packets=30000, heavy_tail=True, seed=42
+        )
+    if df.empty:
+        print(f"No packets found for flowID={flowID}.")
+        raise ValueError(
+            f"No packets found for flowID={flowID}. Please check the database or use synthetic data."
+        )
+
+    aggregated_series_dict = _calc_aggregated_series_dict(df)
+
+    rs_results = []
+    var_results = []
+
+    for m in agregation_levels_m:
+        # TODO
+        ...
+
+    print("########################")
+    print("########################")
+    print("########################")
 
 
 #############################################
@@ -470,6 +569,7 @@ def _generate_synthetic_interarrival_df(n_packets=10000, heavy_tail=True, seed=4
     else:
         # Exponential for memoryless inter-arrivals
         inter_arrivals = np.random.exponential(scale=1.0, size=n_packets)
+    inter_arrivals = inter_arrivals * 0.001
 
     timestamps = np.cumsum(inter_arrivals)
 
@@ -478,7 +578,7 @@ def _generate_synthetic_interarrival_df(n_packets=10000, heavy_tail=True, seed=4
 
     df = pd.DataFrame(
         {
-            "time": timestamps,
+            "timestamp": timestamps,
             "inter_arrival": inter_arrivals,
             "pkt_size": pkt_sizes,
             "ttl": ttls,
@@ -570,4 +670,5 @@ def test_calc_self_similarity_stats_as_df():
 
 
 if __name__ == "__main__":
-    test_calc_self_similarity_stats_as_df()
+    calc_self_similarity_stats_as_df(None)
+    # test_calc_self_similarity_stats_as_df()
