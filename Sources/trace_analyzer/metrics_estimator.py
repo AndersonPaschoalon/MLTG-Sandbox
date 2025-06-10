@@ -307,243 +307,144 @@ def calc_wavelet_as_df(
     return result_df
 
 
-"""
-def calc_self_similarity_stats_as_df(
-    ac: AlchemyConnector,
-    flowID: int = 0,
-    agregation_levels_m=[1, 5, 10, 50, 100, 500, 1000],
-    max_timestamp: float = 0,  # 0 means no limit. Owerwise, only consider packets with timestamp <= max_timestamp.
-) -> pd.DataFrame:
-    ""
-    Calculate self-similarity statistics for multiple aggregation levels.
-
-    Returns:
-        dict[str, pd.DataFrame]:
-            - 'rs': DataFrame for R/S plot (log(m), log(R/S))
-            - 'var': DataFrame for Variance-Time plot (log(m), log(Var))
-            - 'hurst': DataFrame summarizing Hurst exponents from each method
-    ""
-
-    # --- 1. Load packet data ---
-    if ac:
-        df = get_packet_arrival_df(ac, flowID=flowID)
-    else:
-        df = _generate_synthetic_interarrival_df(
-            n_packets=10000, heavy_tail=True, seed=42
-        )
-
-    if df.empty:
-        print(f"No packets found for flowID={flowID}.")
-        return {
-            "rs": pd.DataFrame(),
-            "var": pd.DataFrame(),
-            "hurst": pd.DataFrame(),
-        }
-
-    # Limit to max_timestamp if set
-    if max_timestamp > 0:
-        df = df[df["time"] <= max_timestamp]
-
-    # For analysis, let's work with inter-arrival times
-    signal = df["inter_arrival"].values
-
-    # To accumulate results
+def _rs_analysis_on_series(series, block_sizes):
     rs_data = []
-    var_data = []
 
-    # For slope estimation → Hurst
-    rs_logs = []
-    var_logs = []
+    for n in block_sizes:
+        if n >= len(series):
+            continue
+        num_blocks = len(series) // n
+        rs_values = []
 
-    agg_logs = []
+        for i in range(num_blocks):
+            block = series[i * n : (i + 1) * n]
+            mean = np.mean(block)
+            dev = block - mean
+            cum_dev = np.cumsum(dev)
+            R = np.max(cum_dev) - np.min(cum_dev)
+            S = np.std(block, ddof=1)
+            if S != 0:
+                rs_values.append(R / S)
 
-    for m in agregation_levels_m:
-        # --- 2. Aggregate signal by level m ---
-        # Using non-overlapping blocks of size m:
-        # e.g., for m=10, each new value is sum of 10 inter-arrivals
-        num_blocks = len(signal) // m
-        if num_blocks == 0:
-            print(f"Not enough data for aggregation level m={m}. Skipping.")
+        if rs_values:
+            avg_rs = np.mean(rs_values)
+            rs_data.append((np.log2(n), np.log2(avg_rs)))
+
+    rs_df = pd.DataFrame(rs_data, columns=["log_n", "log_rs"])
+    if not rs_df.empty:
+        slope, _, _, _, _ = linregress(rs_df["log_n"], rs_df["log_rs"])
+    else:
+        slope = np.nan
+
+    return rs_df, slope
+
+
+def _rs_analysis_on_series_cloudy(series, block_sizes):
+    log_ns, log_rss = [], []
+
+    for n in block_sizes:
+        if n >= len(series):
             continue
 
-        agg_signal = signal[: num_blocks * m].reshape(-1, m).sum(axis=1)
+        step = max(1, n // 4)
+        rs_values = []
 
-        # --- 3. R/S statistic ---
-        mean_agg = np.mean(agg_signal)
-        Z = np.cumsum(agg_signal - mean_agg)
-        R = np.max(Z) - np.min(Z)
-        S = np.std(agg_signal, ddof=1)
+        for start in range(0, len(series) - n + 1, step):
+            block = series[start : start + n]
+            mean = np.mean(block)
+            dev = block - mean
+            cum_dev = np.cumsum(dev)
+            R = np.max(cum_dev) - np.min(cum_dev)
+            S = np.std(block, ddof=1)
+            if S != 0:
+                rs = R / S
+                log_ns.append(np.log2(n))
+                log_rss.append(np.log2(rs))
 
-        rs_stat = R / S if S != 0 else np.nan
+    rs_df = pd.DataFrame({"log_n": log_ns, "log_rs": log_rss})
 
-        # --- 4. Variance ---
-        var_stat = np.var(agg_signal)
-
-        # --- 5. Accumulate data ---
-        rs_data.append({"m": m, "rs": rs_stat})
-        var_data.append({"m": m, "var": var_stat})
-
-        # For Hurst estimation via slope: log-log points
-        if rs_stat > 0 and var_stat > 0:
-            rs_logs.append(np.log(rs_stat))
-            var_logs.append(np.log(var_stat))
-            agg_logs.append(np.log(m))
-
-    # --- 6. Prepare DataFrames ---
-
-    rs_df = pd.DataFrame(rs_data)
-    var_df = pd.DataFrame(var_data)
-
-    rs_df["log_m"] = np.log(rs_df["m"])
-    rs_df["log_rs"] = np.log(rs_df["rs"])
-
-    var_df["log_m"] = np.log(var_df["m"])
-    var_df["log_var"] = np.log(var_df["var"])
-
-    # --- 7. Linear regression to estimate Hurst exponents ---
-
-    # R/S: log(R/S) = H log(m) + const → slope = H
-    rs_slope, _, _, _, _ = scipy.stats.linregress(agg_logs, rs_logs)
-    hurst_rs = rs_slope
-
-    # Variance: log(Var) = (2H - 2) log(m) + const → slope = 2H - 2 → H = (slope + 2)/2
-    var_slope, _, _, _, _ = scipy.stats.linregress(agg_logs, var_logs)
-    hurst_var = (var_slope + 2) / 2
-
-    # --- 8. Optionally, periodogram method ---
-
-    # Using scipy's Welch method for spectral density estimation
-    freqs, power = scipy.signal.welch(signal, scaling="density")
-
-    periodogram_df = pd.DataFrame(
-        {
-            "freq": freqs,
-            "power": power,
-            "log_freq": np.log(freqs + 1e-8),
-            "log_power": np.log(power + 1e-8),
-        }
-    )
-
-    # Linear fit on low frequency region (e.g., first 10% of freqs)
-    low_freq = int(0.1 * len(freqs))
-    slope, _, _, _, _ = scipy.stats.linregress(
-        periodogram_df["log_freq"][:low_freq], periodogram_df["log_power"][:low_freq]
-    )
-
-    # Spectral slope β → H = (1 + β) / 2
-    hurst_spec = (1 + abs(slope)) / 2  # Take abs to avoid negative
-
-    # --- 9. Summary DataFrame ---
-
-    hurst_df = pd.DataFrame(
-        {"method": ["rs", "var", "spec"], "hurst": [hurst_rs, hurst_var, hurst_spec]}
-    )
-
-    # --- 10. Return all DataFrames ---
-
-    return {
-        "rs": rs_df,
-        "var": var_df,
-        "periodogram": periodogram_df,
-        "hurst": hurst_df,
-    }
-"""
-
-
-def calc_self_similarity_stats_as_df(
-    ac: AlchemyConnector,
-    flowID: int = 0,
-    agregation_levels_m=[1, 5, 10, 50, 100, 500, 1000],
-    max_timestamp: float = 0,  # 0 means no limit. Owerwise, only consider packets with timestamp <= max_timestamp.
-) -> pd.DataFrame:
-    """
-    Calculate self-similarity statistics for multiple aggregation levels.
-
-    Returns:
-        dict[str, pd.DataFrame]:
-            - 'rs': DataFrame for R/S plot (log(m), log(R/S))
-            - 'var': DataFrame for Variance-Time plot (log(m), log(Var))
-            - 'hurst': DataFrame summarizing Hurst exponents from each method
-    """
-
-    def _calc_aggregate_series(series, m):
-        n = len(series) // m
-        truncated = series[: n * m]
-        reshaped = truncated.reshape((n, m))
-        aggregated = reshaped.mean(axis=1)  # average over each block
-        return aggregated
-
-    def _calc_aggregated_series_dict(df):
-        # Limit to max_timestamp if set
-        if max_timestamp > 0:
-            df = df[df["time"] <= max_timestamp]
-
-        bin_width = 0.01  # 10 milliseconds
-        time_start = df["timestamp"].min()
-        time_end = df["timestamp"].max()
-
-        bins = np.arange(time_start, time_end + bin_width, bin_width)
-        df["time_bin"] = pd.cut(df["timestamp"], bins=bins, labels=False)
-        bytes_per_bin = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values
-        pkts_per_bin = df.groupby("time_bin").size().values
-
-        aggregated_series_dict = {}
-
-        for m in agregation_levels_m:
-            agg_bytes = _calc_aggregate_series(bytes_per_bin, m)
-            agg_pkts = _calc_aggregate_series(pkts_per_bin, m)
-            aggregated_series_dict[m] = {"bytes": agg_bytes, "pkts": agg_pkts}
-
-        return aggregated_series_dict
-
-    def _calc_rs_for_series(series):
-        """
-        Compute the rescaled range (R/S) statistic for a series.
-        """
-        n = len(series)
-        mean = np.mean(series)
-        dev = series - mean
-        cum_dev = np.cumsum(dev)
-        R = np.max(cum_dev) - np.min(cum_dev)
-        S = np.std(series, ddof=1)
-        if S == 0:
-            return np.nan
-        return R / S
-
-    def _estimate_hurst(rs_df):
-        """
-        Estimate Hurst exponent from R/S plot.
-        """
-        slope, intercept, r_value, p_value, std_err = linregress(
-            rs_df["log_m"], rs_df["log_rs"]
-        )
-        return slope
-
-    # --- 1. Load packet data ---
-    if ac:
-        df = get_packet_arrival_df(ac, flowID=flowID)
+    if not rs_df.empty:
+        slope, _, _, _, _ = linregress(rs_df["log_n"], rs_df["log_rs"])
     else:
-        df = _generate_synthetic_interarrival_df(
-            n_packets=30000, heavy_tail=True, seed=42
+        slope = np.nan
+
+    return rs_df, slope
+
+
+def self_similarity_rs(
+    ac=None, flowID: int = 0, aggregation_levels: list[int] = [1, 5, 10, 50, 100, 500]
+):
+    if ac is None:
+        df = _generate_synthetic_interarrival_df()
+    else:
+        df = get_packet_arrival_df(ac, flowID=flowID)
+
+    # Binning
+    bin_width = 0.01
+    time_start = df["timestamp"].min()
+    time_end = df["timestamp"].max()
+    bins = np.arange(time_start, time_end + bin_width, bin_width)
+    df["time_bin"] = pd.cut(df["timestamp"], bins=bins, labels=False)
+    bytes_per_bin = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values
+
+    # --- R/S Plot (Figure 2a) ---
+    rs_df, _ = _rs_analysis_on_series(
+        bytes_per_bin, block_sizes=[2, 4, 8, 16, 32, 64, 128]
+    )
+    x = rs_df["log_n"]
+    rs_df["slope_1_line"] = x * 1.0
+    rs_df["slope_half_line"] = x * 0.5
+
+    # --- Hurst vs Aggregation Level (Figure 2d) ---
+    hurst_vs_m = []
+    for m in aggregation_levels:
+        n = len(bytes_per_bin) // m
+        truncated = bytes_per_bin[: n * m]
+        agg_series = truncated.reshape((n, m)).mean(axis=1)
+        _, hurst = _rs_analysis_on_series(agg_series, block_sizes=[2, 4, 8, 16, 32])
+        hurst_vs_m.append((m, hurst))
+
+    hurst_df = pd.DataFrame(hurst_vs_m, columns=["aggregation_level", "hurst_rs"])
+
+    return hurst_df, rs_df  # <- now just one rs_df, not a dict
+
+
+def self_similarity_rs_cloudy(
+    ac=None, flowID: int = 0, aggregation_levels: list[int] = [1, 5, 10, 50, 100, 500]
+):
+    if ac is None:
+        df = _generate_synthetic_interarrival_df()
+    else:
+        df = get_packet_arrival_df(ac, flowID=flowID)
+
+    bin_width = 0.01
+    time_start = df["timestamp"].min()
+    time_end = df["timestamp"].max()
+    bins = np.arange(time_start, time_end + bin_width, bin_width)
+    df["time_bin"] = pd.cut(df["timestamp"], bins=bins, labels=False)
+    bytes_per_bin = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values
+
+    # --- Cloudy R/S Plot (Figure 2a style) ---
+    rs_df, _ = _rs_analysis_on_series_cloudy(
+        bytes_per_bin, block_sizes=[2, 4, 8, 16, 32, 64, 128]
+    )
+    x = rs_df["log_n"]
+    rs_df["slope_1_line"] = x * 1.0
+    rs_df["slope_half_line"] = x * 0.5
+
+    # --- Hurst vs Aggregation Level (Figure 2d style) ---
+    hurst_vs_m = []
+    for m in aggregation_levels:
+        n = len(bytes_per_bin) // m
+        truncated = bytes_per_bin[: n * m]
+        agg_series = truncated.reshape((n, m)).mean(axis=1)
+        _, hurst = _rs_analysis_on_series_cloudy(
+            agg_series, block_sizes=[2, 4, 8, 16, 32]
         )
-    if df.empty:
-        print(f"No packets found for flowID={flowID}.")
-        raise ValueError(
-            f"No packets found for flowID={flowID}. Please check the database or use synthetic data."
-        )
+        hurst_vs_m.append((m, hurst))
 
-    aggregated_series_dict = _calc_aggregated_series_dict(df)
-
-    rs_results = []
-    var_results = []
-
-    for m in agregation_levels_m:
-        # TODO
-        ...
-
-    print("########################")
-    print("########################")
-    print("########################")
+    hurst_df = pd.DataFrame(hurst_vs_m, columns=["aggregation_level", "hurst_rs"])
+    return hurst_df, rs_df
 
 
 #############################################
@@ -561,114 +462,125 @@ def _generate_synthetic_interarrival_df(n_packets=10000, heavy_tail=True, seed=4
     Returns:
         pd.DataFrame: With columns 'time', 'inter_arrival', 'pkt_size', 'ttl'
     """
-    np.random.seed(seed)
-
+    rng = np.random.default_rng(seed)
     if heavy_tail:
-        # Pareto distribution for heavy-tailed inter-arrivals
-        inter_arrivals = np.random.pareto(a=2.5, size=n_packets) + 0.1
+        inter_arrivals = rng.pareto(a=2.5, size=n_packets) * 0.01
     else:
-        # Exponential for memoryless inter-arrivals
-        inter_arrivals = np.random.exponential(scale=1.0, size=n_packets)
-    inter_arrivals = inter_arrivals * 0.001
+        inter_arrivals = rng.exponential(scale=0.01, size=n_packets)
 
     timestamps = np.cumsum(inter_arrivals)
-
-    pkt_sizes = np.random.randint(40, 1500, size=n_packets)  # Ethernet-like sizes
-    ttls = np.random.randint(32, 128, size=n_packets)  # Some TTL range
+    pkt_sizes = rng.integers(low=60, high=1514, size=n_packets)
 
     df = pd.DataFrame(
         {
             "timestamp": timestamps,
             "inter_arrival": inter_arrivals,
             "pkt_size": pkt_sizes,
-            "ttl": ttls,
+            "ttl": 64,
         }
     )
 
     return df
 
 
-def test_calc_self_similarity_stats_as_df():
-    result = calc_self_similarity_stats_as_df(None)
-    # Plot R/S
-    rs_df = result["rs"]
-    plt.figure(figsize=(8, 4))
-    plt.plot(rs_df["log_m"], rs_df["log_rs"], "o-", label="R/S")
-    plt.xlabel("log(m)")
-    plt.ylabel("log(R/S)")
-    plt.title("R/S Plot")
-    plt.grid(True)
-    plt.legend()
-    plt.savefig("rs_plot.png")
-    plt.clf()
+def test_calc_self_similarity_stats_as_df_01():
+    # Run the analysis (synthetic test)
+    hurst_df, rs_df = self_similarity_rs(ac=None)
 
-    # Plot Variance
-    var_df = result["var"]
-    plt.figure(figsize=(8, 4))
-    plt.plot(var_df["log_m"], var_df["log_var"], "o-", color="orange", label="Variance")
-    plt.xlabel("log(m)")
-    plt.ylabel("log(Variance)")
-    plt.title("Variance-Time Plot")
-    plt.grid(True)
-    plt.legend()
-    plt.savefig("variance_plot.png")
-    plt.clf()
-
-    # Periodogram
-    periodogram_df = result["periodogram"]
-    plt.figure(figsize=(8, 4))
+    # --- Plot 1: R/S curve (Figure 2a) ---
+    plt.figure(figsize=(10, 6))
+    plt.plot(rs_df["log_n"], rs_df["log_rs"], marker="o", label="R/S curve")
     plt.plot(
-        periodogram_df["log_freq"],
-        periodogram_df["log_power"],
-        ".",
-        label="Periodogram",
+        rs_df["log_n"],
+        rs_df["slope_1_line"],
+        linestyle="--",
+        color="gray",
+        label="Slope = 1.0",
     )
-    plt.xlabel("log(Frequency)")
-    plt.ylabel("log(Power)")
-    plt.title("Periodogram")
-    plt.grid(True)
+    plt.plot(
+        rs_df["log_n"],
+        rs_df["slope_half_line"],
+        linestyle="--",
+        color="black",
+        label="Slope = 0.5",
+    )
+    plt.title("R/S Analysis (Figure 2a style)")
+    plt.xlabel("log(Block Size)")
+    plt.ylabel("log(R/S)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
     plt.legend()
-    plt.savefig("periodogram_plot.png")
-    plt.clf()
+    plt.tight_layout()
+    plt.savefig("rs_plot_01.png")
+    plt.close()
 
-    # Plot Hurst estimate vs aggregation level
-    hurst_df = result["hurst"]
-    print("\nHurst Exponent Estimates:")
-    print(hurst_df)
-
-    plt.figure(figsize=(8, 4))
-
-    # R/S and Variance are related to aggregation level
-    plt.axhline(
-        y=hurst_df.loc[hurst_df["method"] == "rs", "hurst"].values[0],
-        color="b",
-        linestyle="--",
-        label="R/S Estimate",
+    # --- Plot 2: Hurst exponent vs aggregation level m (Figure 2d) ---
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        hurst_df["aggregation_level"],
+        hurst_df["hurst_rs"],
+        marker="o",
+        linestyle="-",
+        color="blue",
     )
-    plt.axhline(
-        y=hurst_df.loc[hurst_df["method"] == "var", "hurst"].values[0],
-        color="orange",
-        linestyle="--",
-        label="Variance Estimate",
-    )
+    plt.axhline(y=0.5, color="gray", linestyle="--", label="H = 0.5 (No correlation)")
+    plt.axhline(y=1.0, color="black", linestyle="--", label="H = 1.0 (Perfect LRD)")
+    plt.xscale("log")
+    plt.xlabel("Aggregation Level (m)")
+    plt.ylabel("Estimated Hurst Exponent (R/S)")
+    plt.title("Hurst Exponent vs Aggregation Level (Figure 2d style)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("hurst_estimates_01.png")
+    plt.close()
 
-    # Spectral estimate as horizontal line
-    plt.axhline(
-        y=hurst_df.loc[hurst_df["method"] == "spec", "hurst"].values[0],
-        color="green",
-        linestyle="--",
-        label="Spectral Estimate",
-    )
 
-    plt.xlabel("Aggregation level (m)")
+def test_calc_self_similarity_stats_as_df():
+    hurst_df, rs_df = self_similarity_rs_cloudy(ac=None)
+
+    # --- Plot 1: Cloudy R/S ---
+    plt.figure(figsize=(10, 6))
+    plt.scatter(rs_df["log_n"], rs_df["log_rs"], alpha=0.4, s=15, label="R/S values")
+    plt.plot(
+        rs_df["log_n"],
+        rs_df["slope_1_line"],
+        linestyle="--",
+        color="gray",
+        label="slope = 1.0",
+    )
+    plt.plot(
+        rs_df["log_n"],
+        rs_df["slope_half_line"],
+        linestyle="--",
+        color="black",
+        label="slope = 0.5",
+    )
+    plt.title("R/S Analysis with Multiple Windows (Cloudy Plot)")
+    plt.xlabel("log(Block Size)")
+    plt.ylabel("log(R/S)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("rs_cloudy_plot.png")
+
+    # --- Plot 2: Hurst vs Aggregation Level ---
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        hurst_df["aggregation_level"], hurst_df["hurst_rs"], marker="o", linestyle="-"
+    )
+    plt.axhline(y=0.5, color="gray", linestyle="--", label="H = 0.5 (no correlation)")
+    plt.axhline(y=1.0, color="black", linestyle="--", label="H = 1.0 (strong LRD)")
+    plt.xscale("log")
+    plt.xlabel("Aggregation Level (m)")
     plt.ylabel("Estimated Hurst Exponent")
-    plt.title("Hurst Exponent Estimates")
-    plt.grid(True)
+    plt.title("Hurst vs Aggregation Level")
+    plt.grid(True, linestyle="--", linewidth=0.5)
     plt.legend()
-    plt.savefig("hurst_estimates.png")
-    plt.clf()
+    plt.tight_layout()
+    plt.savefig("hurst_vs_aggregation.png")
 
 
 if __name__ == "__main__":
-    calc_self_similarity_stats_as_df(None)
+    # calc_self_similarity_stats_as_df(None)
     # test_calc_self_similarity_stats_as_df()
+    test_calc_self_similarity_stats_as_df()
