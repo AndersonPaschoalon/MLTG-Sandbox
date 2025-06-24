@@ -4,7 +4,6 @@ from pandas import DataFrame
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
-from trace_analyzer.analysis_registry import AnalysisRegistry
 from trace_analyzer.core import get_env, get_mem, load_env
 
 env = get_env()
@@ -103,6 +102,20 @@ def filter_df_map_by_target(df_map: dict[str, DataFrame], target_list: list[str]
 
 
 def load_stored_analysis_data(target_list=None):
+    """
+    Load post-analysis data from CSVs, prepare in-memory DataFrames and compute min time ranges.
+
+    Data types loaded:
+    - Inter-arrival Data: mem.inter_df_map + mem.inter_min_time_max
+    - Bandwidth/PPS/FPS Data: mem.bw_df_map + mem.bw_min_time_max
+    - Burst Durations: mem.bdurations_df_map
+    - Burst Intervals: mem.bintervals_df_map
+    - Burst Sizes: mem.bsizes_df_map
+
+    Args:
+        target_list (list[str], optional): Filter for which targets to load. If empty, load all.
+    """
+
     # utility 01
     def _load_data_with_min_time(data_target, target_list, time_column="time"):
         """
@@ -139,67 +152,6 @@ def load_stored_analysis_data(target_list=None):
                 data_map[target] = df
         return data_map
 
-    for analysis_name, analysis_def in AnalysisRegistry.get_all().items():
-        if analysis_def["requires_min_time"]:
-            df_map, min_time = _load_data_with_min_time(
-                getattr(mem, analysis_def["mem_attribute"]), target_list, "time"
-            )
-            print(
-                f" -  setting {analysis_name}_df_map and {analysis_name}_min_time_max for {analysis_name}"
-            )
-            setattr(mem, f"{analysis_name}_df_map", df_map)
-            setattr(mem, f"{analysis_name}_min_time_max", min_time)
-        else:
-            df_map = _load_data_map(
-                getattr(mem, analysis_def["mem_attribute"]), target_list
-            )
-            print(f" -  setting {analysis_name}_df_map for {analysis_name}")
-            setattr(mem, f"{analysis_name}_df_map", df_map)
-
-
-"""
-def _old_load_stored_analysis_data(target_list=None):
-    #
-    #Load post-analysis data from CSVs, prepare in-memory DataFrames and compute min time ranges.
-    #Data types loaded:
-    #- Inter-arrival Data: mem.inter_df_map + mem.inter_min_time_max
-    #- Bandwidth/PPS/FPS Data: mem.bw_df_map + mem.bw_min_time_max
-    #- Burst Durations: mem.bdurations_df_map
-    #- Burst Intervals: mem.bintervals_df_map
-    #- Burst Sizes: mem.bsizes_df_map
-    #Args:
-    #    target_list (list[str], optional): Filter for which targets to load. If empty, load all.
-    
-    # utility 01
-    def _load_data_with_min_time(data_target, target_list, time_column="time"):
-        #Load CSVs for data targets and compute the minimal max time across DataFrames.
-        #Returns:
-        #    data_map (dict): target → DataFrame
-        #    min_time_max (float): smallest of all max times
-        data_map = {}
-        min_time_max = None
-
-        for file, target in data_target:
-            if _plot_this(target, target_list):
-                df = pd.read_csv(file)
-                data_map[target] = df
-                max_time = df[time_column].max()
-                if min_time_max is None or max_time < min_time_max:
-                    min_time_max = max_time
-        return data_map, min_time_max
-
-    # utility 02
-    def _load_data_map(data_target, target_list):
-        #Load CSVs for data targets into a simple target → DataFrame map.
-        #Returns:
-        #    data_map (dict): target → DataFrame
-        data_map = {}
-        for file, target in data_target:
-            if _plot_this(target, target_list):
-                df = pd.read_csv(file)
-                data_map[target] = df
-        return data_map
-
     if target_list is None:
         target_list = []
 
@@ -220,4 +172,3 @@ def _old_load_stored_analysis_data(target_list=None):
     mem.wavelet_df_map = _load_data_map(mem.waveletdata_target, target_list)
 
     print("load_analysis_data done")
-"""

@@ -1,5 +1,4 @@
 import argparse
-import logging
 import math
 import os
 import sys
@@ -22,7 +21,6 @@ from commons.config.experiment_config import ExperimentConfig
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.enviroment.env import Env
 from commons.enviroment.memory_store import MemoryStore
-from commons.logger.logger import Logger
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
@@ -34,11 +32,6 @@ from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 env = get_env()
 mem = get_mem()
-
-# TODO: Remover, adicionar ao main.py
-Logger.initialize(
-    "./Logs/trace_analyser.log", level_log=logging.DEBUG, level_console=logging.DEBUG
-)
 
 
 def plot_violin_interarrival(target_list=None):
@@ -269,22 +262,16 @@ def plot_bandwidth_cdf(target_list=None):
     Plot the CDF of bandwidth values for each target.
     Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
     """
-    # if target_list:
-    #    df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
-    # else:
-    #    df_map = mem.bw_df_map
-    # truncated_map = {
-    #    target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
-    # }
+    if target_list:
+        df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
+    else:
+        df_map = mem.bw_df_map
 
-    truncated_map, compared_targets = data_loader.prepare_distribution_data(
-        df_map=mem.bw_df_map,
-        time_column="time",
-        max_time=mem.bw_min_time_max,
-        target_list=target_list,
-    )
+    truncated_map = {
+        target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
+    }
 
-    save_path_base = mem.pnf.mkname("bandwidth_cdf", compared_targets)
+    save_path_base = mem.pnf.mkname("bandwidth_cdf", list(truncated_map.keys()))
     plot_functions.plot_cdf(
         df_map=truncated_map,
         column="bandwidth",
@@ -414,3 +401,64 @@ def plot_wavelet_multiresolution_energy_analysis(target_list=None):
         ylabel="log2(Energy(j))",
         save_path_base=filename,
     )
+
+
+def run_tests():
+    print("#########")
+    target_list = []
+    data_loader.load_stored_analysis_data(target_list=target_list)
+    plot_violin_interarrival(target_list=target_list)
+    plot_violin_pkt(target_list=target_list)
+    plot_box_interarrival(target_list=target_list)
+    plot_box_pkt(target_list=target_list)
+    plot_interarrival_pdf(target_list=target_list)
+    plot_interarrival_cdf(target_list=target_list)
+    plot_interarrival_by_index(target_list=target_list)
+    plot_bw_pps_fps_refactored("bandwidth", target_list=None)
+    plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
+    plot_bw_pps_fps_refactored("flow_per_second", target_list=None)
+    plot_pktsize_histogram(target_list=None)
+    plot_bandwidth_cdf()
+    plot_packet_load_cdf()
+    plot_payload_size_cdf()
+    plot_burst_size_violin()
+    plot_inter_burst_interval_cdf()
+    plot_burst_duration_violin()
+    plot_wavelet_multiresolution_energy_analysis()
+
+
+def test_main():
+    try:
+        # create_env("scripts/xml/sample_tests.xml", "Banana")
+        # load_env()
+        # print(mem)
+        cmd_list_tr = False
+        cmd_mk_env = False
+        cmd_rm_env = False
+        cmd_analyze = True
+        cmd_run_tests = True
+
+        # --list-traces
+        if cmd_list_tr:
+            analyzer.list_experiments()
+        # --mk-env
+        if cmd_mk_env:
+            core.create_env("scripts/xml/sample_tests.xml", "Banana")
+            analyzer.load_into_snifferdb()
+            analyzer.list_experiments()
+        # --rm-env
+        if cmd_rm_env:
+            core.rm_env()
+        if cmd_analyze:
+            analyzer.analyze_experiment_and_store()
+        if cmd_run_tests:
+            run_tests()
+    except Exception as ex:
+        print("********** EXCEPTION **********")
+        traceback.print_exc()
+        print("*******************************")
+        print(ex)
+
+
+if __name__ == "__main__":
+    test_main()

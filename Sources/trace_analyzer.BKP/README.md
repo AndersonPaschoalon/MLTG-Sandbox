@@ -7,9 +7,9 @@ The purpose of this tutorial is to explain how to add new analyses to the `trace
 ## ✅ **Overview of the Pipeline Steps**
 
 1. **Register** the analysis in the environment (`core.py`).
-2. **Analyze and export** the analysis as a CSV (`analyzer.py`), for later usage.
-3. **Implement metric extraction** (`metrics_estimator.py`)
-4. **Load** the CSVs generated in the previous step for plotting (`data_loader.py`).
+2. **Analyze and export** the analysis as a CSV (`analyzer.py`).
+3. **Load** the CSV for later plotting (`data_loader.py`).
+4. **Implement metric extraction** (`metrics_estimator.py`) — already done!
 5. **Add plotting** capabilities (`plot_functions.py` + `plotter.py`).
 6. **Run the complete cycle**.
 
@@ -95,41 +95,9 @@ for trace, target in mem.traces_target:
 * For each trace and target, we compute the wavelet features.
 * We store them as `<experiment_dir>/analysis/wavelet.<target>.csv`.
 
-
 ---
 
-## ✅ **3. Metric Extraction in `metrics_estimator.py`**
-
-Here you must implement a function in `metrics_estimator.py`.
-
-This function will be called by `analyze_experiment_and_store()` and will be responsible for **loading the data** and **executing the actual computation** of the desired metric.
-
-You don’t need to worry about connecting to the *right* database — the pipeline does that for you.
-
-For Wavelet Multiresolution Energy Analysis we have this function:
-
-```python
-def calc_wavelet_as_df(ac: AlchemyConnector, ...) -> pd.DataFrame:
-```
-
-It:
-
-* Loads packets from DB;
-* Bins them into time windows;
-* Applies Wavelet Transform;
-* Returns a DataFrame like:
-
-```
-scale, log2_energy, energy_abs
-0,     10.5,        1200.0
-1,     8.2,         500.0
-...
-```
-
-
----
-
-## ✅ **4. Load the Wavelet Data in `data_loader.py`**
+## ✅ **3. Load the Wavelet Data in `data_loader.py`**
 
 In `load_stored_analysis_data()` add:
 
@@ -161,6 +129,36 @@ In this example the function returns two values:
 > **Note:** Any variable may be stored in the `mem` object. The purpose of this pipeline is to normalize the naming convention across all steps. That being said, take care when setting new variables, like `mem.inter_df_map` and `mem.inter_min_time_max`.
 > * Ensure names do not conflict — if the same name is added twice, it will be overwritten, and the pipeline will break.
 > * Follow naming conventions: for instance, DataFrame maps should end with the `df_map` suffix. This reduces the chance of conflicts.
+
+---
+
+## ✅ **4. Metric Extraction in `metrics_estimator.py`**
+
+Here you must implement a function in `metrics_estimator.py`.
+
+This function will be called by `analyze_experiment_and_store()` and will be responsible for **loading the data** and **executing the actual computation** of the desired metric.
+
+You don’t need to worry about connecting to the *right* database — the pipeline does that for you.
+
+For Wavelet Multiresolution Energy Analysis we have this function:
+
+```python
+def calc_wavelet_as_df(ac: AlchemyConnector, ...) -> pd.DataFrame:
+```
+
+It:
+
+* Loads packets from DB;
+* Bins them into time windows;
+* Applies Wavelet Transform;
+* Returns a DataFrame like:
+
+```
+scale, log2_energy, energy_abs
+0,     10.5,        1200.0
+1,     8.2,         500.0
+...
+```
 
 ---
 

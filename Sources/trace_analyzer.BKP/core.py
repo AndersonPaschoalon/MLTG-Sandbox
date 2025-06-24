@@ -1,16 +1,13 @@
 import os
 
-import trace_analyzer.analysis_registry as analysis_registry
 from commons.config.experiment_config import ExperimentConfig
 from commons.enviroment.env import Env
 from commons.enviroment.memory_store import MemoryStore
-from commons.logger.logger import Logger
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
-from trace_analyzer.analysis_registry import AnalysisRegistry
 from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 env_file = ".trace_analyzer_env.json"
@@ -158,21 +155,17 @@ def load_env():
             traces_target.append(tt)
         mem.traces_target = traces_target
 
-        # # regiester csv data files
-        # data_types = [
-        #     (ADNF.BW_PPS_FPS, "bwdata_target"),
-        #     (ADNF.INTERARRIVAL, "interdata_target"),
-        #     (ADNF.BURST_DURATIONS, "burstdurdata_target"),
-        #     (ADNF.BURST_INTERVALS, "burstinterdata_target"),
-        #     (ADNF.BURST_SIZES, "burstsizesdata_target"),
-        #     (ADNF.WAVELET, "waveletdata_target"),
-        # ]
-        # for file_type, mem_attr in data_types:
-        #     # sets a tuple (file, target) to the atribute xpto_target of the corresponding file prefix.
-        #     _load_target_data(file_type, mem_attr)
-        # Dynamically load all registered analysis data
-        analysis_registry.register_all_analysis()
-        for analysis_name, analysis_def in AnalysisRegistry.get_all().items():
-            _load_target_data(analysis_def["csv_prefix"], analysis_def["mem_attribute"])
+        # regiester csv data files
+        data_types = [
+            (ADNF.BW_PPS_FPS, "bwdata_target"),
+            (ADNF.INTERARRIVAL, "interdata_target"),
+            (ADNF.BURST_DURATIONS, "burstdurdata_target"),
+            (ADNF.BURST_INTERVALS, "burstinterdata_target"),
+            (ADNF.BURST_SIZES, "burstsizesdata_target"),
+            (ADNF.WAVELET, "waveletdata_target"),
+        ]
+        for file_type, mem_attr in data_types:
+            # sets a tuple (file, target) to the atribute xpto_target of the corresponding file prefix.
+            _load_target_data(file_type, mem_attr)
 
     print("load_env done")

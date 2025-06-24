@@ -10,7 +10,6 @@ from commons.enviroment.memory_store import MemoryStore
 from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
-from trace_analyzer.analysis_registry import AnalysisRegistry
 from trace_analyzer.core import (
     CMD_ANALYZE,
     CMD_MAKE_ENV,
@@ -89,33 +88,32 @@ def load_into_snifferdb():
     return True
 
 
-"""
-def _old_analyze_experiment_and_store():
-    #
-    # Analyze parsed experiment data and generate CSVs for plotting.
-    #
-    # Workflow:
-    # 1. Load the experiment environment (`load_env()`).
-    # 2. Abort if the experiment has already been analyzed (`env.ex_analyzed` flag).
-    # 3. For each trace in `mem.traces_target`:
-    #    - Open a DB connector (`mem.sniffer.flowdb_connector`).
-    #    - Compute and export to CSV:
-    #        a. Bandwidth, packets per second, and flows per second (`ADNF.BW_PPS_FPS`).
-    #        b. Packet inter-arrival times (`ADNF.INTERARRIVAL`).
-    #        c. Burst metrics:
-    #            - Burst sizes (`ADNF.BURST_SIZES`),
-    #            - Burst durations (`ADNF.BURST_DURATIONS`),
-    #            - Inter-burst intervals (`ADNF.BURST_INTERVALS`).
-    #
-    # Notes:
-    # - CSV files are named and stored via `mem.anf.mknameext`.
-    # - Analysis will not proceed if already marked as analyzed.
-    # - To redo the analysis:
-    #  Use `{CMD_RM_ENV}` to remove the environment, `{CMD_MAKE_ENV}` to reload, and `{CMD_ANALYZE}` to analyze again.
-    #
-    # Returns:
-    #    bool: False if analysis is skipped due to prior completion; True otherwise.
-    # 
+def analyze_experiment_and_store():
+    """
+    Analyze parsed experiment data and generate CSVs for plotting.
+
+    Workflow:
+    1. Load the experiment environment (`load_env()`).
+    2. Abort if the experiment has already been analyzed (`env.ex_analyzed` flag).
+    3. For each trace in `mem.traces_target`:
+        - Open a DB connector (`mem.sniffer.flowdb_connector`).
+        - Compute and export to CSV:
+            a. Bandwidth, packets per second, and flows per second (`ADNF.BW_PPS_FPS`).
+            b. Packet inter-arrival times (`ADNF.INTERARRIVAL`).
+            c. Burst metrics:
+                - Burst sizes (`ADNF.BURST_SIZES`),
+                - Burst durations (`ADNF.BURST_DURATIONS`),
+                - Inter-burst intervals (`ADNF.BURST_INTERVALS`).
+
+    Notes:
+    - CSV files are named and stored via `mem.anf.mknameext`.
+    - Analysis will not proceed if already marked as analyzed.
+    - To redo the analysis:
+      Use `{CMD_RM_ENV}` to remove the environment, `{CMD_MAKE_ENV}` to reload, and `{CMD_ANALYZE}` to analyze again.
+
+    Returns:
+        bool: False if analysis is skipped due to prior completion; True otherwise.
+    """
 
     def bw_pps_fps(target: str, ac: AlchemyConnector):
         df = metrics_estimator.calc_bw_pps_fps_as_df(ac)
@@ -130,11 +128,12 @@ def _old_analyze_experiment_and_store():
         return csv_file
 
     def burst_metrics(target: str, ac: AlchemyConnector, inter_arrival_threshould=0.01):
-        #
-        #Analyze bursts for a given target and DB connector.
-        #- Burst: sequence of packets where inter-arrival < threshold.
-        #- Saves burst sizes, durations, and inter-burst intervals to CSVs.
-        #
+        """
+        Analyze bursts for a given target and DB connector.
+
+        - Burst: sequence of packets where inter-arrival < threshold.
+        - Saves burst sizes, durations, and inter-burst intervals to CSVs.
+        """
         burst_sizes, burst_durations, inter_burst_intervals = (
             metrics_estimator.calc_burst_metrics(ac)
         )
@@ -170,28 +169,6 @@ def _old_analyze_experiment_and_store():
         interarrival(target, ac)
         burst_metrics(target, ac)
         wavelet_analysis(target, ac)
-
-    env.ex_analyzed = True
-    env.save(env_file)
-"""
-
-
-def analyze_experiment_and_store():
-    load_env()
-    if env.ex_analyzed:
-        print(f"Experiment {env.ex_name} already analyzed...")
-        return False
-
-    for trace, target in mem.traces_target:
-        # load connector to the database
-        ac = mem.sniffer.flowdb_connector(trace)
-
-        for analysis_name, analysis_def in AnalysisRegistry.get_all().items():
-            fn_name = analysis_def["metric_fn"].__name__
-            print(f"Running {analysis_name} ({fn_name}) for {target}")
-            df = analysis_def["metric_fn"](ac)
-            csv_file = mem.anf.mknameext(analysis_def["csv_prefix"], target, "csv")
-            df.to_csv(csv_file, index=False)
 
     env.ex_analyzed = True
     env.save(env_file)

@@ -65,6 +65,30 @@
             }
         },
         {
+            "name": "trace_analyzer:test_metrics_estimator",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/trace_analyzer/test_metrics_estimator.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "trace_analyzer:tester",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/trace_analyzer/tester.py",
+            "args": [
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "name": "commons:DatafileNameFormatter",
             "type": "debugpy",
             "request": "launch",
