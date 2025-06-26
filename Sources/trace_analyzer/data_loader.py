@@ -5,7 +5,7 @@ from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
 from trace_analyzer.analysis_registry import AnalysisRegistry
-from trace_analyzer.core import get_env, get_mem, load_env
+from trace_analyzer.core_state import get_env, get_mem, load_env
 
 env = get_env()
 mem = get_mem()

@@ -11,7 +11,7 @@ from commons.naming.analysis_data_name_formatter import (
     AnalysisDataNameFormatter as ADNF,
 )
 from trace_analyzer.analysis_registry import AnalysisRegistry
-from trace_analyzer.core import (
+from trace_analyzer.core_state import (
     CMD_ANALYZE,
     CMD_MAKE_ENV,
     CMD_RM_ENV,

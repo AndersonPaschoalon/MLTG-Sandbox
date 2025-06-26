@@ -2,7 +2,7 @@ import traceback
 
 import trace_analyzer.analysis_registry as analysis_registry
 import trace_analyzer.analyzer as analyzer
-import trace_analyzer.core as core
+import trace_analyzer.core_state as core_state
 import trace_analyzer.data_loader as data_loader
 import trace_analyzer.plotter as plotter
 
@@ -47,12 +47,12 @@ def test_main():
             analyzer.list_experiments()
         # --mk-env
         if cmd_mk_env:
-            core.create_env("scripts/xml/sample_tests.xml", "Banana")
+            core_state.create_env("scripts/xml/sample_tests.xml", "Banana")
             analyzer.load_into_snifferdb()
             analyzer.list_experiments()
         # --rm-env
         if cmd_rm_env:
-            core.rm_env()
+            core_state.rm_env()
         if cmd_analyze:
             analyzer.analyze_experiment_and_store()
         if cmd_run_tests:

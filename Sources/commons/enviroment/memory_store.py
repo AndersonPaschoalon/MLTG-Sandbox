@@ -21,7 +21,11 @@ class MemoryStore(ReprMixin):
         try:
             return self._vars[name]
         except KeyError:
-            raise AttributeError(f"'MemoryStore' has no attribute '{name}'") from None
+            var_names = self.list_vars()
+            vars_names_str = ", ".join(str(x) for x in var_names)
+            raise AttributeError(
+                f"'MemoryStore' has no attribute '{name}'. Available variables are: [{vars_names_str}]"
+            ) from None
 
     def __setattr__(self, name, value):
         self._vars[name] = value

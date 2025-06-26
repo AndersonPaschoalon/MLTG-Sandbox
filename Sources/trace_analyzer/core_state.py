@@ -59,38 +59,77 @@ def rm_env():
 
 def load_env():
     """
-    Load experiment environment configuration and register key runtime objects into `mem`.
+    Initialize and configure the experiment analysis environment by:
+    1. Loading core configuration files
+    2. Setting up directory structures and naming conventions
+    3. Registering available data sources
+    4. Loading previously generated analysis data
 
-    This function performs the following steps:
+    The function follows a strict initialization sequence to ensure proper dependency
+    ordering. All runtime objects are registered in the global `mem` object.
 
-    1. **Load environment configuration**:
-        - Reads from `env_file` JSON and retrieves experiment XML and name.
+    Implementation Details:
+    ----------------------
+    1. ENVIRONMENT VALIDATION:
+       - Verifies existence of environment file (env_file)
+       - Loads experiment XML path and name from environment
+       - Validates XML configuration file exists
 
-    2. **Verify experiment configuration file exists**:
-        - Raises FileNotFoundError if XML file is missing.
+    2. CORE CONFIGURATION LOADING:
+       - Loads experiment configuration (ExperimentConfig)
+       - Initializes naming formatters:
+         * mem.rpcap: Raw PCAP file naming
+         * mem.rcsv: Raw CSV file naming
+         * mem.anf: Analysis file naming
+         * mem.pnf: Plot file naming
+       - Creates SnifferWrapper for trace access
 
-    3. **Register base runtime objects in `mem`**:
-        - Experiment configuration (`mem.c`).
-        - Raw data name formatter (`mem.rpcap` and `mem.rcsv`).
-        - Analysis data name formatter (`mem.anf`).
-        - Plot name formatter (`mem.pnf`).
-        - Sniffer wrapper (`mem.sniffer`).
-        - PCAP files for ground truth, client, and server.
+    3. DATA SOURCE REGISTRATION:
+       - Registers ground truth PCAP
+       - Discovers and registers client/server PCAPs
+       - If environment is marked as loaded (env.ex_loaded):
+         a. Discovers all available traces via SnifferWrapper
+         b. Parses trace metadata (target, ground truth status)
+         c. Registers as (trace_path, target, is_ground_truth) tuples
 
-    4. **If the experiment is marked as loaded**:
-        - Register loaded sniffer traces (`mem.traces_target`) as list of (trace_file, target).
-        - For each analysis type (e.g., wavelet, burst sizes):
-            - Load associated CSVs.
-            - Register as list of (file, target) tuples in corresponding `mem` attribute using `_load_target_data()`.
+    4. ANALYSIS DATA LOADING:
+       - When env.ex_loaded=True:
+         a. Initializes analysis registry
+         b. For each registered analysis:
+            i. Discovers CSV files using analysis-specific prefix
+            ii. Extracts target information from filenames
+            iii. Registers as (csv_path, target) tuples
+         c. Handles both time-aligned and simple analyses
 
-    Finalizes by printing `"load_env done"`.
-
-    Raises:
-        FileNotFoundError: If environment or experiment XML is missing.
+    Error Handling:
+    --------------
+    - Raises FileNotFoundError for missing critical files
+    - Gracefully handles individual analysis load failures
+    - Provides detailed console output about loading progress
 
     Side Effects:
-        - Populates `mem` with all necessary runtime objects for analysis and plotting.
-        - Prints progress to console.
+    ------------
+    - Populates global `mem` object with:
+      * Configuration objects (mem.c, mem.list_configs)
+      * Naming utilities (mem.rpcap, mem.anf, mem.pnf)
+      * Data sources (mem.ground_truth, mem.client_pcaps, mem.server_pcaps)
+      * Trace registry (mem.traces_target)
+      * Analysis data maps (mem.*_df_map)
+    - Modifies environment state (env.ex_loaded)
+    - Creates directory structures if needed
+
+    Returns:
+    -------
+    None
+
+    Example Workflow:
+    ----------------
+    1. First call (fresh environment):
+       - Only loads core configuration
+       - Sets up directory structure
+    2. Subsequent calls (env.ex_loaded=True):
+       - Discovers all available data
+       - Loads analysis CSVs for plotting
     """
 
     def _load_target_data(file_type, mem_attr):
@@ -153,24 +192,12 @@ def load_env():
         ltraces = mem.sniffer.list_loaded_traces()
         traces_target = []
         for trace in ltraces:
-            target = mem.rpcap.parse(trace, RDNF.TEST_TARGET)
-            tt = (trace, target)
+            target, is_groundthruth = mem.rpcap.parse(trace, RDNF.TEST_TARGET)
+            tt = (trace, target, is_groundthruth)
             traces_target.append(tt)
         mem.traces_target = traces_target
 
         # # regiester csv data files
-        # data_types = [
-        #     (ADNF.BW_PPS_FPS, "bwdata_target"),
-        #     (ADNF.INTERARRIVAL, "interdata_target"),
-        #     (ADNF.BURST_DURATIONS, "burstdurdata_target"),
-        #     (ADNF.BURST_INTERVALS, "burstinterdata_target"),
-        #     (ADNF.BURST_SIZES, "burstsizesdata_target"),
-        #     (ADNF.WAVELET, "waveletdata_target"),
-        # ]
-        # for file_type, mem_attr in data_types:
-        #     # sets a tuple (file, target) to the atribute xpto_target of the corresponding file prefix.
-        #     _load_target_data(file_type, mem_attr)
-        # Dynamically load all registered analysis data
         analysis_registry.register_all_analysis()
         for analysis_name, analysis_def in AnalysisRegistry.get_all().items():
             _load_target_data(analysis_def["csv_prefix"], analysis_def["mem_attribute"])

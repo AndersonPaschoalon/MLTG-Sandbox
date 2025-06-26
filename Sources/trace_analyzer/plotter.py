@@ -14,7 +14,7 @@ from scipy.stats import gaussian_kde
 
 import commons.pylang.pylang as pl
 import trace_analyzer.analyzer as analyzer
-import trace_analyzer.core as core
+import trace_analyzer.core_state as core_state
 import trace_analyzer.data_loader as data_loader
 import trace_analyzer.metrics_estimator as metrics_estimator
 import trace_analyzer.plot_functions as plot_functions
@@ -29,7 +29,7 @@ from commons.naming.analysis_data_name_formatter import (
 from commons.naming.plot_name_formatter import PlotNameFormatter as PNF
 from commons.naming.raw_data_name_formatter import RawDataNameFormatter as RDNF
 from commons.pylang.os_utils import OSUtils as osutils
-from trace_analyzer.core import get_env, get_mem, load_env
+from trace_analyzer.core_state import get_env, get_mem, load_env
 from trace_analyzer.sniffer_wrapper import SnifferWrapper
 
 env = get_env()
@@ -45,12 +45,12 @@ def plot_violin_interarrival(target_list=None):
     """
     Plot violin distribution of inter-arrival times for each target.
 
-    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    Filters data up to mem.interarrival_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        df_map=mem.inter_df_map,
+        df_map=mem.interarrival_df_map,
         time_column="time",
-        max_time=mem.inter_min_time_max,
+        max_time=mem.interarrival_min_time_max,
         target_list=target_list,
     )
     filename = mem.pnf.mkname("violin-interarrival", compared_targets)
@@ -70,12 +70,12 @@ def plot_violin_pkt(target_list=None):
     """
     Plot violin distribution of packet sizes for each target.
 
-    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    Filters data up to mem.interarrival_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        df_map=mem.inter_df_map,
+        df_map=mem.interarrival_df_map,
         time_column="time",
-        max_time=mem.inter_min_time_max,
+        max_time=mem.interarrival_min_time_max,
         target_list=target_list,
     )
     filename = mem.pnf.mkname("violin-pkt", compared_targets)
@@ -96,12 +96,12 @@ def plot_box_interarrival(target_list=None):
     """
     Plot boxplot distribution of inter-arrival times for each target.
 
-    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    Filters data up to mem.interarrival_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        df_map=mem.inter_df_map,
+        df_map=mem.interarrival_df_map,
         time_column="time",
-        max_time=mem.inter_min_time_max,
+        max_time=mem.interarrival_min_time_max,
         target_list=target_list,
     )
     filename = mem.pnf.mkname("box-interarrival", compared_targets)
@@ -121,12 +121,12 @@ def plot_box_pkt(target_list=None):
     """
     Plot boxplot distribution of packet sizes for each target.
 
-    Filters data up to mem.inter_min_time_max and optionally by target_list.
+    Filters data up to mem.interarrival_min_time_max and optionally by target_list.
     """
     filtered_df_map, compared_targets = data_loader.prepare_distribution_data(
-        df_map=mem.inter_df_map,
+        df_map=mem.interarrival_df_map,
         time_column="time",
-        max_time=mem.inter_min_time_max,
+        max_time=mem.interarrival_min_time_max,
         target_list=target_list,
     )
     filename = mem.pnf.mkname("box-pkt", compared_targets)
@@ -147,7 +147,7 @@ def plot_interarrival_pdf(target_list=None):
     """
     Plot the PDF of inter-arrival times (log-log KDE).
     """
-    df_map = data_loader.filter_df_map_by_target(mem.inter_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(mem.interarrival_df_map, target_list)
     targets = list(df_map.keys())
 
     filename = mem.pnf.mkname("pdf-interarrival", targets)
@@ -168,7 +168,7 @@ def plot_interarrival_cdf(target_list=None):
     Wrapper to plot the CDF of inter-arrival times using the generic plot_cdf().
     Filters targets if target_list is provided.
     """
-    df_map = data_loader.filter_df_map_by_target(mem.inter_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(mem.interarrival_df_map, target_list)
     targets = list(df_map.keys())
     filename = mem.pnf.mkname("cdf-interarrival", targets)
 
@@ -186,7 +186,7 @@ def plot_interarrival_by_index(target_list=None):
     """
     Plot inter-arrival time over packet index, per target.
     """
-    df_map = data_loader.filter_df_map_by_target(mem.inter_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(mem.interarrival_df_map, target_list)
 
     # Ensure 'index' column exists
     for df in df_map.values():
@@ -210,11 +210,11 @@ def plot_interarrival_by_index(target_list=None):
 
 def plot_bw_pps_fps_refactored(plot_type, target_list=None):
     """
-    Plot bandwidth, packets/sec or flows/sec using preloaded mem.bw_df_map and mem.bw_min_time_max.
+    Plot bandwidth, packets/sec or flows/sec using preloaded mem.bw_pps_fps_df_map and mem.bw_pps_fps_min_time_max.
     """
-    df_map = data_loader.filter_df_map_by_target(mem.bw_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(mem.bw_pps_fps_df_map, target_list)
     compared = list(df_map.keys())
-    tmax = mem.bw_min_time_max
+    tmax = mem.bw_pps_fps_min_time_max
 
     metric_map = {
         "bandwidth": ("bandwidth", "bandwidth_average", "Bandwidth (bps)"),
@@ -243,14 +243,15 @@ def plot_pktsize_histogram(target_list=None):
     """
     Plot a separate packet size histogram for each target.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
-    else:
-        df_map = mem.inter_df_map
+    # if target_list:
+    #    df_map = {k: v for k, v in mem.interarrival_df_map.items() if k in target_list}
+    # else:
+    #    df_map = mem.interarrival_df_map
+    df_map = data_loader.filter_df_map_by_target(mem.interarrival_df_map, target_list)
 
     colors = cm.get_cmap("tab10")
     for i, (target, df) in enumerate(df_map.items()):
-        df = df[df["time"] <= mem.bw_min_time_max]
+        df = df[df["time"] <= mem.bw_pps_fps_min_time_max]
         save_path = mem.pnf.mkname("histogram-pktsize", [target])
         color = colors(i % 10)
         plot_functions.plot_histogram(
@@ -267,20 +268,12 @@ def plot_pktsize_histogram(target_list=None):
 def plot_bandwidth_cdf(target_list=None):
     """
     Plot the CDF of bandwidth values for each target.
-    Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
+    Uses preloaded and truncated data from mem.bw_pps_fps_df_map and mem.bw_pps_fps_min_time_max.
     """
-    # if target_list:
-    #    df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
-    # else:
-    #    df_map = mem.bw_df_map
-    # truncated_map = {
-    #    target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
-    # }
-
     truncated_map, compared_targets = data_loader.prepare_distribution_data(
-        df_map=mem.bw_df_map,
+        df_map=mem.bw_pps_fps_df_map,
         time_column="time",
-        max_time=mem.bw_min_time_max,
+        max_time=mem.bw_pps_fps_min_time_max,
         target_list=target_list,
     )
 
@@ -298,19 +291,15 @@ def plot_bandwidth_cdf(target_list=None):
 def plot_payload_size_cdf(target_list=None):
     """
     Plot the CDF of packet sizes for each target.
-    Uses preloaded and truncated interarrival data from mem.inter_df_map and mem.inter_min_time_max.
+    Uses preloaded and truncated interarrival data from mem.interarrival_df_map and mem.interarrival_min_time_max.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.inter_df_map.items() if k in target_list}
-    else:
-        df_map = mem.inter_df_map
-
-    truncated_map = {
-        target: df[df["time"] <= mem.inter_min_time_max]
-        for target, df in df_map.items()
-    }
-
-    save_path_base = mem.pnf.mkname("payload_size_cdf", list(truncated_map.keys()))
+    truncated_map, compared_targets = data_loader.prepare_distribution_data(
+        df_map=mem.interarrival_df_map,
+        time_column="time",
+        max_time=mem.interarrival_min_time_max,
+        target_list=target_list,
+    )
+    save_path_base = mem.pnf.mkname("payload_size_cdf", compared_targets)
     plot_functions.plot_cdf(
         df_map=truncated_map,
         column="pkt_size",
@@ -324,18 +313,15 @@ def plot_payload_size_cdf(target_list=None):
 def plot_packet_load_cdf(target_list=None):
     """
     Plot the CDF of packet load (packets per second) for each target.
-    Uses preloaded and truncated data from mem.bw_df_map and mem.bw_min_time_max.
+    Uses preloaded and truncated data from mem.bw_pps_fps_df_map and mem.bw_pps_fps_min_time_max.
     """
-    if target_list:
-        df_map = {k: v for k, v in mem.bw_df_map.items() if k in target_list}
-    else:
-        df_map = mem.bw_df_map
-
-    truncated_map = {
-        target: df[df["time"] <= mem.bw_min_time_max] for target, df in df_map.items()
-    }
-
-    save_path_base = mem.pnf.mkname("packet_load_cdf", list(truncated_map.keys()))
+    truncated_map, compared_targets = data_loader.prepare_distribution_data(
+        df_map=mem.bw_pps_fps_df_map,
+        time_column="time",
+        max_time=mem.bw_pps_fps_min_time_max,
+        target_list=target_list,
+    )
+    save_path_base = mem.pnf.mkname("packet_load_cdf", compared_targets)
     plot_functions.plot_cdf(
         df_map=truncated_map,
         column="npackets",
@@ -350,7 +336,9 @@ def plot_burst_duration_violin(target_list=None):
     """
     Plot violin distribution of burst durations for each target.
     """
-    df_map = data_loader.filter_df_map_by_target(mem.bdurations_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(
+        mem.burst_durations_df_map, target_list
+    )
     filename = mem.pnf.mkname("violin-burst-duration", list(df_map.keys()))
     plot_functions.plot_distribution_plot(
         df_map=df_map,
@@ -368,7 +356,9 @@ def plot_inter_burst_interval_cdf(target_list=None):
     """
     Plot CDF of inter-burst intervals for each target.
     """
-    df_map = data_loader.filter_df_map_by_target(mem.bintervals_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(
+        mem.burst_intervals_df_map, target_list
+    )
     filename = mem.pnf.mkname("burst_interval_cdf", list(df_map.keys()))
     plot_functions.plot_cdf(
         df_map=df_map,
@@ -384,7 +374,7 @@ def plot_burst_size_violin(target_list=None):
     """
     Plot violin distribution of burst sizes for each target.
     """
-    df_map = data_loader.filter_df_map_by_target(mem.bsizes_df_map, target_list)
+    df_map = data_loader.filter_df_map_by_target(mem.burst_sizes_df_map, target_list)
     filename = mem.pnf.mkname("violin-burst-size", list(df_map.keys()))
     plot_functions.plot_distribution_plot(
         df_map=df_map,

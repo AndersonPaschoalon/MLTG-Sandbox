@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List
+from typing import List, Tuple
 
 from commons.pylang.repr_mixin import ReprMixin
 
@@ -153,7 +153,7 @@ class RawDataNameFormatter(ReprMixin):
         ]
 
     @staticmethod
-    def parse(file_name: str, field_key: str = "test_target") -> str:
+    def parse(file_name: str, field_key: str = "test_target") -> Tuple[str, bool]:
         """
         Extract a specific component from a filename based on field key.
 
@@ -188,6 +188,7 @@ class RawDataNameFormatter(ReprMixin):
 
         Returns:
             str: The extracted value corresponding to the field key.
+            bool: whatever file_name is from a ground-truth pcap or not.
 
         Raises:
             ValueError: If the filename is not in the expected format or field key is invalid.
@@ -207,7 +208,7 @@ class RawDataNameFormatter(ReprMixin):
                 "file_extension": 6,
             }
             try:
-                return parts[component_map[field_key]]
+                return parts[component_map[field_key]], False
             except KeyError:
                 raise ValueError(f"Invalid field key: {field_key}")
         elif len == 6:
@@ -221,7 +222,7 @@ class RawDataNameFormatter(ReprMixin):
             }
 
             try:
-                return parts[component_map[field_key]]
+                return parts[component_map[field_key]], False
             except KeyError:
                 raise ValueError(f"Invalid field key: {field_key}")
         else:  # len == 3
@@ -232,7 +233,7 @@ class RawDataNameFormatter(ReprMixin):
             }
 
             try:
-                return parts[component_map[field_key]]
+                return parts[component_map[field_key]], True
             except KeyError:
                 raise ValueError(f"Invalid field key: {field_key}")
 
