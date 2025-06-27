@@ -1,34 +1,38 @@
 import traceback
 
-import trace_analyzer.analysis_registry as analysis_registry
-import trace_analyzer.analyzer as analyzer
-import trace_analyzer.core_state as core_state
-import trace_analyzer.data_loader as data_loader
-import trace_analyzer.plotter as plotter
+import trace_analyzer.core.analyzer as analyzer
+import trace_analyzer.core.data_loader as data_loader
+import trace_analyzer.core.state as core_state
+import trace_analyzer.plotter.plotters.burstiness as pltbrt
+import trace_analyzer.plotter.plotters.packet_level as pltpkt
+import trace_analyzer.plotter.plotters.scaling as pltscl
 
 
 def run_tests():
     print("#########")
     target_list = []
     data_loader.load_stored_analysis_data(target_list=target_list)
-    plotter.plot_violin_interarrival(target_list=target_list)
-    plotter.plot_violin_pkt(target_list=target_list)
-    plotter.plot_box_interarrival(target_list=target_list)
-    plotter.plot_box_pkt(target_list=target_list)
-    plotter.plot_interarrival_pdf(target_list=target_list)
-    plotter.plot_interarrival_cdf(target_list=target_list)
-    plotter.plot_interarrival_by_index(target_list=target_list)
-    plotter.plot_bw_pps_fps_refactored("bandwidth", target_list=None)
-    plotter.plot_bw_pps_fps_refactored("packet_per_second", target_list=None)
-    plotter.plot_bw_pps_fps_refactored("flow_per_second", target_list=None)
-    plotter.plot_pktsize_histogram(target_list=None)
-    plotter.plot_bandwidth_cdf()
-    plotter.plot_packet_load_cdf()
-    plotter.plot_payload_size_cdf()
-    plotter.plot_burst_size_violin()
-    plotter.plot_inter_burst_interval_cdf()
-    plotter.plot_burst_duration_violin()
-    plotter.plot_wavelet_multiresolution_energy_analysis()
+
+    pltpkt.plot_violin_interarrival(target_list=target_list)
+    pltpkt.plot_violin_pkt(target_list=target_list)
+    pltpkt.plot_box_interarrival(target_list=target_list)
+    pltpkt.plot_box_pkt(target_list=target_list)
+    pltpkt.plot_interarrival_pdf(target_list=target_list)
+    pltpkt.plot_interarrival_cdf(target_list=target_list)
+    pltpkt.plot_interarrival_by_index(target_list=target_list)
+    pltpkt.plot_bw_pps_fps("bandwidth", target_list=None)
+    pltpkt.plot_bw_pps_fps("packet_per_second", target_list=None)
+    pltpkt.plot_bw_pps_fps("flow_per_second", target_list=None)
+    pltpkt.plot_pktsize_histogram(target_list=None)
+    pltpkt.plot_bandwidth_cdf()
+    pltpkt.plot_packet_load_cdf()
+    pltpkt.plot_payload_size_cdf()
+
+    pltbrt.plot_burst_size_violin()
+    pltbrt.plot_inter_burst_interval_cdf()
+    pltbrt.plot_burst_duration_violin()
+
+    pltscl.plot_wavelet_multiresolution_energy_analysis()
 
 
 def test_main():
