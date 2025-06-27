@@ -66,8 +66,8 @@
 - [Torrence 1998 wavelet guide bams](./Papers/TrafficValidation/Torrence_1998_Wavelet_Guide_BAMS.pdf)
 - [How to validate traffic generators](./Papers/TrafficValidation/How_to_Validate_Traffic_Generators.pdf)
 - [A non-intrusive, wavelet-based approach to detecting network performance problems](./Papers/TrafficValidation/A%20non-intrusive,%20wavelet-based%20approach%20to%20detecting%20network%20performance%20problems.pdf)
--   [Analytic Evaluation of RED Performance.pdf](./Papers/TrafficValidation/Analytic%20Evaluation%20of%20RED%20Performance.pdf): Este paper pode ser muito util pois ele estabelece um framework de validação do impacto de tráfego self-simular em middleboxes. Inclusive ele propõe um cenário de validação semelhante ao que eu estou utilizando.
-
+- [Analytic Evaluation of RED Performance.pdf](./Papers/TrafficValidation/Analytic%20Evaluation%20of%20RED%20Performance.pdf): Este paper pode ser muito util pois ele estabelece um framework de validação do impacto de tráfego self-simular em middleboxes. Inclusive ele propõe um cenário de validação semelhante ao que eu estou utilizando.
+- [On the Self-Similar Nature of Ethernet Traffic](./Papers/TrafficValidation/On%20the%20Self-Similar%20Nature%20of%20Ethernet%20Traffic.pdf)
 
 ---
 
