@@ -35,6 +35,7 @@ class AnalysisRegistry:
 
 
 def register_all_analysis():
+
     # Bandwidth/PPS/FPS analysis
     AnalysisRegistry.register(
         name="bw_pps_fps",
@@ -85,5 +86,23 @@ def register_all_analysis():
         mem_attribute="waveletdata_target",
         csv_prefix="wavelet",
         metric_fn=metrics_scaling.calc_wavelet_as_df,
+        requires_min_time=False,
+    )
+
+    AnalysisRegistry.register(
+        name="hurst_rs",
+        display_name="Hurst R/S Analysis",
+        mem_attribute="hurstrsdata_target",
+        csv_prefix="hurst_rs",
+        metric_fn=metrics_scaling.calc_rs_analysis_as_df_dense,
+        requires_min_time=False,
+    )
+
+    AnalysisRegistry.register(
+        name="hurst_variancetime",
+        display_name="Hurst Variance-Time Analysis",
+        mem_attribute="hurstvariancetimedata_target",
+        csv_prefix="hurst_variancetime",
+        metric_fn=metrics_scaling.calc_variance_time_analysis_as_df,
         requires_min_time=False,
     )

@@ -1034,6 +1034,124 @@ def test_self_similarity_stats_gemini2():
     )
 
 
+#############################
+
+
+def deepseek_calc_rs_analysis_as_df(
+    ac: AlchemyConnector,
+    flow_id: int = 0,
+    min_block_size: int = 10,
+    max_block_size: int = 10000,
+    num_points: int = 50,
+) -> pd.DataFrame:
+    """
+    Perform R/S analysis on packet arrival data for Figure 2a.
+
+    Returns DataFrame with:
+    - log10_block_size: x-axis values (log10(d))
+    - log10_rs: y-axis values (log10(R/S))
+    - line_1: Reference line with slope 1
+    - line_05: Reference line with slope 0.5
+    - hurst_estimate: Single Hurst estimate for the full plot
+    """
+    # Load and prepare data
+    df = get_packet_arrival_df(ac, flow_id=flow_id)
+    bytes_per_bin = df["bytes"].resample("10ms").sum().values
+
+    # Generate block sizes
+    block_sizes = np.unique(
+        np.logspace(
+            np.log10(min_block_size),
+            np.log10(max_block_size),
+            num=num_points,
+            dtype=int,
+        )
+    )
+
+    results = []
+    for m in block_sizes:
+        if m >= len(bytes_per_bin):
+            continue
+
+        k = len(bytes_per_bin) // m
+        truncated = bytes_per_bin[: k * m]
+        reshaped = truncated.reshape((k, m))
+
+        block_rs = []
+        for block in reshaped:
+            mean = np.mean(block)
+            dev = block - mean
+            cum_dev = np.cumsum(dev)
+            R = np.max(cum_dev) - np.min(cum_dev)
+            S = np.std(block, ddof=1)
+            if S > 0:
+                block_rs.append(R / S)
+
+        if block_rs:
+            results.append({"block_size": m, "log10_rs": np.log10(np.mean(block_rs))})
+
+    rs_df = pd.DataFrame(results)
+    if rs_df.empty:
+        return pd.DataFrame()
+
+    # Calculate single Hurst estimate for the full plot
+    x = np.log10(rs_df["block_size"])
+    y = rs_df["log10_rs"]
+    slope, intercept, _, _, _ = linregress(x, y)
+
+    # Prepare final output
+    rs_df["log10_block_size"] = np.log10(rs_df["block_size"])
+    rs_df["line_1"] = x * 1.0 + intercept
+    rs_df["line_05"] = x * 0.5 + intercept
+    rs_df["hurst_estimate"] = slope  # Single value for all rows
+
+    return rs_df[
+        ["log10_block_size", "log10_rs", "line_1", "line_05", "hurst_estimate"]
+    ]
+
+
+def deepseek_calc_hurst_vs_aggregation(
+    ac: AlchemyConnector,
+    flow_id: int = 0,
+    aggregation_levels: list = [1, 5, 10, 50, 100, 500, 1000],
+) -> pd.DataFrame:
+    """
+    Calculate Hurst estimates at different aggregation levels for Figure 2d.
+
+    Returns DataFrame with:
+    - aggregation_level: m values
+    - hurst_estimate: H estimate at each level
+    - method: 'rs_analysis' for compatibility with other methods
+    """
+    df = get_packet_arrival_df(ac, flow_id=flow_id)
+    bytes_per_bin = df["bytes"].resample("10ms").sum().values
+
+    results = []
+    for m in aggregation_levels:
+        if m >= len(bytes_per_bin):
+            continue
+
+        # Create aggregated series
+        k = len(bytes_per_bin) // m
+        truncated = bytes_per_bin[: k * m]
+        aggregated = truncated.reshape((k, m)).mean(axis=1)
+
+        # Calculate R/S Hurst for this aggregated series
+        rs_df = calc_rs_analysis_as_df(
+            ac, flow_id, min_block_size=10, max_block_size=k // 10
+        )
+        if not rs_df.empty:
+            results.append(
+                {
+                    "aggregation_level": m,
+                    "hurst_estimate": rs_df["hurst_estimate"].iloc[0],
+                    "method": "rs_analysis",
+                }
+            )
+
+    return pd.DataFrame(results)
+
+
 if __name__ == "__main__":
     # calc_self_similarity_stats_as_df(None)
     # test_calc_self_similarity_stats_as_df()'

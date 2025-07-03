@@ -333,3 +333,65 @@ def plot_multiline_metric(
     plt.close()
 
     return png_file
+
+
+# Plot function similar to Figure 2a of the paper
+def plot_single_rs_analysis(
+    df, title="R/S Analysis", save_path_base="rs_analysis_plot"
+) -> str:
+    plt.figure(figsize=(8, 6))
+
+    # Scatter all R/S data points
+    plt.scatter(
+        df["log10_block_size"],
+        df["log10_rs"],
+        s=15,
+        marker="+",
+        label="R/S values",
+        alpha=0.6,
+    )
+
+    # Reference lines from origin
+    x = np.linspace(df["log10_block_size"].min(), df["log10_block_size"].max(), 100)
+    plt.plot(x, x * 1.0, "--", color="gray", label="H = 1.0 (Brownian)")
+    plt.plot(x, x * 0.5, "--", color="black", label="H = 0.5 (White Noise)")
+
+    plt.title(title)
+    plt.xlabel("log10(Block Size)")
+    plt.ylabel("log10(R/S)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+
+    path = f"{save_path_base}.png"
+    plt.savefig(path, dpi=300)
+    plt.close()
+    return path
+
+
+def plot_variance_time_cloud(
+    df, save_path_base="variance_time_plot", title="Variance-Time Plot"
+):
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(
+        df["log10_block_size"], df["log10_variance"], s=10, alpha=0.6, label="Variance"
+    )
+    plt.plot(
+        df["log10_block_size"],
+        df["line_-1"],  # this is the line 382
+        linestyle="--",
+        color="gray",
+        label="slope = -1",
+    )
+    plt.title(title)
+    plt.xlabel("log10(Block Size)")
+    plt.ylabel("log10(Variance)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+
+    filename = f"{save_path_base}.png"
+    plt.savefig(filename, dpi=300)
+    plt.close()
+    return filename

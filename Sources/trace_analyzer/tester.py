@@ -33,6 +33,8 @@ def run_tests():
     pltbrt.plot_burst_duration_violin()
 
     pltscl.plot_wavelet_multiresolution_energy_analysis()
+    pltscl.plot_rs_analysis_by_target()
+    pltscl.plot_variance_time_analysis()
 
 
 def test_main():
