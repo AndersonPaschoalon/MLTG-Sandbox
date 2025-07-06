@@ -335,7 +335,6 @@ def plot_multiline_metric(
     return png_file
 
 
-# Plot function similar to Figure 2a of the paper
 def plot_single_rs_analysis(
     df, title="R/S Analysis", save_path_base="rs_analysis_plot"
 ) -> str:
