@@ -20,8 +20,9 @@
 - [ ] Coefficient of Variation (CV) of interarrival times
 
 ## 3. Scaling & Self-Similarity Analysis
-- [ ] Hurst Exponent (H): Estimation via R/S analysis
-- [ ] Hurst Exponent (H): variance-time plot 
+- [x] Hurst Exponent (H): Estimation via R/S analysis
+- [x] Hurst Exponent (H): variance-time plot 
+- [x] Hurst Exponent (H): Pediodogram 
 - [ ] Hurst Exponent (H): wavelet-based methods
 - [x] Wavelet Analysis (Use multiresolution analysis to detect scaling behavior: Plot energy vs. time-scale)
 - [ ] Log-Log Plot of Variance (To analyze long-range dependence (LRD))

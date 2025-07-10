@@ -77,3 +77,12 @@ def register_all_analysis():
         metric_fn=metrics_scaling.calc_variance_time_analysis_as_df,
         requires_min_time=False,
     )
+
+    AnalysisRegistry.register(
+        name="hurst_periodogram",
+        display_name="Hurst Periodogram Analysis",
+        mem_attribute="hurstperiodogramdata_target",
+        csv_prefix="hurst_periodogram",
+        metric_fn=metrics_scaling.calc_periodogram_as_df,
+        requires_min_time=False,
+    )

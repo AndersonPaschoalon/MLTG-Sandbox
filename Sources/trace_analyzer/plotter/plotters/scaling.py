@@ -40,7 +40,7 @@ def plot_rs_analysis_by_target(target_list=None):
 
     saved_files = []
     for label, df in df_map.items():
-        filename = mem.pnf.mkname("rs-analysis", [label])
+        filename = mem.pnf.mkname("hurst_rs_analysis", [label])
         out_file = plot_functions.plot_single_rs_analysis(
             df=df, title=f"R/S Analysis - {label}", save_path_base=filename
         )
@@ -63,5 +63,33 @@ def plot_variance_time_analysis(target_list=None):
             title=f"Variance-Time Analysis - {label}",
         )
         saved_files.append(out_file)
+
+    return saved_files
+
+
+def plot_periodogram_analysis(target_list=None):
+    """
+    Plot periodogram-based Hurst analysis for each target separately.
+    Generates a scatter plot of log10(P(f)) vs log10(frequency) per target.
+    """
+    mem_df_map = mem.hurst_periodogram_df_map
+    df_map = data_loader.filter_df_map_by_target(mem_df_map, target_list)
+
+    saved_files = []
+
+    for label, df in df_map.items():
+        filename_base = mem.pnf.mkname("hurst_periodogram", [label])
+
+        out_files = plot_functions.plot_scatter(
+            df=df,
+            x_column="log10_frequency",
+            y_column="log10_power",
+            xlabel="log10(Frequency)",
+            ylabel="log10(Periodogram Power)",
+            title=f"Periodogram - {label}",
+            save_path_base=filename_base,
+            loglog=False,
+        )
+        saved_files.extend(out_files)
 
     return saved_files

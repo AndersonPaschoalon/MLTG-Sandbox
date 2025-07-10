@@ -1,13 +1,11 @@
 import numpy as np
 import pandas as pd
 import pywt
+from scipy.signal import periodogram
 from scipy.stats import linregress
 
+import trace_analyzer.metrics.packet_level as packet_level
 from commons.connectors.alchemy_connector import AlchemyConnector
-from trace_analyzer.metrics.packet_level import (
-    _generate_synthetic_interarrival_df,
-    get_packet_arrival_df,
-)
 
 
 def calc_wavelet_as_df(
@@ -15,8 +13,6 @@ def calc_wavelet_as_df(
     flowID: int = 0,
     wavelet: str = "db4",
     level: int = 5,
-    bin_width: float = 0.01,  # bin width in seconds
-    agg: str = "count",  # or 'sum' for bandwidth
 ) -> pd.DataFrame:
     """
     Perform WMEA using timestamp binning from SnifyLite DB.
@@ -26,36 +22,13 @@ def calc_wavelet_as_df(
         flowID (int): Specific flow to analyze. Default is 0 (all).
         wavelet (str): Wavelet type.
         level (int): Decomposition level.
-        bin_width (float): Width of time bins in seconds.
-        agg (str): Aggregation: 'count' for packet rate, 'sum' for bandwidth.
 
     Returns:
         pd.DataFrame: DataFrame with scale, log2_energy, and target.
     """
-
-    # --- 1. Load packet data ---
-    df = get_packet_arrival_df(ac, flowID=flowID)
-
-    if df.empty:
-        print(f"No packets found for flowID={flowID}.")
-        return pd.DataFrame(columns=["scale", "log2_energy", "target"])
-
-    # --- 2. Bin timestamps into fixed intervals ---
-    time_start = df["time"].min()
-    time_end = df["time"].max()
-
-    bins = np.arange(time_start, time_end + bin_width, bin_width)
-    df["time_bin"] = pd.cut(df["time"], bins=bins, labels=False)
-
-    if agg == "count":
-        signal = df.groupby("time_bin").size().values  # Packet counts per bin
-    elif agg == "sum":
-        signal = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values  # Bandwidth
-    else:
-        raise ValueError("agg must be 'count' or 'sum'")
-
-    # --- 3. Ensure enough samples for wavelet decomposition ---
-    signal = signal[np.isfinite(signal)]
+    signal = packet_level.get_bandwidth_signal(
+        ac=ac, flowID=flowID, bin_width=0.01, agg="sum"
+    )
 
     if len(signal) < 2**level:
         print(
@@ -177,7 +150,7 @@ def _perform_variance_time_analysis(
     # --- Add slope = -1 line and Hurst estimation ---
     slope, intercept, *_ = linregress(df["log10_block_size"], df["log10_variance"])
 
-    df["hurst_estimate"] = 1 - slope  # For variance-time: H = 1 - slope
+    df["hurst_estimate"] = 1 - abs(slope)  # For variance-time: H = 1 - slope
     df["line_-1"] = df["log10_block_size"] * (-1) + intercept
 
     return df[
@@ -196,30 +169,13 @@ def calc_rs_analysis_as_df_dense(
     flowID: int = 0,
     aggregation_levels: list = [1, 5, 10, 50, 100, 500, 1000],
     bin_width: float = 0.01,
-    agg: str = "count",
+    agg: str = "sum",
     min_block_size: int = 10,
     max_block_size_cap: int = 1000,
 ) -> pd.DataFrame:
-
-    df = get_packet_arrival_df(ac, flowID=flowID)
-
-    if df.empty:
-        raise ValueError("Input DataFrame is empty. Cannot perform R/S analysis.")
-
-    time_start = df["time"].min()
-    time_end = df["time"].max()
-
-    bins = np.arange(time_start, time_end + bin_width, bin_width)
-    df["time_bin"] = pd.cut(df["time"], bins=bins, labels=False)
-
-    if agg == "count":
-        signal = df.groupby("time_bin").size().values
-    elif agg == "sum":
-        signal = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values
-    else:
-        raise ValueError("agg must be 'count' or 'sum'")
-
-    signal = signal[np.isfinite(signal)]
+    signal = packet_level.get_bandwidth_signal(
+        ac=ac, flowID=flowID, bin_width=0.01, agg="count"
+    )
 
     all_results = []
     for m in aggregation_levels:
@@ -228,7 +184,7 @@ def calc_rs_analysis_as_df_dense(
 
         k = len(signal) // m
         truncated = signal[: k * m]
-        aggregated = truncated.reshape((k, m)).mean(axis=1)
+        aggregated = truncated.reshape((k, m)).sum(axis=1)
 
         rs_df = _perform_rs_analysis_dense(
             time_series=aggregated,
@@ -246,50 +202,103 @@ def calc_rs_analysis_as_df_dense(
 def calc_variance_time_analysis_as_df(
     ac: AlchemyConnector,
     flowID: int = 0,
-    aggregation_levels: list = [1, 5, 10, 50, 100, 500, 1000],
-    bin_width: float = 0.01,
-    agg: str = "count",
     min_block_size: int = 10,
     max_block_size_cap: int = 1000,
 ) -> pd.DataFrame:
-    df = get_packet_arrival_df(ac, flowID=flowID)
-    if df.empty:
-        raise ValueError(
-            "Input DataFrame is empty. Cannot perform Variance-Time analysis."
-        )
 
-    # Time binning
-    time_start = df["time"].min()
-    time_end = df["time"].max()
-    bins = np.arange(time_start, time_end + bin_width, bin_width)
-    df["time_bin"] = pd.cut(df["time"], bins=bins, labels=False)
+    signal = packet_level.get_bandwidth_signal(
+        ac=ac, flowID=flowID, bin_width=0.01, agg="sum"
+    )
 
-    if agg == "count":
-        signal = df.groupby("time_bin").size().values
-    elif agg == "sum":
-        signal = df.groupby("time_bin")["pkt_size"].sum().fillna(0).values
-    else:
-        raise ValueError("agg must be 'count' or 'sum'")
+    # Perform full variance-time analysis ONCE
+    vt_df = _perform_variance_time_analysis(
+        signal,
+        min_block_size=min_block_size,
+        max_block_size=min(max_block_size_cap, len(signal) // 10),
+    )
 
-    signal = signal[np.isfinite(signal)]
+    return vt_df
 
-    # Loop over aggregation levels
-    all_results = []
+
+def _compute_periodogram(signal: np.ndarray, fs: float = 1.0):
+    """
+    Compute periodogram and return log10(freq), log10(power), and slope fit on low frequencies.
+    Returns empty arrays and np.nan if input is too short or invalid.
+    """
+    freqs, power = periodogram(signal, fs=fs, scaling="density", detrend=False)
+
+    # Avoid log of zero or negative
+    mask = (freqs > 0) & np.isfinite(power) & (power > 0)
+    freqs = freqs[mask]
+    power = power[mask]
+
+    if len(freqs) == 0 or len(power) == 0:
+        print("[WARN] Empty frequency or power array after filtering. Skipping.")
+        return np.array([]), np.array([]), np.nan
+
+    log_freq = np.log10(freqs)
+    log_power = np.log10(power)
+
+    cutoff = int(0.2 * len(log_freq))
+    if cutoff == 0:
+        print("[WARN] Not enough frequency samples for linear regression. Skipping.")
+        return log_freq, log_power, np.nan
+
+    slope, _, _, _, _ = linregress(log_freq[:cutoff], log_power[:cutoff])
+    hurst_estimate = (1 - abs(slope)) / 2  # Spectral method
+
+    return log_freq, log_power, hurst_estimate
+
+
+def calc_periodogram_as_df(
+    ac,
+    flowID: int = 0,
+    aggregation_levels: list = [1, 5, 10, 50, 100, 500, 1000],
+    base_bin_width: float = 0.01,  # T0 = 10ms
+) -> pd.DataFrame:
+    """
+    Calculate periodogram for different aggregation levels (m * T0).
+    Each result is tagged with m and its corresponding Hurst exponent estimate.
+    Returns a single stacked DataFrame.
+    """
+    raw_signal = packet_level.get_bandwidth_signal(
+        ac=ac, flowID=flowID, bin_width=base_bin_width, agg="sum"
+    )
+
+    results = []
     for m in aggregation_levels:
-        if m >= len(signal):
+        if m >= len(raw_signal):
             continue
-        k = len(signal) // m
-        truncated = signal[: k * m]
-        aggregated = truncated.reshape((k, m)).mean(axis=1)
 
-        vt_df = _perform_variance_time_analysis(
-            aggregated,
-            min_block_size=min_block_size,
-            max_block_size=min(max_block_size_cap, len(aggregated) // 10),
+        k = len(raw_signal) // m
+        truncated = raw_signal[: k * m]
+        aggregated = truncated.reshape((k, m)).sum(axis=1)
+
+        try:
+            log_freq, log_power, hurst = _compute_periodogram(aggregated, fs=1.0)
+            if len(log_freq) == 0 or len(log_power) == 0:
+                continue
+
+            df = pd.DataFrame(
+                {
+                    "log10_frequency": log_freq,
+                    "log10_power": log_power,
+                    "aggregation_level": m,
+                    "hurst_estimate": hurst,
+                }
+            )
+            results.append(df)
+        except Exception as e:
+            print(f"[ERROR] Failed to compute periodogram for m={m}: {e}")
+
+    if results:
+        return pd.concat(results, ignore_index=True)
+    else:
+        return pd.DataFrame(
+            columns=[
+                "log10_frequency",
+                "log10_power",
+                "aggregation_level",
+                "hurst_estimate",
+            ]
         )
-
-        if not vt_df.empty:
-            vt_df["aggregation_level"] = m
-            all_results.append(vt_df)
-
-    return pd.concat(all_results, ignore_index=True)

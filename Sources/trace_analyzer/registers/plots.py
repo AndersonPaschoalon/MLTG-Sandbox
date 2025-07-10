@@ -67,8 +67,15 @@ def register_all_plotters():
         pltscl.plot_wavelet_multiresolution_energy_analysis,
     )
     PlotRegistry.register(
-        "rs_analysis", "R/S Analysis", pltscl.plot_rs_analysis_by_target
+        "hurst_rs_analysis", "R/S Analysis", pltscl.plot_rs_analysis_by_target
     )
     PlotRegistry.register(
-        "variance_time", "Variance-Time Analysis", pltscl.plot_variance_time_analysis
+        "hurst_variance_time",
+        "Variance-Time Analysis",
+        pltscl.plot_variance_time_analysis,
+    )
+    PlotRegistry.register(
+        "hurst_peiorodogram",
+        "Periodogram Analysis",
+        pltscl.plot_periodogram_analysis,
     )

@@ -1,10 +1,12 @@
-from typing import Tuple
+from typing import List, Tuple
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from pandas import DataFrame
+from scipy.stats import linregress
 
 
 def plot_cdf(
@@ -368,16 +370,16 @@ def plot_single_rs_analysis(
     return path
 
 
-def plot_variance_time_cloud(
+def plot_variance_time_cloud__(
     df, save_path_base="variance_time_plot", title="Variance-Time Plot"
 ):
-
+    """
     plt.figure(figsize=(10, 6))
     plt.scatter(
-        df["log10_block_size"], df["log10_variance"], s=10, alpha=0.6, label="Variance"
+        df["aggregation_level"], df["log10_variance"], s=10, alpha=0.6, label="Variance"
     )
     plt.plot(
-        df["log10_block_size"],
+        df["aggregation_level"],
         df["line_-1"],  # this is the line 382
         linestyle="--",
         color="gray",
@@ -394,3 +396,157 @@ def plot_variance_time_cloud(
     plt.savefig(filename, dpi=300)
     plt.close()
     return filename
+    """
+
+    if "aggregation_level" not in df.columns or df.empty:
+        raise ValueError("Expected column 'aggregation_level' missing or empty.")
+
+    df = df.copy()
+    df["log10_m"] = np.log10(df["aggregation_level"])
+
+    # --- Fit line ---
+    slope, intercept, _, _, _ = linregress(df["log10_m"], df["log10_variance"])
+    df["fitted_line"] = df["log10_m"] * slope + intercept
+    df["line_-1"] = df["log10_m"] * (-1) + intercept  # Reference slope -1
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(df["log10_m"], df["log10_variance"], s=40, marker="+", label="Variance")
+
+    # Plot reference line with slope -1
+    plt.plot(
+        df["log10_m"], df["line_-1"], linestyle="--", color="gray", label="slope = -1"
+    )
+
+    # Plot fitted regression line
+    plt.plot(
+        df["log10_m"],
+        df["fitted_line"],
+        linestyle="-",
+        color="black",
+        label=f"fit: slope={slope:.2f}",
+    )
+
+    plt.title(title)
+    plt.xlabel("log10(m)")
+    plt.ylabel("log10(variances)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+
+    filename = f"{save_path_base}.png"
+    plt.savefig(filename, dpi=300)
+    plt.close()
+    return filename
+
+
+def plot_variance_time_cloud(
+    df,
+    save_path_base: str = "variance_time_plot",
+    title: str = "Variance-Time Plot",
+) -> str:
+    if df.empty or "log10_block_size" not in df or "log10_variance" not in df:
+        raise ValueError(
+            "Expected columns 'log10_block_size' and 'log10_variance' are missing or empty."
+        )
+
+    df = df.copy()
+
+    # --- Fit regression line ---
+    slope, intercept, _, _, _ = linregress(df["log10_block_size"], df["log10_variance"])
+    df["fitted_line"] = df["log10_block_size"] * slope + intercept
+    df["line_-1"] = (
+        df["log10_block_size"] * (-1) + intercept
+    )  # Reference line slope = -1
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(
+        df["log10_block_size"],
+        df["log10_variance"],
+        s=40,
+        marker="+",
+        alpha=0.7,
+        label="Normalized Variance",
+    )
+
+    # Plot slope = -1 reference
+    plt.plot(
+        df["log10_block_size"],
+        df["line_-1"],
+        linestyle="--",
+        color="gray",
+        label="Reference: slope = -1",
+    )
+
+    # Plot fitted line
+    plt.plot(
+        df["log10_block_size"],
+        df["fitted_line"],
+        linestyle="-",
+        color="black",
+        label=f"Fitted slope = {slope:.2f}",
+    )
+
+    plt.title(title)
+    plt.xlabel("log10(Block Size m)")
+    plt.ylabel("log10(Normalized Variance)")
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+
+    filename = f"{save_path_base}.png"
+    plt.savefig(filename, dpi=300)
+    plt.close()
+    return filename
+
+
+def plot_scatter(
+    df: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    save_path_base: str,
+    loglog: bool = False,
+) -> str:
+    """
+    Plot a scatter plot from a single DataFrame and save both PNG and CSV files.
+
+    Args:
+        df (pd.DataFrame): Data to be plotted.
+        x_column (str): Column name for X-axis.
+        y_column (str): Column name for Y-axis.
+        xlabel (str): X-axis label.
+        ylabel (str): Y-axis label.
+        title (str): Plot title.
+        save_path_base (str): Path prefix for saving the plot and CSV (no extension).
+        loglog (bool): Whether to apply log-log scaling.
+
+    Returns:
+        str: Filename of the saved plot.
+    """
+    if df.empty:
+        raise ValueError("DataFrame is empty. Nothing to plot.")
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(df[x_column], df[y_column], s=40, marker="+", label=title)
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True, linestyle="--", linewidth=0.5)
+
+    if loglog:
+        plt.xscale("log")
+        plt.yscale("log")
+
+    plt.tight_layout()
+
+    png_file = f"{save_path_base}.png"
+    plt.savefig(png_file, dpi=300)
+    plt.close()
+
+    csv_file = f"{save_path_base}.csv"
+    df.to_csv(csv_file, index=False)
+
+    return png_file

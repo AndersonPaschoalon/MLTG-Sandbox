@@ -5,7 +5,7 @@ import pandas as pd
 from commons.connectors.alchemy_connector import AlchemyConnector
 from trace_analyzer.metrics.packet_level import get_packet_arrival_df
 
-
+"""
 def _calc_burst_metrics(ac: AlchemyConnector, inter_arrival_threshold=0.01):
     # Analyze bursts for a given target and DB connector.
     # - Burst: sequence of packets where inter-arrival < threshold.
@@ -52,6 +52,7 @@ def _calc_burst_metrics(ac: AlchemyConnector, inter_arrival_threshold=0.01):
     ]
 
     return burst_sizes, burst_durations, inter_burst_intervals
+"""
 
 
 def calc_burst_metrics_base(ac: AlchemyConnector, inter_arrival_threshold=0.01):

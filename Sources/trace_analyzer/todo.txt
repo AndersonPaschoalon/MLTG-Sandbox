@@ -1,0 +1,11 @@
+# Doing
+- Plot: variance x time
+
+
+
+# TODO
+- Refactor: implementar funcção para bining
+- Periodogram
+- Refactor: salvar dados dos plots em csv
+
+

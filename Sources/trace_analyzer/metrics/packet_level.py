@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from fbm import FBM
 
 from commons.connectors.alchemy_connector import AlchemyConnector
 from commons.models.packet import Packet
@@ -103,7 +104,7 @@ def _generate_synthetic_interarrival_df(
 
     df = pd.DataFrame(
         {
-            "timestamp": timestamps,
+            "time": timestamps,
             "inter_arrival": inter_arrivals,
             "pkt_size": pkt_sizes,
             "ttl": 64,  # TTL padrão para pacotes IP
@@ -286,3 +287,83 @@ def get_packet_arrival_df(connector: AlchemyConnector, flowID: int = 0) -> pd.Da
         )
 
         return df
+
+
+def get_bandwidth_signal(
+    ac, flowID=0, bin_width: float = 0.01, agg: str = "count"
+) -> np.ndarray:
+    """
+    Generate a uniformly sampled time-series signal representing either
+    packet counts or bandwidth (bytes) over fixed-width time bins.
+
+    Parameters:
+    -----------
+    ac : AlchemyConnector
+        Database connection object to retrieve packet data.
+
+    flowID : int, default=0
+        Flow ID to filter packets. If 0 or negative, all flows are used.
+
+    bin_width : float, default=0.01
+        Width of each time bin in seconds. Used to discretize the timeline.
+
+    agg : str, default='count'
+        Aggregation method:
+            - "count": Number of packets per bin (i.e., packet rate).
+            - "sum": Total packet size per bin (i.e., bandwidth in bytes).
+
+    Returns:
+    --------
+    np.ndarray
+        1D NumPy array representing the signal (packet count or bandwidth) per time bin.
+        Missing bins (i.e., with no packets) are filled with zero.
+
+    Raises:
+    -------
+    ValueError:
+        - If no packet data is found for the specified flowID.
+        - If required DataFrame columns are missing.
+        - If aggregation method is invalid.
+    """
+    # --- Step 1: Load packet data ---
+    if not ac:
+        df = _generate_synthetic_interarrival_df()
+    else:
+        df = get_packet_arrival_df(ac, flowID=flowID)
+
+    if df.empty:
+        raise ValueError(f"No packets found for flowID={flowID}.")
+
+    required_cols = {"time", "pkt_size"}
+    if not required_cols.issubset(df.columns):
+        raise ValueError(f"Missing required columns: {required_cols - set(df.columns)}")
+
+    # --- Step 2: Bin time values into fixed-size intervals ---
+    time_start = df["time"].min()
+    time_end = df["time"].max()
+
+    num_bins = int(np.ceil((time_end - time_start) / bin_width)) + 1
+    bin_edges = np.linspace(
+        time_start, time_start + num_bins * bin_width, num=num_bins + 1
+    )
+
+    df["time_bin"] = pd.cut(
+        df["time"], bins=bin_edges, labels=False, include_lowest=True
+    )
+
+    # --- Step 3: Aggregate by chosen method ---
+    if agg == "count":
+        values = df.groupby("time_bin").size()
+    elif agg == "sum":
+        values = df.groupby("time_bin")["pkt_size"].sum()
+    else:
+        raise ValueError("agg must be either 'count' or 'sum'.")
+
+    # --- Step 4: Fill gaps with zero (ensures all bins are present) ---
+    signal = np.zeros(num_bins)
+    signal[values.index.astype(int)] = values.values
+
+    # --- Step 5: Filter non-finite values just in case ---
+    signal = signal[np.isfinite(signal)]
+
+    return signal
