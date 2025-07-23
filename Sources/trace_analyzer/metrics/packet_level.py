@@ -367,3 +367,39 @@ def get_bandwidth_signal(
     signal = signal[np.isfinite(signal)]
 
     return signal
+
+
+def calc_peak_load_stats(
+    connector: AlchemyConnector, flowID: int = 0, time_granularity: float = 0.1
+) -> pd.DataFrame:
+    """
+    Computes peak packet load and peak-to-mean ratio for each target.
+
+    Returns:
+        DataFrame with columns:
+        - target
+        - peak_packet_load
+        - mean_packet_load
+        - peak_to_mean_ratio
+    """
+    df_map = calc_bw_pps_fps_as_df(connector, flowID, time_granularity)
+    results = []
+    for label, df in df_map.items():
+        if df.empty or "npackets" not in df:
+            continue
+
+        pkt_values = df["npackets"].dropna()
+        peak = pkt_values.max()
+        mean = pkt_values.mean()
+        ratio = peak / mean if mean > 0 else float("nan")
+
+        results.append(
+            {
+                "target": label,
+                "peak_packet_load": peak,
+                "mean_packet_load": mean,
+                "peak_to_mean_ratio": ratio,
+            }
+        )
+
+    return pd.DataFrame(results)

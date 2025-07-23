@@ -100,7 +100,7 @@ def filter_df_map_by_target(df_map: dict[str, DataFrame], target_list: list[str]
 
 
 def load_stored_analysis_data(target_list=None):
-    # utility 01
+
     def _load_data_with_min_time(data_target, target_list, time_column="time"):
         """
         Load CSVs for data targets and compute the minimal max time across DataFrames.
@@ -121,7 +121,6 @@ def load_stored_analysis_data(target_list=None):
                     min_time_max = max_time
         return data_map, min_time_max
 
-    # utility 02
     def _load_data_map(data_target, target_list):
         """
         Load CSVs for data targets into a simple target → DataFrame map.

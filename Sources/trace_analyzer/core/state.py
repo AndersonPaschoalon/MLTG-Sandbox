@@ -1,5 +1,6 @@
 import os
 
+import commons.pylang.pylang as pl
 import trace_analyzer.registers.analysis as analysis
 from commons.config.experiment_config import ExperimentConfig
 from commons.enviroment.env import Env
@@ -32,6 +33,11 @@ def get_env():
 
 def get_mem():
     return mem
+
+
+def set_env_param(param: str, new_value: object):
+    print("Setting env.ex_analyzed as False")
+    pl.set_json_param(env_file, "ex_analyzed", new_value)
 
 
 def create_env(ex_xml, ex_name):

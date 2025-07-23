@@ -1,269 +1,197 @@
-# ✅ **How to Add a New Analysis to the Pipeline**
+## ✅ How to Add a New Analysis Module in `trace_analyzer`
 
-The purpose of this tutorial is to explain how to add new analyses to the `trace_analyzer` pipeline. We will use the addition of Wavelet Multiresolution Energy Analysis (WMEA) as an example.
-
----
-
-## ✅ **Overview of the Pipeline Steps**
-
-1. **Register** the analysis in the environment (`core.py`).
-2. **Analyze and export** the analysis as a CSV (`analyzer.py`), for later usage.
-3. **Implement metric extraction** (`metrics_estimator.py`)
-4. **Load** the CSVs generated in the previous step for plotting (`data_loader.py`).
-5. **Add plotting** capabilities (`plot_functions.py` + `plotter.py`).
-6. **Run the complete cycle**.
+This guide shows how to implement a **new metric analysis + its plot**, and **register** both in the system. The framework is built with **separation of concerns** in mind.
 
 ---
 
-## ✅ **1. Register Analysis in `core.py`**
+### 🔧 1. Register the Metric Function (Analysis)
 
-First, in `analysis_data_name_formatter.py`, add a constant to represent the wavelet analysis. This will be used as the prefix for the CSV file used to store the data.
-
-```python
-class AnalysisDataNameFormatter(ReprMixin):
-    ...
-    
-    # Analysis identifiers (add more as needed)
-    
-    WAVELET = "wavelet"
-```
-
-Then, in `load_env()`, there is a section where **all analysis types** are registered to load their corresponding CSVs.
-
-Each entry is a **tuple**:
+For each new metric to be measured, register it at `trace_analyzer/registers/analysis.py`:
 
 ```python
-(<ANALYSIS_IDENTIFIER>, <mem_attribute_name>)
+# File: trace_analyzer/registers/analysis.py
+def register_all_analysis():
 ```
 
-For Wavelet, add:
+Add:
 
 ```python
-data_types = [
-    (ADNF.BW_PPS_FPS, "bwdata_target"),
-    (ADNF.INTERARRIVAL, "interdata_target"),
-    (ADNF.BURST_DURATIONS, "burstdurdata_target"),
-    (ADNF.BURST_INTERVALS, "burstinterdata_target"),
-    (ADNF.BURST_SIZES, "burstsizesdata_target"),
-    (ADNF.WAVELET, "waveletdata_target"),  # ✅ <- Add this!
-]
-```
-
-This ensures that after `load_env()` is called, `mem.waveletdata_target` is populated with all file paths and target names for wavelet CSVs.
-
----
-
-## ✅ **2. Analyze and Export to CSV in `analyzer.py`**
-
-Now edit the function `analyze_experiment_and_store()` in `analyzer.py`.
-
-### ✔️ Add an internal function
-
-Inside `analyze_experiment_and_store()`, add an internal function responsible for:
-
-* Calling the metric estimator responsible for extracting raw data from the database, processing it, and transforming it into a DataFrame (step #4);
-* Generating a file name for the calculated data using the `mem.anf` object;
-* Saving the data as a CSV file.
-
-```python
-def wavelet_analysis(target: str, ac: AlchemyConnector):
-    """
-    Perform wavelet analysis for given trace, export to CSV.
-    """
-    df = metrics_estimator.calc_wavelet_as_df(ac)
-    csv_file = mem.anf.mknameext(ADNF.WAVELET, target, "csv")
-    df.to_csv(csv_file, index=False)
-    return csv_file
-```
-
-### ✔️ Integrate the function into the main loop of `analyze_experiment_and_store()`:
-
-```python
-for trace, target in mem.traces_target:
-    print(f"Loading DB connector for trace {trace}")
-    ac: AlchemyConnector = mem.sniffer.flowdb_connector(trace)
-    
-    bw_pps_fps(target, ac)
-    interarrival(target, ac)
-    burst_metrics(target, ac)
-    
-    wavelet_analysis(target, ac)  # ✅ <- Add here!
-```
-
-**What happens:**
-
-* For each trace and target, we compute the wavelet features.
-* We store them as `<experiment_dir>/analysis/wavelet.<target>.csv`.
-
-
----
-
-## ✅ **3. Metric Extraction in `metrics_estimator.py`**
-
-Here you must implement a function in `metrics_estimator.py`.
-
-This function will be called by `analyze_experiment_and_store()` and will be responsible for **loading the data** and **executing the actual computation** of the desired metric.
-
-You don’t need to worry about connecting to the *right* database — the pipeline does that for you.
-
-For Wavelet Multiresolution Energy Analysis we have this function:
-
-```python
-def calc_wavelet_as_df(ac: AlchemyConnector, ...) -> pd.DataFrame:
-```
-
-It:
-
-* Loads packets from DB;
-* Bins them into time windows;
-* Applies Wavelet Transform;
-* Returns a DataFrame like:
-
-```
-scale, log2_energy, energy_abs
-0,     10.5,        1200.0
-1,     8.2,         500.0
-...
-```
-
-
----
-
-## ✅ **4. Load the Wavelet Data in `data_loader.py`**
-
-In `load_stored_analysis_data()` add:
-
-```python
-mem.wavelet_df_map = _load_data_map(mem.waveletdata_target, target_list)
-```
-
-Now, after running `data_loader.load_stored_analysis_data()`, we can access the wavelet data using:
-
-```python
-mem.wavelet_df_map  # -> {target: DataFrame}
-```
-
-This is critical because all plot functions use these pre-loaded maps.
-
-For plots where the **minimum of the maximum time** is needed (e.g., when we need all time series to have the same time range), we can use the utility function `_load_data_with_min_time()`:
-
-```python
-mem.inter_df_map, mem.inter_min_time_max = _load_data_with_min_time(
-    mem.interdata_target, target_list, "time"
+AnalysisRegistry.register(
+    name="hurst_periodogram",                          # Unique ID
+    display_name="Hurst Periodogram Analysis",         # Human-readable name
+    mem_attribute="hurstperiodogramdata_target",       # Atribute used internally to store the tuple (csv_file, target)
+    csv_prefix="hurst_periodogram",                    # Prefix for CSV/plot file names
+    metric_fn=metrics_scaling.calc_periodogram_as_df,  # Analysis logic function
+    requires_min_time=False,                           # Set True if time alignment is required: if time scale needs to be truncated by the min maximum time. 
 )
 ```
 
-In this example the function returns two values:
+---
 
-* The DataFrame map;
-* The minimum value of the maximum "time" column across all loaded DataFrames.
+### 🧠 2. Implement the Metric Function
 
-> **Note:** Any variable may be stored in the `mem` object. The purpose of this pipeline is to normalize the naming convention across all steps. That being said, take care when setting new variables, like `mem.inter_df_map` and `mem.inter_min_time_max`.
-> * Ensure names do not conflict — if the same name is added twice, it will be overwritten, and the pipeline will break.
-> * Follow naming conventions: for instance, DataFrame maps should end with the `df_map` suffix. This reduces the chance of conflicts.
+Once the new metric have been registered, you must implement the metric function. Place it inside a file at `trace_analyzer/metrics/`. The file must group all related metrics together. 
+
+#### 🔹 Signature
+
+```python
+def your_analysis_function(
+    ac: AlchemyConnector,
+    flowID: int = 0,
+    ...
+) -> pd.DataFrame:
+```
+
+In this example we implement the periodogram metric as part of the scalling metrics:
+
+```python
+# File: trace_analyzer/metrics/scaling.py
+def calc_periodogram_as_df(
+    ac,
+    flowID: int = 0,
+    aggregation_levels: list = [1, 5, 10, 50, 100, 500, 1000],
+    base_bin_width: float = 0.01,
+) -> pd.DataFrame:
+```
+
+#### 🔹 Requirements
+
+* **Strict signature**: Must accept at least `ac` and `flowID`, as mandatory parameters. Others parameters must have default values.
+* **Returns**: A `pandas.DataFrame`. If the analysis does have many levels, the results must be  **stacked** in the output Dataframe (e.g., R/S, periodogram). This dataframe will be saved as a `csv` file by the framework.
+* All logic for data extraction, transformation, and calculation must be **contained inside this function**.
+
+
+➡️ Framework will automatically:
+
+* Call this function once per experiment, for each target.
+* Write results to CSV using `csv_prefix`, followed by the right target name.
 
 ---
 
-## ✅ **5. Add Plot Functionality**
+### 📌 3. Register the Plot Function
 
-### ✔️ In `plot_functions.py`: Add or reuse a generic plotting function:
-
-Since the wavelet plot is a **multiline plot** of `log2_energy` over `scale` for different targets, we can use:
+As we did fot the analysis, we must register each new plot. There is no `1-1` requirement here. For a given set of analisis, you may implement as many plots you want. The oposite is true as well, you may implement a single plot using many analysis data. You must register the new plot in this file `trace_analyzer/registers/plots.py`:
 
 ```python
-def plot_multiline_metric(df_map, x_column, y_column, title, xlabel, ylabel, save_path_base) -> str
+# File: trace_analyzer/registers/plots.py
+def register_all_plotters():
 ```
 
-If none of the available plotting functions fits the requirements, implement a new one.
-
-Key considerations:
-
-* First argument: A DataFrame dictionary. Each key of the dictionary can be used as a label; the corresponding DataFrame provides the data.
-* The function should return the name (or names) of the generated plot files.
-* Add any additional options as needed. In `plot_multiline_metric()`, the options represent:
-
-  * `x_column`: DataFrame column for x-axis.
-  * `y_column`: DataFrame column for y-axis.
-  * `title`: Plot title.
-  * `xlabel`: X-axis label.
-  * `ylabel`: Y-axis label.
-  * `save_path_base`: Output file name (without extension).
-
----
-
-### ✔️ In `plotter.py`: Wrap it for Wavelet
-
-Finally, wrap it into a new function `plot_wavelet_energy()`:
-
-* Use `data_loader.filter_df_map_by_target()` to select only the DataFrames to be plotted. If `target_list` is empty, all DataFrames will be used.
-* Generate the plot file name using `mem.pnf()`.
-* Call the appropriate plot function.
+In the example, we show how the periodogram was registered:
 
 ```python
-def plot_wavelet_energy(target_list=None):
-    """
-    Plot wavelet multiresolution energy for each target.
-    """
-    filtered_df_map = data_loader.filter_df_map_by_target(
-        mem.wavelet_df_map, target_list or []
-    )
-    compared_targets = list(filtered_df_map.keys())
-    filename = mem.pnf.mkname("wavelet_energy", compared_targets)
+import trace_analyzer.plotter.plotters.scaling as pltscl
 
-    plot_functions.plot_multiline_metric(
-        df_map=filtered_df_map,
-        x_column="scale",
-        y_column="log2_energy",
-        title="Wavelet Multiresolution Energy Analysis",
-        xlabel="Time Scale j",
-        ylabel="log2(Energy(j))",
-        save_path_base=filename,
-    )
-```
 
-Now you can call:
-
-```python
-plot_wavelet_energy(target_list=target_list)
-```
-
-to generate the wavelet energy plot comparing all selected targets.
-
----
-
-## ✅ **6. Running the Full Cycle**
-
-```python
-# Step 1: Setup experiment
-core.create_env("scripts/xml/<experiment-list-config>.xml", "<Experiment-Name>")
-analyzer.load_into_snifferdb()
-analyzer.analyze_experiment_and_store()
-
-# Step 2: Load data and plot
-target_list = []  # Empty → all targets
-data_loader.load_stored_analysis_data(target_list=target_list)
-
-plot_wavelet_energy(target_list=target_list)
+PlotRegistry.register(
+    name="hurst_periodogram",                          # Must match analysis name
+    display_name="Periodogram Analysis",               # For CLI/report use
+    plot_fn=pltscl.plot_periodogram_analysis,          # Calls the periodogram plotter
+)
 ```
 
 ---
 
-## ✅ **7. What You Get**:
+### 🎨 4. Implement the Plotter
 
-✅ All wavelet CSVs saved in `/analysis`.
-✅ All wavelet plots saved in `/plot`.
-✅ Plots automatically named based on experiment + compared targets.
+Now, you must implement the plotter you have declared in the register. 
+
+#### 🔹 Signature
+
+```python
+def plot_myplotname(target_list=None) -> list[str]:
+```
+
+#### 🔹 Responsibilities
+
+* Fetches the target-specific DataFrames using the correct `mem_attribute`.
+* Calls a generic **plot function** with each individual DataFrame (or df\_map).
+* Generates one or more `.png` and `.csv` files and returns the paths.
+
+Is advided to group all related plots in the same group. In the example we are using (periodogram), it is grouped as one of the scaling plots, into `scaling.py`.
+
+```python
+# File: trace_analyzer/plotter/plotters/scaling.py
+
+def plot_periodogram_analysis(target_list=None):
+```
+
+To access the right analysis data to be plotted, you should use the following elements:
+* `mem.<analysis_name>_df_map`: this will contain a dataframe map of all targets related with the giving analysis name (registered in the first step);
+* `data_loader.filter_df_map_by_target()` if the dataframes does not need to have time alignment, or `data_loader.prepare_distribution_data()` owtherwise;
+* If time alignment is need, you also will have to pass the attribute `mem.<analysis_name>_min_time_max` to `data_loader.prepare_distribution_data()`, and the column name of the dataframe where the time stamp is located.
+* Both functions  `data_loader.filter_df_map_by_target()`  and `data_loader.prepare_distribution_data()` will return the map of dataframes that will be plotted, and the list of targets.
+
+To generate the name of the plot, you must use the attibutte/method: `mem.pnf.mkname()`. Pass a single labal to it to make plot by target, or pass the complete lsit to plot for all targets at the same time.
+
+Example:
+
+```python
+def plot_periodogram_analysis(target_list=None):
+    df_map = data_loader.filter_df_map_by_target(mem.hurstperiodogramdata_target, target_list)
+    saved = []
+
+    for label, df in df_map.items():
+        filename = mem.pnf.mkname("hurst_periodogram", [label])
+        out = plot_functions.plot_scatter(
+            df=df,
+            x_column="log10_frequency",
+            y_column="log10_power",
+            xlabel="log10(Frequency)",
+            ylabel="log10(Periodogram Power)",
+            title=f"Periodogram - {label}",
+            save_path_base=filename,
+            loglog=True,
+        )
+        saved.extend(out)
+
+    return saved
+```
+#### 🔹 Behavior
+
+* Receives all plotting parameters explicitly.
+* If plotting multiple targets together: receives `df_map: dict[str, pd.DataFrame]`.
+* If plotting one per target: receives `df: pd.DataFrame`.
+* **Saves both PNG and CSV** files with matching base names.
 
 ---
 
-## ✅ **Key Points Recap**
+### 🧭 Rule of Thumb: Plotting Decision
 
-| **Step**               | **Purpose**                                    |
-| ---------------------- | ---------------------------------------------- |
-| `core.py`              | Register new analysis for environment tracking |
-| `analyzer.py`          | Implement computation and CSV export           |
-| `data_loader.py`       | Register DataFrame maps for plotting           |
-| `metrics_estimator.py` | Extract metrics from DB                        |
-| `plot_functions.py`    | Define or reuse plot function                  |
-| `plotter.py`           | Add wrapper for user-friendly plotting         |
+| Target Behavior         | Plot Signature Input              | Who Decides?         |
+| ----------------------- | --------------------------------- | -------------------- |
+| All targets in 1 figure | `df_map: dict[str, pd.DataFrame]` | The plotter function |
+| Each target gets a plot | `df: pd.DataFrame` per iteration  | The plotter function |
+
+
+---
+
+### 🛠 5. Implement the Generic Plot Function (if needed)
+
+Inside the logic of the plotter, is advised to use one of the available plot functions, and to implement a new expleriment agnostic plot function. It most receive as parameter a DataFrame (for plots of single target) of a map of dataframes (for plots of many targets):
+
+```python
+# File: trace_analyzer/plotter/functions/plot_functions.py
+```
+
+Signature:
+
+```python
+def plot_scatter(
+    df: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    save_path_base: str,
+    loglog: bool = False,
+) -> list[str]:
+```
+
+This function MUST:
+
+* Plot the data as a scatter
+* Apply log scales if needed
+* Save both PNG and CSV with matching filenames
 

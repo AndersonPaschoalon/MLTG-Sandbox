@@ -1,0 +1,192 @@
+Here's a clearer and grammatically refined version of your tutorial, while preserving your style and intent:
+
+---
+
+## ✅ How to Add a New Analysis Module in `trace_analyzer`
+
+This guide shows how to implement a **new metric analysis and its plot**, and how to **register** both within the system. The framework is built with a **separation of concerns** in mind.
+
+---
+
+### 🔧 1. Register the Metric Function (Analysis)
+
+Each new metric must be registered in `trace_analyzer/registers/analysis.py`:
+
+```python
+# File: trace_analyzer/registers/analysis.py
+def register_all_analysis():
+```
+
+Add:
+
+```python
+AnalysisRegistry.register(
+    name="hurst_periodogram",                          # Unique identifier
+    display_name="Hurst Periodogram Analysis",         # Human-readable name
+    mem_attribute="hurstperiodogramdata_target",       # Used internally to store the result for each target
+    csv_prefix="hurst_periodogram",                    # Prefix for CSV/plot file names
+    metric_fn=metrics_scaling.calc_periodogram_as_df,  # Function that computes the metric
+    requires_min_time=False,                           # Set True if the analysis requires time alignment
+)
+```
+
+---
+
+### 🧠 2. Implement the Metric Function
+
+After registration, you must implement the actual metric function. Place it inside a module in `trace_analyzer/metrics/`. Try to group related analyses together.
+
+#### 🔹 Function Signature
+
+```python
+def your_analysis_function(
+    ac: AlchemyConnector,
+    flowID: int = 0,
+    ...
+) -> pd.DataFrame:
+```
+
+Example:
+
+```python
+# File: trace_analyzer/metrics/scaling.py
+def calc_periodogram_as_df(
+    ac,
+    flowID: int = 0,
+    aggregation_levels: list = [1, 5, 10, 50, 100, 500, 1000],
+    base_bin_width: float = 0.01,  # T0 = 10ms
+) -> pd.DataFrame:
+```
+
+#### 🔹 Requirements
+
+* ✅ Must accept at least `ac` and `flowID` as arguments (with optional defaults for any additional arguments).
+* ✅ Must return a `pandas.DataFrame`. If the analysis has multiple levels (e.g., different block sizes), return a **stacked** DataFrame.
+* ✅ All logic — including data loading, transformations, and metric calculation — must be done inside this function.
+
+➡️ The framework will:
+
+* Call this function once per experiment, for each target.
+* Automatically save the result as a CSV, using `csv_prefix` and target name.
+
+---
+
+### 📌 3. Register the Plot
+
+Just like metrics, plots must be registered in:
+
+```python
+# File: trace_analyzer/registers/plots.py
+def register_all_plotters():
+```
+
+Example:
+
+```python
+import trace_analyzer.plotter.plotters.scaling as pltscl
+
+PlotRegistry.register(
+    "hurst_periodogram",                     # Should match the analysis name
+    "Periodogram Analysis",                  # Display name (used in CLI, reports)
+    pltscl.plot_periodogram_analysis,        # Plotter function to call
+)
+```
+
+---
+
+### 🎨 4. Implement the Plotter Function
+
+This is the main function responsible for rendering and saving the plots.
+
+#### 🔹 Signature
+
+```python
+def plot_my_plot_name(target_list=None) -> list[str]:
+```
+
+#### 🔹 Responsibilities
+
+* ✅ Load the correct DataFrames using the `mem_attribute` set during analysis registration.
+* ✅ Use helper functions like `data_loader.filter_df_map_by_target()` or `data_loader.prepare_distribution_data()` to obtain the data.
+* ✅ Generate plots by calling a **generic plot function** (reusable across analyses).
+* ✅ Return a list of file paths to the generated plots and CSVs.
+
+Example:
+
+```python
+# File: trace_analyzer/plotter/plotters/scaling.py
+
+def plot_periodogram_analysis(target_list=None):
+    df_map = data_loader.filter_df_map_by_target(
+        mem.hurstperiodogramdata_target, target_list
+    )
+    saved = []
+
+    for label, df in df_map.items():
+        filename = mem.pnf.mkname("hurst_periodogram", [label])
+        out = plot_functions.plot_scatter(
+            df=df,
+            x_column="log10_frequency",
+            y_column="log10_power",
+            xlabel="log10(Frequency)",
+            ylabel="log10(Periodogram Power)",
+            title=f"Periodogram - {label}",
+            save_path_base=filename,
+            loglog=True,
+        )
+        saved.extend(out)
+
+    return saved
+```
+
+#### 🔹 Memory & File Utilities
+
+* `mem.<analysis_name>_df_map`: Holds `{target: DataFrame}` from the metric execution.
+* Use `mem.pnf.mkname(name, [label])` to generate filenames.
+* Use `data_loader.filter_df_map_by_target()` for most analyses.
+* Use `data_loader.prepare_distribution_data()` for time-aligned data (you'll need `mem.<analysis_name>_min_time_max` and timestamp column).
+
+---
+
+### 🧭 Rule of Thumb: Plot Input Strategy
+
+| Target Behavior         | Plot Input                        | Controlled By        |
+| ----------------------- | --------------------------------- | -------------------- |
+| All targets in 1 figure | `df_map: dict[str, pd.DataFrame]` | The plotter function |
+| One plot per target     | `df: pd.DataFrame` (looped)       | The plotter function |
+
+---
+
+### 🛠 5. Implement the Plot Function (Generic)
+
+Reusable, experiment-agnostic plot functions should go in:
+
+```python
+# File: trace_analyzer/plotter/functions/plot_functions.py
+```
+
+#### 🔹 Example
+
+```python
+def plot_scatter(
+    df: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    save_path_base: str,
+    loglog: bool = False,
+) -> list[str]:
+```
+
+This function must:
+
+* ✅ Plot a scatter plot
+* ✅ Apply log scaling if `loglog=True`
+* ✅ Save both PNG and CSV files using the provided `save_path_base`
+* ✅ Return a list of output filenames
+
+---
+
+Let me know if you'd like this exported to Markdown, PDF, or HTML!

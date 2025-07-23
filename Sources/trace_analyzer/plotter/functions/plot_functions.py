@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -7,6 +7,12 @@ import pandas as pd
 import seaborn as sns
 from pandas import DataFrame
 from scipy.stats import linregress
+
+
+def save_figure(path: str, dpi: int = 300):
+    plt.tight_layout()
+    plt.savefig(path, dpi=dpi)
+    plt.close()
 
 
 def plot_cdf(
@@ -331,7 +337,7 @@ def plot_multiline_metric(
     plt.tight_layout()
 
     png_file = f"{save_path_base}.png"
-    plt.savefig(png_file, dpi=300)
+    plt.savefig(png_file)
     plt.close()
 
     return png_file
@@ -365,39 +371,15 @@ def plot_single_rs_analysis(
     plt.tight_layout()
 
     path = f"{save_path_base}.png"
-    plt.savefig(path, dpi=300)
+    plt.savefig(path)
     plt.close()
     return path
 
 
+"""
 def plot_variance_time_cloud__(
     df, save_path_base="variance_time_plot", title="Variance-Time Plot"
 ):
-    """
-    plt.figure(figsize=(10, 6))
-    plt.scatter(
-        df["aggregation_level"], df["log10_variance"], s=10, alpha=0.6, label="Variance"
-    )
-    plt.plot(
-        df["aggregation_level"],
-        df["line_-1"],  # this is the line 382
-        linestyle="--",
-        color="gray",
-        label="slope = -1",
-    )
-    plt.title(title)
-    plt.xlabel("log10(Block Size)")
-    plt.ylabel("log10(Variance)")
-    plt.grid(True, linestyle="--", linewidth=0.5)
-    plt.legend()
-    plt.tight_layout()
-
-    filename = f"{save_path_base}.png"
-    plt.savefig(filename, dpi=300)
-    plt.close()
-    return filename
-    """
-
     if "aggregation_level" not in df.columns or df.empty:
         raise ValueError("Expected column 'aggregation_level' missing or empty.")
 
@@ -434,9 +416,10 @@ def plot_variance_time_cloud__(
     plt.tight_layout()
 
     filename = f"{save_path_base}.png"
-    plt.savefig(filename, dpi=300)
+    plt.savefig(filename)
     plt.close()
     return filename
+"""
 
 
 def plot_variance_time_cloud(
@@ -496,6 +479,7 @@ def plot_variance_time_cloud(
     filename = f"{save_path_base}.png"
     plt.savefig(filename, dpi=300)
     plt.close()
+    print("-------------------")
     return filename
 
 
@@ -543,10 +527,127 @@ def plot_scatter(
     plt.tight_layout()
 
     png_file = f"{save_path_base}.png"
-    plt.savefig(png_file, dpi=300)
+    plt.savefig(png_file)
     plt.close()
 
     csv_file = f"{save_path_base}.csv"
     df.to_csv(csv_file, index=False)
+
+    return png_file
+
+
+def plot_correlogram(
+    df: pd.DataFrame,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    save_path_base: str,
+) -> List[str]:
+    """
+    Plots a correlogram from lag-autocorrelation data.
+
+    Args:
+        df: DataFrame with 'lag' and 'autocorrelation' columns.
+        xlabel: Label for x-axis.
+        ylabel: Label for y-axis.
+        title: Plot title.
+        save_path_base: File path base (without extension).
+
+    Returns:
+        List with paths to saved files: [png_file, csv_file]
+    """
+    if df.empty:
+        print(f"[WARN] Empty dataframe for {title} — skipping plot.")
+        return []
+
+    plt.figure(figsize=(10, 6))
+    plt.stem(df["lag"], df["autocorrelation"], basefmt=" ")
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.tight_layout()
+
+    png_file = f"{save_path_base}.png"
+    plt.savefig(png_file)
+    plt.close()
+
+    csv_file = f"{save_path_base}.csv"
+    df.to_csv(csv_file, index=False)
+
+    return png_file
+
+
+def plot_lines(
+    df_map: Dict[str, pd.DataFrame],
+    x_column: str,
+    y_column: str,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    save_path_base: str,
+    x_axis_logscale: bool = False,
+    y_axis_logscale: bool = False,
+) -> List[str]:
+    """
+    Plots a multi-line chart from a dictionary of target → DataFrame.
+
+    Args:
+        df_map: Dict of {label: DataFrame}
+        x_column: Column name to use for X-axis
+        y_column: Column name to use for Y-axis
+        xlabel: X-axis label
+        ylabel: Y-axis label
+        title: Plot title
+        save_path_base: Path base to save PNG and CSV (no extension)
+
+    Returns:
+        List with paths to saved file png_file
+    """
+    if not df_map:
+        print(f"[WARN] No data provided for '{title}' — skipping plot.")
+        return []
+
+    plt.figure(figsize=(10, 6))
+
+    for label, df in df_map.items():
+        if df.empty or x_column not in df.columns or y_column not in df.columns:
+            print(f"[WARN] Skipping '{label}' — required columns missing or empty.")
+            continue
+
+        x = df[x_column].dropna()
+        y = df[y_column].dropna()
+        if len(x) != len(y):
+            print(f"[WARN] Skipping '{label}' — X and Y column size mismatch.")
+            continue
+
+        plt.plot(x, y, label=label)
+
+    if x_axis_logscale:
+        plt.xscale("log")
+    if y_axis_logscale:
+        plt.yscale("log")
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True, linestyle="--", linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+
+    png_file = f"{save_path_base}.png"
+    plt.savefig(png_file, dpi=300)
+    plt.close()
+
+    # Save combined CSV with "label" column
+    csv_file = f"{save_path_base}.csv"
+    with open(csv_file, "w") as f:
+        f.write(f"label,{x_column},{y_column}\n")
+        for label, df in df_map.items():
+            if df.empty or x_column not in df or y_column not in df:
+                continue
+            for x, y in zip(df[x_column], df[y_column]):
+                f.write(f"{label},{x},{y}\n")
 
     return png_file

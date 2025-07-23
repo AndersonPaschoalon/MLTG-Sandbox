@@ -56,7 +56,7 @@ def plot_variance_time_analysis(target_list=None):
 
     saved_files = []
     for label, df in df_map.items():
-        filename = mem.pnf.mkname("hurst_variancetime", [label])
+        filename = ("hurst_variancetime", [label])
         out_file = plot_functions.plot_variance_time_cloud(
             df=df,
             save_path_base=filename,
@@ -93,3 +93,43 @@ def plot_periodogram_analysis(target_list=None):
         saved_files.extend(out_files)
 
     return saved_files
+
+
+def plot_interarrival_correlogram(target_list=None):
+    """
+    Plot correlogram of interarrival times per target.
+    """
+    mem_df_map = mem.interarrival_correlogram_df_map
+    df_map = data_loader.filter_df_map_by_target(mem_df_map, target_list)
+
+    saved = []
+    for label, df in df_map.items():
+        filename = mem.pnf.mkname("interarrival_correlogram", [label])
+        out = plot_functions.plot_correlogram(
+            df=df,
+            xlabel="Lag",
+            ylabel="Autocorrelation",
+            title=f"Interarrival Correlogram - {label}",
+            save_path_base=filename,
+        )
+        saved.extend(out)
+
+    return saved
+
+
+def plot_idc_timescale(target_list=None):
+    df_map = data_loader.filter_df_map_by_target(
+        mem.idc_per_timescale_df_map, target_list
+    )
+    save_path_base = mem.pnf.mkname("idc_timescale", list(df_map.keys()))
+
+    return plot_functions.plot_lines(
+        df_map=df_map,
+        x_column="time_scale",
+        y_column="log10_idc",
+        xlabel="Time Scale (s)",
+        ylabel="log₁₀(IDC)",
+        title="Index of Dispersion vs Time Scale",
+        save_path_base=save_path_base,
+        x_axis_logscale=True,
+    )

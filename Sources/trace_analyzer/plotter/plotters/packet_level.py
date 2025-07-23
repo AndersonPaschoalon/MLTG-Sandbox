@@ -300,3 +300,35 @@ def plot_packet_load_cdf(target_list=None):
         save_path_base=save_path_base,
         log_scale=True,
     )
+
+
+def plot_peak_packet_load_cdf(target_list=None):
+    df_map = data_loader.filter_df_map_by_target(
+        mem.peak_packet_load_df_map, target_list
+    )
+    save_path_base = mem.pnf.mkname("peak_packet_load_cdf", list(df_map.keys()))
+
+    plot_functions.plot_cdf(
+        df_map=df_map,
+        column="peak_packet_load",
+        xlabel="Peak Packet Load (pkt/s)",
+        title="Peak Packet Load Distribution (CDF)",
+        save_path_base=save_path_base,
+        log_scale=True,
+    )
+
+
+def peak_to_mean_ratio_cdf(target_list=None):
+    df_map = data_loader.filter_df_map_by_target(
+        mem.peak_packet_load_df_map, target_list
+    )
+    save_path_base = mem.pnf.mkname("peak_to_mean_ratio_cdf", list(df_map.keys()))
+
+    plot_functions.plot_cdf(
+        df_map=df_map,
+        column="peak_to_mean_ratio",
+        xlabel="Peak-to-Mean Packet Load Ratio",
+        title="Peak-to-Mean Load Ratio Distribution (CDF)",
+        save_path_base=save_path_base,
+        log_scale=False,
+    )

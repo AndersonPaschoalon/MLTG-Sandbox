@@ -46,6 +46,7 @@ def test_main():
         if cmd_rm_env:
             core_state.rm_env()
         if cmd_analyze:
+            core_state.set_env_param("ex_analyzed", False)
             analyzer.analyze_experiment_and_store()
         if cmd_run_tests:
             run_all_plots()

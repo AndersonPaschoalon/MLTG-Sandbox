@@ -44,6 +44,16 @@ def register_all_plotters():
     PlotRegistry.register(
         "payload_cdf", "Payload Size CDF", pltpkt.plot_payload_size_cdf
     )
+    # PlotRegistry.register(
+    #    "peak_packet_load",
+    #    "Peak Packet Load (pkt/s) – CDF",
+    #    pltpkt.plot_peak_packet_load_cdf,
+    # )
+    # PlotRegistry.register(
+    #    "eak_to_mean_ratio",
+    #    "Peak-to-Mean Ratio – CDF",
+    #    pltpkt.peak_to_mean_ratio_cdf,
+    # )
 
     # Burst-level plots
     PlotRegistry.register(
@@ -78,4 +88,15 @@ def register_all_plotters():
         "hurst_peiorodogram",
         "Periodogram Analysis",
         pltscl.plot_periodogram_analysis,
+    )
+    PlotRegistry.register(
+        "interarrival_correlogram",
+        "Interarrival Correlogram",
+        pltscl.plot_interarrival_correlogram,
+    )
+
+    PlotRegistry.register(
+        "idc_per_timescale",
+        "Index of Dispersion for Counts (IDC)",
+        pltscl.plot_idc_timescale,
     )

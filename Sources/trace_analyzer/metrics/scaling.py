@@ -3,6 +3,7 @@ import pandas as pd
 import pywt
 from scipy.signal import periodogram
 from scipy.stats import linregress
+from statsmodels.tsa.stattools import acf
 
 import trace_analyzer.metrics.packet_level as packet_level
 from commons.connectors.alchemy_connector import AlchemyConnector
@@ -302,3 +303,77 @@ def calc_periodogram_as_df(
                 "hurst_estimate",
             ]
         )
+
+
+def calc_interarrival_correlogram(
+    ac,
+    flowID: int = 0,
+    max_lag: int = 50,
+    nlags: int = 50,
+) -> pd.DataFrame:
+    """
+    Computes the autocorrelation (correlogram) of interarrival times for a flow.
+
+    Args:
+        ac: AlchemyConnector
+        flowID: Target flow ID
+        max_lag: Max lag to compute ACF
+        nlags: Number of lags in ACF (used if max_lag not specified)
+
+    Returns:
+        pd.DataFrame with columns: 'lag', 'autocorrelation'
+    """
+    df = packet_level.get_packet_arrival_df(ac, flowID=flowID)
+    interarrivals = df["inter_arrival"].dropna().values
+
+    if len(interarrivals) < 10:
+        return pd.DataFrame()  # Not enough data
+
+    acf_vals = acf(interarrivals, nlags=max_lag, fft=True)
+
+    return pd.DataFrame({"lag": np.arange(len(acf_vals)), "autocorrelation": acf_vals})
+
+
+def calc_idc_per_timescale_as_df(
+    ac,
+    flowID: int = 0,
+    time_scales: list = [0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200],
+) -> pd.DataFrame:
+    """
+    Calculates the Index of Dispersion for Counts (IDC) over multiple time scales.
+
+    Returns:
+        DataFrame with columns:
+            - time_scale
+            - idc
+            - log10_idc
+    """
+    results = []
+
+    for scale in time_scales:
+        print(f"[INFO] Processing time scale: {scale} s")
+
+        signal = packet_level.get_bandwidth_signal(
+            ac=ac, flowID=flowID, bin_width=scale, agg="count"
+        )
+
+        if signal is None or len(signal) == 0:
+            print(f"[WARN] Empty signal for scale {scale}, skipping.")
+            continue
+
+        values = np.asarray(signal)
+        values = values[~np.isnan(values)]  # remove NaNs if any
+
+        if len(values) == 0:
+            print(f"[WARN] All-NaN signal for scale {scale}, skipping.")
+            continue
+
+        mean_val = np.mean(values)
+        var_val = np.var(values)
+
+        if mean_val > 0:
+            idc = var_val / mean_val
+            log_idc = np.log10(idc)
+            results.append({"time_scale": scale, "idc": idc, "log10_idc": log_idc})
+
+    return pd.DataFrame(results)

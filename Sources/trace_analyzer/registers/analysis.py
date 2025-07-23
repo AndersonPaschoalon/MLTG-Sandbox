@@ -86,3 +86,30 @@ def register_all_analysis():
         metric_fn=metrics_scaling.calc_periodogram_as_df,
         requires_min_time=False,
     )
+
+    AnalysisRegistry.register(
+        name="interarrival_correlogram",
+        display_name="Interarrival Correlogram",
+        mem_attribute="interarrivalcorrelogram_target",
+        csv_prefix="interarrival_correlogram",
+        metric_fn=metrics_scaling.calc_interarrival_correlogram,
+        requires_min_time=False,
+    )
+
+    # AnalysisRegistry.register(
+    #    name="peak_packet_load",
+    #    display_name="Peak Packet Load (pkt/s) – CDF",
+    #    mem_attribute="peak_packet_load_data_target",
+    #    csv_prefix="peak_packet_load",
+    #    metric_fn=metrics_packet_level.calc_peak_load_stats,
+    #    requires_min_time=False,
+    # )
+
+    AnalysisRegistry.register(
+        name="idc_per_timescale",
+        display_name="Index of Dispersion for Counts (IDC)",
+        mem_attribute="idc_per_timescale_data_target",
+        csv_prefix="idc_per_timescale",
+        metric_fn=metrics_scaling.calc_idc_per_timescale_as_df,
+        requires_min_time=False,
+    )
